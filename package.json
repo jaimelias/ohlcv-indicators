@@ -1,0 +1,18 @@
+{
+  "name": "ohlcv-indicators",
+  "version": "1.0.0",
+  "description": "A JavaScript library featuring optimized trading indicators for OHLCV arrays [{open, high, low, close, value}], utilizing BigNumber precision for enhanced accuracy.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node test/test.js",
+    "build": "webpack"
+  },
+  "author": "https://jaimelias.com/",
+  "license": "ISC",
+  "dependencies": {
+    "bignumber.js": "^9.1.2",
+    "webpack": "^5.92.1",
+    "webpack-cli": "^5.1.4"
+  }
+}
