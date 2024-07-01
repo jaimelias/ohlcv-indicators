@@ -1,11 +1,20 @@
 import OHLCV_INDICATORS from '../index.js'
-import { getOHLCV } from './fetchLiveData.js'
+import { getOHLCV, fetchIntraday , getLatestOHLCV} from './fetchLiveData.js'
 
 const indicators = new OHLCV_INDICATORS();
 const {BigNumber} = indicators
 
 const TEST = async () => {  
   
+
+
+  //console.log(await getLatestOHLCV('NVDA'))
+
+  //console.log((await fetchIntraday()).marketData.slice(-2))
+
+  //return
+
+
   const ohlcv = await getOHLCV('AAPL', 230)
 
   indicators

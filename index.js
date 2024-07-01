@@ -17,24 +17,28 @@ export default class OHLCV_INDICATORS {
     init(ohlcv) {
         const { BigNumber } = this
     
-        const ohlcvObj = ohlcv.map(({ open, high, low, close, volume, timestamp }) => ({
+        const ohlcvObj = ohlcv.map(({ open, high, low, close, volume, ...rest }) => ({
             open: BigNumber(open),
             high: BigNumber(high),
             low: BigNumber(low),
             close: BigNumber(close),
             volume: BigNumber(volume),
-            timestamp
-        }))
-    
-        this.ohlcv = ohlcvObj.reduce((acc, { open, high, low, close, volume, timestamp }) => {
-            acc.open.push(open)
-            acc.high.push(high)
-            acc.low.push(low)
-            acc.close.push(close)
-            acc.volume.push(volume)
-            acc.timestamp.push(timestamp)
-            return acc
-        }, { open: [], high: [], low: [], close: [], volume: [], timestamp: [] })
+            ...rest
+        }));
+        
+        this.ohlcv = ohlcvObj.reduce((acc, { open, high, low, close, volume, ...rest }) => {
+            acc.open.push(open);
+            acc.high.push(high);
+            acc.low.push(low);
+            acc.close.push(close);
+            acc.volume.push(volume);
+            Object.keys(rest).forEach(key => {
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(rest[key]);
+            });
+            return acc;
+        }, { open: [], high: [], low: [], close: [], volume: [] });
+        
         
         return this
     }
