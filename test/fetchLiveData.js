@@ -2,9 +2,6 @@
 const apiRoot = 'https://nasdaq.jaimelias.workers.dev/api'
 const convertCurrencyToFloat = str =>  parseFloat(str.replace(/[,$]/g, ''))
 
-
-
-
 export const getOHLCV = async (symbol, limit) => {
 
     
@@ -60,33 +57,33 @@ const getDateRange = limit => {
 };
 
 
-export const fetchIntraday = async () => {
+export const fetchHistoricalOHLCV = async ({symbol, days}) => {
 
+    //this function removes the lates "today result from output"
 
-    const response = await fetch("https://charting.nasdaq.com/data/charting/intraday?symbol=NVDA&mostRecent=1&includeLatestIntradayData=1&", {
-        headers: {
-          accept: "application/json",
-          "accept-language": "es-ES,es;q=0.9,en;q=0.8",
-          priority: "u=1, i",
-          "sec-ch-ua": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"",
-          "sec-ch-ua-mobile": "?0",
-          "sec-ch-ua-platform": "\"macOS\"",
-          "sec-fetch-dest": "empty",
-          "sec-fetch-mode": "cors",
-          "sec-fetch-site": "same-origin"
-        },
-        referrer: "https://charting.nasdaq.com/dynamic/chart.html",
-        referrerPolicy: "strict-origin-when-cross-origin",
-        body: null,
-        method: "GET",
-        mode: "cors",
-        credentials: "include"
+    const response = await fetch(`https://charting.nasdaq.com/data/charting/intraday?symbol=${symbol}&mostRecent=${days}&includeLatestIntradayData=1&`, {
+        referrer: "https://charting.nasdaq.com/dynamic/chart.html"
       })
 
       const data = await response.json()
+      const {marketData} = data
 
-      return data
 
+      const parsedData = marketData.map(o => ({
+        value: o.Value,
+        volume: o.Volume,
+        data: o.Date,
+        ...convertNYDateStringToUTC(o.Date)
+      }))
+
+      const lastItem = parsedData[parsedData.length - 1]
+      const lastDay = new Date(lastItem.utcTimestamp);
+      lastDay.setUTCHours(0, 0, 0, 0)
+      const lastTimeStamp = lastDay.getTime()
+
+      const filteredData = parsedData.filter(o => o.utcTimestamp < lastTimeStamp)
+
+      return filteredData;
 }
 
 
@@ -120,3 +117,67 @@ const convertNyMillisecondsToUtc = milliseconds => {
         utcDate: utcDateString
     };
 }
+
+
+function convertNYDateStringToUTC(dateString) {
+    // Create a date object in the New York timezone
+    const nyDate = new Date(dateString + ' GMT-0400');
+
+    // Get the UTC date string
+    const utcDateString = nyDate.toISOString().replace('T', ' ').substring(0, 19);
+
+    // Get the UTC timestamp
+    const utcTimestamp = nyDate.getTime();
+
+    return {
+        utcDateString: utcDateString,
+        utcTimestamp: utcTimestamp
+    };
+}
+
+
+export const convertToOHLCV = (data, intervalMinutes) => {
+    const validMinuteIntervals = [5, 10, 15, 30, 45, 60, 120, 180, 240];
+  
+    if (!validMinuteIntervals.includes(intervalMinutes)) {
+      const errMessage = `Invalid interval. Please use any of the following intervals: ${validMinuteIntervals.join(", ")}`;
+      throw Error(errMessage);
+    }
+  
+    const result = [];
+    let tempGroup = [];
+    let currentIntervalStart = null;
+  
+    data.forEach(item => {
+      if (!currentIntervalStart) {
+        currentIntervalStart = item.utcTimestamp;
+      }
+  
+      if ((item.utcTimestamp - currentIntervalStart) < intervalMinutes * 60000) {
+        tempGroup.push(item);
+      } else {
+        result.push(calculateOHLCV(tempGroup));
+        tempGroup = [item];
+        currentIntervalStart = item.utcTimestamp;
+      }
+    });
+  
+    if (tempGroup.length) {
+      result.push(calculateOHLCV(tempGroup));
+    }
+  
+    return result;
+  };
+  
+  const calculateOHLCV = (group) => {
+    const open = group[0].value;
+    const close = group[group.length - 1].value;
+    const high = Math.max(...group.map(item => item.value));
+    const low = Math.min(...group.map(item => item.value));
+    const volume = group[group.length - 1].volume;
+    const utcDateString = group[group.length - 1].utcDateString;
+    const utcTimestamp = group[group.length - 1].utcTimestamp;
+  
+    return { open, high, low, close, volume, utcDateString, utcTimestamp };
+  };
+  

@@ -1,5 +1,5 @@
 import OHLCV_INDICATORS from '../index.js'
-import { getOHLCV, fetchIntraday , getLatestOHLCV} from './fetchLiveData.js'
+import { getOHLCV, fetchHistoricalOHLCV , getLatestOHLCV, convertToOHLCV} from './fetchLiveData.js'
 
 const indicators = new OHLCV_INDICATORS();
 const {BigNumber} = indicators
@@ -10,8 +10,10 @@ const TEST = async () => {
 
   //console.log(await getLatestOHLCV('NVDA'))
 
-  //console.log((await fetchIntraday()).marketData.slice(-2))
-
+  //const historical = convertToOHLCV(await fetchHistoricalOHLCV({symbol: 'NVDA', days: 15}), 5)
+  //console.log(historical.length)
+  //console.log(historical[0])
+  //console.log(historical[historical.length - 1])
   //return
 
 
@@ -49,12 +51,14 @@ const TEST = async () => {
       }
     })
 
-    console.log(`${k}: ${JSON.stringify({firstValue, firstValidIndex, lastValue})}`)
-    console.log('---\n')
+    //console.log(`${k}: ${JSON.stringify({firstValue, firstValidIndex, lastValue})}`)
+    //console.log('---\n')
   }
 
-  console.log('<<<<<<<<<< HEADERS >>>>>>>>>>')
-  console.log(indicators.getHeaders())
+  //console.log('<<<<<<<<<< HEADERS >>>>>>>>>>')
+  //console.log(indicators.getHeaders())
+
+  console.log(indicators.getLastValues())
 }
 
 TEST()

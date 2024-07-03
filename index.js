@@ -50,6 +50,17 @@ export default class OHLCV_INDICATORS {
     getData() {
         return this.ohlcv
     }
+    getLastValues(){
+        const output = {}
+
+        for(let k in this.ohlcv)
+        {
+            const arr = this.ohlcv[k]
+            output[k] = arr[arr.length - 1]
+        }
+
+        return output
+    }
 
     addColumn(key, arr) {
         const ohlcvLength = this.ohlcv.open.length
