@@ -7,7 +7,7 @@ import { IchimokuCloud } from './src/moving-averages/ichimokuCloud.js'
 import { RSI} from './src/oscillators/rsi.js'
 import { MFI} from './src/oscillators/mfi.js'
 import { RelativeVolume} from './src/moving-averages/relativeVolume.js'
-import { findCrosses} from './src/utilities.js'
+import {findCrosses} from './src/utilities.js'
 
 export default class OHLCV_INDICATORS {
     constructor() {
@@ -83,6 +83,7 @@ export default class OHLCV_INDICATORS {
 
         //crossing single column pairs 
         const ohlcv = this.getData()
+        let slowNumArr = []
 
         //each parameter [{fast, slow}, {fast, slow}]
 
@@ -97,8 +98,8 @@ export default class OHLCV_INDICATORS {
             
             //if the column does not exist, will try to create a new one
             //this code can only add single column output indicators such as SMA and EMA
-            [fast, slow].forEach(v => {
-                if (!ohlcv.hasOwnProperty(v)) {
+            [fast, slow].forEach((v, i) => {
+                if (!ohlcv.hasOwnProperty(v) && typeof v === 'string') {
                     const arr = v.split('_')
                     if (arr.length > 0) {
                         const funcName = arr[0].toUpperCase()
@@ -109,13 +110,23 @@ export default class OHLCV_INDICATORS {
                         }
                     }
                 }
+                else if(typeof v === 'number' && i === 1)
+                {
+                    slowNumArr = ohlcv.close.map(o => 30)
+                }
             })            
         
             //finds the cross and adds is to the columns
             if (ohlcv.hasOwnProperty(fast) && ohlcv.hasOwnProperty(slow)) {
                 const cross = findCrosses(this.BigNumber, ohlcv[fast], ohlcv[slow])
                 this.addColumn(`${fast}_x_${slow}`, cross)
-            } else {
+            }
+            else if(ohlcv.hasOwnProperty(fast) && slowNumArr.length > 0)
+            {
+                const cross = findCrosses(this.BigNumber, ohlcv[fast], slowNumArr)
+                this.addColumn(`${fast}_x_${slow}`, cross)
+            }
+            else {
                 console.error(`Missing ohlcv properties for ${fast} or ${slow}`)
             }
         })

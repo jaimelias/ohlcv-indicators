@@ -7,9 +7,12 @@ export const BollingerBands = (main, size, times) => {
   const data = ohlcv['close'];
   const bb = getBollingerBands(main.BigNumber, data, size, times)
   const {upper, mid, lower} = bb
-  main.addColumn(`bollinger_bands_upper`, upper)
-  main.addColumn(`bollinger_bands_mid`, mid)
-  main.addColumn(`bollinger_bands_lower`, lower)
+
+
+  for(let k in bb)
+  {
+    main.addColumn(`bollinger_bands_${k}`, bb[k])
+  }
 }
 
 
@@ -28,8 +31,11 @@ export const getBollingerBands = (BigNumber, data, size = 20, times = 2) => {
     let upper = avg.map((o, i) => o.plus(timesSd[i]))
     let mid = avg
     let lower = avg.map((o, i) => o.minus(timesSd[i]))
+    let range = bollingerBandsRange(data, {upper, lower})
+
+    console.log({range})
   
-    return { upper, mid, lower }
+    return { upper, mid, lower, range }
   };
   
   const deviation = (BigNumber, data, size) => {
@@ -49,5 +55,15 @@ export const getBollingerBands = (BigNumber, data, size = 20, times = 2) => {
     }
   
     return ret
-  };
+  }
+
+
+const bollingerBandsRange = (data, bollingerBands) => {
+    let {upper, lower} = bollingerBands;
+
+    const range = upper.map((v, i) => v.minus(lower[i]))
+
+    const output = data.map((v, i) => (v.minus(lower[i]).dividedBy(range[i])).times(100))
   
+    return output
+  }

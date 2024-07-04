@@ -10,6 +10,11 @@ const TEST = async () => {
 
   //console.log(await getLatestOHLCV('NVDA'))
 
+
+  //const historical = await fetchHistoricalOHLCV({symbol: 'NVDA', days: 30})
+
+  //console.log(historical[0])
+
   //const historical = convertToOHLCV(await fetchHistoricalOHLCV({symbol: 'NVDA', days: 15}), 5)
   //console.log(historical.length)
   //console.log(historical[0])
@@ -21,17 +26,17 @@ const TEST = async () => {
 
   indicators
     .init(ohlcv)
-    .EMA(21)
-    .EMA(9, 'ema21')
-    .SMA(200)
-    .SMA(100, 'sma_200')
-    .MACD(12, 26, 9)
+    //.EMA(21)
+    //.EMA(9, 'ema21')
+    //.SMA(200)
+    //.SMA(100, 'sma_200')
+    //.MACD(12, 26, 9)
     .BollingerBands(20, 2)
-    .IchimokuCloud(9, 26, 52)
+    //.IchimokuCloud(9, 26, 52)
     .RSI(14, 14)
     .MFI(14)
-    .RelativeVolume(10)
-    .crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}])
+    //.RelativeVolume(10)
+    .crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14_14', slow: 30}])
 
   const dataSet = indicators.getData()
   

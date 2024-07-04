@@ -61,7 +61,7 @@ export const fetchHistoricalOHLCV = async ({symbol, days}) => {
 
     //this function removes the lates "today result from output"
 
-    const response = await fetch(`https://charting.nasdaq.com/data/charting/intraday?symbol=${symbol}&mostRecent=${days}&includeLatestIntradayData=1&`, {
+    const response = await fetch(`https://charting.nasdaq.com/data/charting/intraday?symbol=${symbol}&mostRecent=${days}&includeLatestIntradayData=0&`, {
         referrer: "https://charting.nasdaq.com/dynamic/chart.html"
       })
 
