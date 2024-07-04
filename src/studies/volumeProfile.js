@@ -1,4 +1,4 @@
-export const VolumeProfile = (BigNumber, ohlcv, numBins = 10) => {
+export const VolumeProfile = (BigNumber, ohlcv, numBins = 10, position) => {
   const { open, high, low, close, volume } = ohlcv;
 
   // Determine the range of prices
@@ -51,8 +51,34 @@ export const VolumeProfile = (BigNumber, ohlcv, numBins = 10) => {
     totals.upVolume = totals.upVolume.plus(upVolume);
     totals.downVolume = totals.downVolume.plus(downVolume);
     totals.grossVolume = totals.grossVolume.plus(grossVolume);
-    totals.netVolume = totals.upVolume.minus(totals.downVolume);
   }
 
-  return bins;
-};
+
+  const nodes = findVolumeNodes(bins)
+  return {bins, nodes};
+}
+
+
+const findVolumeNodes = bins => {
+  if (!bins || bins.length === 0) {
+    throw new Error('Bins array is empty or not provided');
+  }
+
+  let highestVolumeNode = bins[0];
+  let lowestVolumeNode = bins[0];
+
+  bins.forEach(bin => {
+    if (bin.grossVolume.isGreaterThan(highestVolumeNode.grossVolume)) {
+      highestVolumeNode = bin;
+    }
+
+    if (bin.grossVolume.isLessThan(lowestVolumeNode.grossVolume)) {
+      lowestVolumeNode = bin;
+    }
+  });
+
+  return {
+    highestVolumeNode,
+    lowestVolumeNode
+  }
+}
