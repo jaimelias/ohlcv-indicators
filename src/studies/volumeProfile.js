@@ -26,7 +26,8 @@ export const VolumeProfile = (BigNumber, ohlcv, numBins = 10) => {
   const inverseBinSize = BigNumber(1).dividedBy(binSize);
 
   // Distribute volume into bins
-  close.forEach((currentClose, i) => {
+  for (let i = 0; i < close.length; i++) {
+    const currentClose = close[i];
     const currentOpen = open[i];
     const currentHigh = high[i];
     const currentLow = low[i];
@@ -41,24 +42,16 @@ export const VolumeProfile = (BigNumber, ohlcv, numBins = 10) => {
     for (let j = lowIndex; j < highIndex; j++) {
       bins[j].upVolume = bins[j].upVolume.plus(upVolume);
       bins[j].downVolume = bins[j].downVolume.plus(downVolume);
-      bins[j].grossVolume = bins[j].upVolume.plus(bins[j].downVolume);    }
-  });
+      bins[j].grossVolume = bins[j].grossVolume.plus(upVolume.plus(downVolume));
+    }
+  }
 
   // Sum totals outside the loop
-  bins.forEach(({ upVolume, downVolume, grossVolume, netVolume }) => {
+  for (const { upVolume, downVolume, grossVolume } of bins) {
     totals.upVolume = totals.upVolume.plus(upVolume);
     totals.downVolume = totals.downVolume.plus(downVolume);
     totals.grossVolume = totals.grossVolume.plus(grossVolume);
-  });
-
-  // Calculate percentage volumes
-  bins.forEach(bin => {
-    Object.keys(totals).forEach(k => {
-      if (!totals[k].isZero()) {
-        bin[`${k}Percent`] = (bin[k].dividedBy(totals[k])).times(100);
-      }
-    });
-  });
+  }
 
   return bins;
 };
