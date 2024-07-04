@@ -51,6 +51,7 @@ export const VolumeProfile = (BigNumber, ohlcv, numBins = 10) => {
     totals.upVolume = totals.upVolume.plus(upVolume);
     totals.downVolume = totals.downVolume.plus(downVolume);
     totals.grossVolume = totals.grossVolume.plus(grossVolume);
+    totals.netVolume = totals.upVolume.minus(totals.downVolume);
   }
 
   return bins;
