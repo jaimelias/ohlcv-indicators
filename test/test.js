@@ -2,7 +2,7 @@ import OHLCV_INDICATORS from '../index.js'
 import { getOHLCV } from './fetchLiveData.js'
 
 const indicators = new OHLCV_INDICATORS();
-const {BigNumber} = indicators
+const {BigNumber, VolumeProfile} = indicators
 
 const TEST = async () => {  
   
@@ -15,15 +15,18 @@ const TEST = async () => {
     //.SMA(200)
     //.SMA(100, 'sma_200')
     //.MACD(12, 26, 9)
-    .BollingerBands(20, 2)
+    //.BollingerBands(20, 2)
     //.IchimokuCloud(9, 26, 52)
-    .RSI(14)
-    .MFI(14)
-    .RelativeVolume(10)
-    .RelativeVolume(20)
-    .crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14', slow: 30}])
+    //.RSI(14)
+    //.MFI(14)
+    //.RelativeVolume(10)
+    //.RelativeVolume(20)
+    //.crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14', slow: 30}])
 
   const dataSet = indicators.getData()
+  const vp = VolumeProfile(BigNumber, dataSet)
+
+  console.log(vp)
   
 
   for(let k in dataSet)
@@ -48,7 +51,7 @@ const TEST = async () => {
   //console.log('<<<<<<<<<< HEADERS >>>>>>>>>>')
   //console.log(indicators.getHeaders())
 
-  console.log(indicators.getLastValues())
+  //console.log(indicators.getLastValues())
 }
 
 TEST()

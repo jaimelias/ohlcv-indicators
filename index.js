@@ -7,11 +7,13 @@ import { IchimokuCloud } from './src/moving-averages/ichimokuCloud.js'
 import { RSI} from './src/oscillators/rsi.js'
 import { MFI} from './src/oscillators/mfi.js'
 import { RelativeVolume} from './src/moving-averages/relativeVolume.js'
+import { VolumeProfile } from './src/studies/volumeProfile.js'
 import {findCrosses} from './src/utilities.js'
 
 export default class OHLCV_INDICATORS {
     constructor() {
         this.BigNumber = BigNumber
+        this.VolumeProfile = VolumeProfile
     }
 
     init(ohlcv) {
