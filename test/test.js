@@ -24,7 +24,7 @@ const TEST = async () => {
     //.crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14', slow: 30}])
 
   const dataSet = indicators.getData()
-  const vp = VolumeProfile(BigNumber, dataSet)
+  const vp = VolumeProfile(BigNumber, dataSet, 5)
 
   console.log(vp)
   
