@@ -155,9 +155,9 @@ export default class OHLCV_INDICATORS {
         IchimokuCloud(this, tenkan, kijun, senkou)
         return this
     }
-    RSI(period, smoothingPeriod)
+    RSI(period, movingAverage, movingAveragePeriod)
     {
-        RSI(this, period, smoothingPeriod)
+        RSI(this, period, movingAverage, movingAveragePeriod)
         return this
     }
     MFI(period)

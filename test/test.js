@@ -1,27 +1,11 @@
 import OHLCV_INDICATORS from '../index.js'
-import { getOHLCV, fetchHistoricalOHLCV , getLatestOHLCV, convertToOHLCV} from './fetchLiveData.js'
+import { getOHLCV } from './fetchLiveData.js'
 
 const indicators = new OHLCV_INDICATORS();
 const {BigNumber} = indicators
 
 const TEST = async () => {  
   
-
-
-  //console.log(await getLatestOHLCV('NVDA'))
-
-
-  //const historical = await fetchHistoricalOHLCV({symbol: 'NVDA', days: 30})
-
-  //console.log(historical[0])
-
-  //const historical = convertToOHLCV(await fetchHistoricalOHLCV({symbol: 'NVDA', days: 15}), 5)
-  //console.log(historical.length)
-  //console.log(historical[0])
-  //console.log(historical[historical.length - 1])
-  //return
-
-
   const ohlcv = await getOHLCV('AAPL', 230)
 
   indicators
@@ -33,10 +17,11 @@ const TEST = async () => {
     //.MACD(12, 26, 9)
     .BollingerBands(20, 2)
     //.IchimokuCloud(9, 26, 52)
-    .RSI(14, 14)
+    .RSI(14)
     .MFI(14)
-    //.RelativeVolume(10)
-    .crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14_14', slow: 30}])
+    .RelativeVolume(10)
+    .RelativeVolume(20)
+    .crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14', slow: 30}])
 
   const dataSet = indicators.getData()
   

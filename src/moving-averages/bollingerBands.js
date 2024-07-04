@@ -3,11 +3,8 @@ import { getSMA } from "./sma.js";
 
 export const BollingerBands = (main, size, times) => {
   const ohlcv = main.getData()
-  const suffix = `${size}_${times}`
   const data = ohlcv['close'];
   const bb = getBollingerBands(main.BigNumber, data, size, times)
-  const {upper, mid, lower} = bb
-
 
   for(let k in bb)
   {
@@ -32,8 +29,6 @@ export const getBollingerBands = (BigNumber, data, size = 20, times = 2) => {
     let mid = avg
     let lower = avg.map((o, i) => o.minus(timesSd[i]))
     let range = bollingerBandsRange(data, {upper, lower})
-
-    console.log({range})
   
     return { upper, mid, lower, range }
   };
