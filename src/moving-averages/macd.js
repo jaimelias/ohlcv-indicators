@@ -27,12 +27,12 @@ export const getMACD = (BigNumber, data, fastLine = 12, slowLine = 26, signalLin
 
     // Calculate the MACD line (histogram)
     const histogram = diff.map((d, i) => d.minus(dea[i]))
-    const crosses = findCrosses(BigNumber, diff, dea)
+    const x = findCrosses(BigNumber, diff, dea)
 
 	return {
 		diff, 
 		dea,
 		histogram,
-        crosses
+        x
     }
 }
