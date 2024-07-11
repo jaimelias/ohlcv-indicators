@@ -17,7 +17,7 @@ const TEST = async () => {
     //.MACD(12, 26, 9)
     //.BollingerBands(20, 2)
     //.IchimokuCloud(9, 26, 52)
-    //.RSI(14)
+    .RSI(14)
     //.MFI(14)
     //.RelativeVolume(10)
     //.RelativeVolume(20)
@@ -26,7 +26,7 @@ const TEST = async () => {
   const dataSet = indicators.getData()
   const vp = VolumeProfile(BigNumber, dataSet, 5)
 
-  console.log(vp)
+  //console.log(vp)
   
 
   for(let k in dataSet)
@@ -48,10 +48,10 @@ const TEST = async () => {
     //console.log('---\n')
   }
 
-  //console.log('<<<<<<<<<< HEADERS >>>>>>>>>>')
-  //console.log(indicators.getHeaders())
+  console.log('<<<<<<<<<< HEADERS >>>>>>>>>>')
+  console.log(indicators.getHeaders())
 
-  //console.log(indicators.getLastValues())
+  console.log(indicators.getLastValues())
 }
 
 TEST()
