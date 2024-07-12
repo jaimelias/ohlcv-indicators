@@ -1,6 +1,6 @@
 {
   "name": "ohlcv-indicators",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A JavaScript library featuring optimized trading indicators for OHLCV arrays [{open, high, low, close, value}], utilizing BigNumber precision for enhanced accuracy.",
   "main": "index.js",
   "type": "module",

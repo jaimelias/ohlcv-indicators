@@ -33,7 +33,8 @@ export const getIchimokuCloud = (BigNumber, data, tenkan = 9, kijun = 26, senkou
 }
   
 const calculateAverage = (BigNumber, high, low, period) => {
-  return high.slice(period).map((_, i) => {
+
+  return high.slice(0, high.length - period + 1).map((_, i) => {
     const highSlice = high.slice(i, i + period)
     const lowSlice = low.slice(i, i + period)
     return BigNumber.maximum(...highSlice).plus(BigNumber.minimum(...lowSlice)).dividedBy(2)
@@ -45,7 +46,7 @@ const calculateSenkouSpanA = (tenkanSen, kijunSen, period, slice) => {
     i < kijunSen.length ? value.plus(kijunSen[i]).dividedBy(2) : null
   ).filter(val => val !== null)
 
-  return spanA.slice(0, (spanA.length - slice)+2)
+  return spanA.slice(0, (spanA.length - slice)+1)
 };
 
 const calculateSenkouSpanB = (BigNumber, high, low, period, slice) => {
@@ -59,5 +60,5 @@ const calculateSenkouSpanB = (BigNumber, high, low, period, slice) => {
 }
 
 
-const calculateChikouSpan = (close, kijunSenPeriod) => close.slice(0, close.length - kijunSenPeriod)
+const calculateChikouSpan = (close, kijunSenPeriod) => close.slice(0, close.length - kijunSenPeriod + 1)
 

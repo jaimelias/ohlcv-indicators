@@ -5,7 +5,7 @@ const indicators = new OHLCV_INDICATORS();
 
 const TEST = async () => {  
   
-  const ohlcv = await getOHLCV('NVDA', 230)
+  const ohlcv = await getOHLCV('ADMA', 200)
 
   indicators
     .init(ohlcv)
