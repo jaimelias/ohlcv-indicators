@@ -58,7 +58,8 @@ export default class OHLCV_INDICATORS {
         for(let k in this.ohlcv)
         {
             const arr = this.ohlcv[k]
-            output[k] = arr[arr.length - 1]
+            let value = arr[arr.length - 1]
+            output[k] = (BigNumber.isBigNumber(value)) ? value.toNumber() : value
         }
 
         return output

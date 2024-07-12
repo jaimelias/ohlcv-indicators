@@ -14,10 +14,10 @@ const TEST = async () => {
     //.EMA(9, 'ema21')
     //.SMA(200)
     //.SMA(100, 'sma_200')
-    //.MACD(12, 26, 9)
+    .MACD(12, 26, 9)
     //.BollingerBands(20, 2)
     //.IchimokuCloud(9, 26, 52)
-    .RSI(14)
+    //.RSI(14)
     //.MFI(14)
     //.RelativeVolume(10)
     //.RelativeVolume(20)
@@ -27,7 +27,11 @@ const TEST = async () => {
   const vp = VolumeProfile(BigNumber, dataSet, 5)
 
   //console.log(vp)
-  
+
+  console.log()
+  const lastValue = Object.entries(indicators.getLastValues()).map(o => ([o[0], o[1], typeof o[1]]))
+
+  console.log(lastValue)
 
   for(let k in dataSet)
   {
@@ -48,10 +52,10 @@ const TEST = async () => {
     //console.log('---\n')
   }
 
-  console.log('<<<<<<<<<< HEADERS >>>>>>>>>>')
-  console.log(indicators.getHeaders())
+  //console.log('<<<<<<<<<< HEADERS >>>>>>>>>>')
+  //console.log(indicators.getHeaders())
 
-  console.log(indicators.getLastValues())
+  //console.log(indicators.getLastValues())
 }
 
 TEST()
