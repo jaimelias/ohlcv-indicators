@@ -35,6 +35,8 @@ export const getLatestOHLCV = async (symbol) => {
     const {chart, lastSalePrice, volume} = data.data
     const allValues = chart.map(o => convertCurrencyToFloat(o.z.value))
 
+    console.log(new Date(chart[chart.length -1].x).toDateString().slice(0, 10))
+
     return [{
         open: allValues[0],
         high: Math.max(...allValues),
@@ -51,5 +53,6 @@ const getDateRange = limit => {
     fromDate.setDate(fromDate.getDate() - limit)
     const fromDateFormatted = fromDate.toISOString().slice(0, 10) // Get the date limit number of days ago in yyyy-mm-dd format
 
+    
     return { fromDate: fromDateFormatted, toDate }
 }

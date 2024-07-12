@@ -45,7 +45,7 @@ const calculateSenkouSpanA = (tenkanSen, kijunSen, period, slice) => {
     i < kijunSen.length ? value.plus(kijunSen[i]).dividedBy(2) : null
   ).filter(val => val !== null)
 
-  return spanA.slice(0, (spanA.length - slice)+1)
+  return spanA.slice(0, (spanA.length - slice)+2)
 };
 
 const calculateSenkouSpanB = (BigNumber, high, low, period, slice) => {
@@ -55,7 +55,7 @@ const calculateSenkouSpanB = (BigNumber, high, low, period, slice) => {
     return BigNumber.maximum(...highSlice).plus(BigNumber.minimum(...lowSlice)).dividedBy(2)
   })
 
-  return spanB.slice(0, (spanB.length -slice)+1)
+  return spanB.slice(0, (spanB.length -slice)+2)
 }
 
 
