@@ -14,7 +14,7 @@ const TEST = async () => {
     //.EMA(9, 'ema21')
     //.SMA(200)
     //.SMA(100, 'sma_200')
-    //.MACD(12, 26, 9)
+    .MACD(12, 26, 9)
     .BollingerBands(20, 2)
     //.IchimokuCloud(9, 26, 52)
     .RSI(14)
