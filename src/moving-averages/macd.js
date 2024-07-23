@@ -9,7 +9,7 @@ export const MACD = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
 
     for(let k in macd)
     {
-        main.addColumn(`macd_${k}`, macd[k]);
+        main.addColumn(k, macd[k]);
     }
 }
 
@@ -30,9 +30,9 @@ export const getMACD = (BigNumber, data, fastLine = 12, slowLine = 26, signalLin
     const x = findCrosses(BigNumber, diff, dea)
 
 	return {
-		diff, 
-		dea,
-		histogram,
-        x
+		'macd_diff': diff, 
+		'macd_dea': dea,
+		'macd_histogram': histogram,
+        'macd_diff_x_macd_dea': x
     }
 }

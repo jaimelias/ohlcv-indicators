@@ -24,7 +24,27 @@ const TEST = async () => {
     .crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14', slow: 70}])
 
   console.log(indicators.getLastValues())
-  console.log(VolumeProfile(BigNumber, indicators.getData(), 5))
+  //console.log(VolumeProfile(BigNumber, indicators.getData(), 5))
+
+  const histogram = indicators.getData().macd_histogram
+  const macdHistogramUp = isMacdHistogramUp({histogram, slice: 4})
 }
+
+const isMacdHistogramUp = ({histogram, slice=4}) => {
+
+  histogram = histogram.slice(-slice)
+  const histogramDiff = histogram.slice(1).map((value, index) => value.minus(histogram[index]))
+  const condition1 = histogram[histogram.length -1].isGreaterThan(0)
+  const condition2 = histogram[histogram.length -1].isGreaterThan(histogram[histogram.length -2])
+  const condition3 = histogramDiff.filter(diff => diff.isGreaterThan(0)).length > histogramDiff.filter(diff => diff.isLessThan(0)).length
+  
+  if(condition1 && condition2 && condition3)
+  {
+      return true
+  }
+
+  return false
+
+} 
 
 TEST()
