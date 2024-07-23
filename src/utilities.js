@@ -43,5 +43,5 @@ export const findCrosses = (BigNumber, fast, slow) => {
         }
     }
 
-    return crosses.map(o => BigNumber(o))
+    return crosses
 }

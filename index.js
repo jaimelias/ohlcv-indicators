@@ -25,10 +25,10 @@ export default class OHLCV_INDICATORS {
             acc.low.push(BigNumber(low))
             acc.close.push(BigNumber(close))
             acc.volume.push(BigNumber(volume))
-            Object.keys(rest).forEach(key => {
-                if (!acc[key]) acc[key] = []
-                acc[key].push(rest[key])
-            });
+            for (const key of Object.keys(rest)) {
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(rest[key]);
+            }
             return acc;
         }, { open: [], high: [], low: [], close: [], volume: [] })
         
@@ -64,8 +64,16 @@ export default class OHLCV_INDICATORS {
         // Use Array.prototype.unshift to add NaN elements efficiently
         const nanArray = new Array(ohlcvLength - arr.length).fill(NaN)
         arr = nanArray.concat(arr)
-        
-        this.ohlcv[key] = arr.map(o => isNaN(o) ? o : o.toNumber())
+
+        if(!key.includes('_x_'))
+        {
+            this.ohlcv[key] = arr.map(o => isNaN(o) ? o : o.toNumber())
+        }
+        else
+        {
+            //cross pair are added to the table directly as numbers
+            this.ohlcv[key] = arr
+        }
     }
 
     crossPairs(arr)
