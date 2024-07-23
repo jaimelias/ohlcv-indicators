@@ -22,7 +22,9 @@ const getOneDayOHLCV = async (symbol, limit) => {
         high: convertCurrencyToFloat(z.high),
         low: convertCurrencyToFloat(z.low),
         close: convertCurrencyToFloat(z.close),
-        volume: convertCurrencyToFloat(z.volume)
+        volume: convertCurrencyToFloat(z.volume),
+        timestamp: x,
+        date: new Date(x).toDateString().slice(0, 10)
     }))
 
     return ohlcv
@@ -34,15 +36,16 @@ export const getLatestOHLCV = async (symbol) => {
     const data = await response.json()
     const {chart, lastSalePrice, volume} = data.data
     const allValues = chart.map(o => convertCurrencyToFloat(o.z.value))
-
-    console.log(new Date(chart[chart.length -1].x).toDateString().slice(0, 10))
+    const timestamp = chart[chart.length -1].x
 
     return [{
         open: allValues[0],
         high: Math.max(...allValues),
         low: Math.min(...allValues),
         close: convertCurrencyToFloat(lastSalePrice),
-        volume: convertCurrencyToFloat(volume)
+        volume: convertCurrencyToFloat(volume),
+        timestamp,
+        date: new Date(chart[chart.length -1].x).toDateString().slice(0, 10)
     }]
 }
 

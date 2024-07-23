@@ -19,27 +19,18 @@ export default class OHLCV_INDICATORS {
     init(ohlcv) {
         const { BigNumber } = this
     
-        const ohlcvObj = ohlcv.map(({ open, high, low, close, volume, ...rest }) => ({
-            open: BigNumber(open),
-            high: BigNumber(high),
-            low: BigNumber(low),
-            close: BigNumber(close),
-            volume: BigNumber(volume),
-            ...rest
-        }));
-        
-        this.ohlcv = ohlcvObj.reduce((acc, { open, high, low, close, volume, ...rest }) => {
-            acc.open.push(open);
-            acc.high.push(high);
-            acc.low.push(low);
-            acc.close.push(close);
-            acc.volume.push(volume);
+        this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
+            acc.open.push(BigNumber(open))
+            acc.high.push(BigNumber(high))
+            acc.low.push(BigNumber(low))
+            acc.close.push(BigNumber(close))
+            acc.volume.push(BigNumber(volume))
             Object.keys(rest).forEach(key => {
-                if (!acc[key]) acc[key] = [];
-                acc[key].push(rest[key]);
+                if (!acc[key]) acc[key] = []
+                acc[key].push(rest[key])
             });
             return acc;
-        }, { open: [], high: [], low: [], close: [], volume: [] });
+        }, { open: [], high: [], low: [], close: [], volume: [] })
         
         
         return this
@@ -55,85 +46,68 @@ export default class OHLCV_INDICATORS {
     getLastValues(){
         const output = {}
 
-        for(let k in this.ohlcv)
-        {
-            const arr = this.ohlcv[k]
-            let value = arr[arr.length - 1]
-            output[k] = (BigNumber.isBigNumber(value)) ? value.toNumber() : value
+        for (const [k, arr] of Object.entries(this.ohlcv)) {
+            let value = arr[arr.length - 1];
+            output[k] = (BigNumber.isBigNumber(value)) ? value.toNumber() : value;
         }
 
         return output
     }
 
     addColumn(key, arr) {
-        const ohlcvLength = this.ohlcv.open.length
+        const ohlcvLength = this.ohlcv.open.length;
 
         if (arr.length > ohlcvLength) {
-            throw new Error(`Invalid column data: The length of the new column exceeds the length of the OHLCV data`)
+            throw new Error(`Invalid column data: The length of the new column exceeds the length of the OHLCV data`);
         }
-
-        //fulls arr with NaN until it has the same lenght as ohlcvLength
-
-        while (arr.length < ohlcvLength) {
-            arr.unshift(NaN)
-        }
-
+        
+        // Use Array.prototype.unshift to add NaN elements efficiently
+        const nanArray = new Array(ohlcvLength - arr.length).fill(NaN)
+        arr = nanArray.concat(arr)
+        
         this.ohlcv[key] = arr.map(o => isNaN(o) ? o : o.toNumber())
     }
 
     crossPairs(arr)
     {
-
-        //crossing single column pairs 
-        const ohlcv = this.getData()
-        let slowNumArr = []
-
-        //each parameter [{fast, slow}, {fast, slow}]
-
-        arr.forEach(o => {
-            const {fast, slow} = o
-
-            //validates both are destructured correctly
-            if(!fast || !slow)
-            {
-                return
-            }
-            
-            //if the column does not exist, will try to create a new one
-            //this code can only add single column output indicators such as SMA and EMA
-            [fast, slow].forEach((v, i) => {
-                if (!ohlcv.hasOwnProperty(v) && typeof v === 'string') {
-                    const arr = v.split('_')
-                    if (arr.length > 0) {
-                        const funcName = arr[0].toUpperCase()
-                        const params = arr.slice(1)
-            
-                        if (typeof this[funcName] === 'function' && params.length > 0) {
-                            this[funcName](...params)
-                        }
-                    }
-                }
-                else if(typeof v === 'number' && i === 1)
-                {
-                    slowNumArr = ohlcv.close.map(o => 30)
-                }
-            })            
+        const ohlcv = this.getData();
+        const slowNumArrCache = {};
         
-            //finds the cross and adds is to the columns
-            if (ohlcv.hasOwnProperty(fast) && ohlcv.hasOwnProperty(slow)) {
-                const cross = findCrosses(this.BigNumber, ohlcv[fast], ohlcv[slow])
-                this.addColumn(`${fast}_x_${slow}`, cross)
+        // Helper function to create column if it doesn't exist
+        const createColumnIfNeeded = (v) => {
+            if (!ohlcv.hasOwnProperty(v) && typeof v === 'string') {
+                const [funcName, ...params] = v.split('_');
+                if (this[funcName.toUpperCase()] && params.length > 0) {
+                    this[funcName.toUpperCase()](...params);
+                }
             }
-            else if(ohlcv.hasOwnProperty(fast) && slowNumArr.length > 0)
-            {
-                const cross = findCrosses(this.BigNumber, ohlcv[fast], slowNumArr)
-                this.addColumn(`${fast}_x_${slow}`, cross)
-            }
-            else {
-                console.error(`Missing ohlcv properties for ${fast} or ${slow}`)
-            }
-        })
+        };
         
+        for (const { fast, slow } of arr) {
+            // Validate parameters
+            if (!fast || !slow) continue;
+        
+            // Create columns if needed
+            createColumnIfNeeded(fast);
+            createColumnIfNeeded(slow);
+        
+            // Prepare slowNumArr if 'slow' is a number
+            if (typeof slow === 'number' && !slowNumArrCache[slow]) {
+                slowNumArrCache[slow] = ohlcv.close.map(() => slow);
+            }
+        
+            // Find and add crosses
+            if (ohlcv[fast] && ohlcv[slow]) {
+                const cross = findCrosses(this.BigNumber, ohlcv[fast], ohlcv[slow]);
+                this.addColumn(`${fast}_x_${slow}`, cross);
+            } else if (ohlcv[fast] && slowNumArrCache[slow]) {
+                const cross = findCrosses(this.BigNumber, ohlcv[fast], slowNumArrCache[slow]);
+                this.addColumn(`${fast}_x_${slow}`, cross);
+            } else {
+                console.error(`Missing ohlcv properties for ${fast} or ${slow}`);
+            }
+        }
+           
     }
 
     EMA(size) {

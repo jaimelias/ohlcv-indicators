@@ -5,7 +5,7 @@ export const IchimokuCloud = (main, tenkan, kijun, senkou) => {
 
   for(let k in ichi)
   {
-      console.log(`${k} [length ${ichi[k].length}] [lastValue ${ichi[k][ichi[k].length -1]}]`)
+      //console.log(`${k} [length ${ichi[k].length}] [lastValue ${ichi[k][ichi[k].length -1]}]`)
       main.addColumn(`ichimoku_${k}`, ichi[k])
   }
 }

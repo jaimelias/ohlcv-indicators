@@ -1,14 +1,15 @@
 import OHLCV_INDICATORS from '../index.js'
 import { getOHLCV } from './fetchLiveData.js'
 
-const indicators = new OHLCV_INDICATORS();
+const indicators = new OHLCV_INDICATORS()
+const {BigNumber, VolumeProfile} = indicators
 
 const TEST = async () => {  
   
-  const ohlcv = await getOHLCV('ADMA', 200)
+  const unparsedOHLCV = await getOHLCV('ADMA', 200)
 
   indicators
-    .init(ohlcv)
+    .init(unparsedOHLCV)
     //.EMA(21)
     //.EMA(9, 'ema21')
     //.SMA(200)
@@ -16,13 +17,14 @@ const TEST = async () => {
     //.MACD(12, 26, 9)
     //.BollingerBands(20, 2)
     .IchimokuCloud(9, 26, 52)
-    //.RSI(14)
+    .RSI(14)
     //.MFI(14)
     //.RelativeVolume(10)
     //.RelativeVolume(20)
-    //.crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14', slow: 30}])
+    .crossPairs([{fast: 'ema_9', slow: 'ema_21'}, {fast: 'close', slow: 'sma_200'}, {fast: 'rsi_14', slow: 70}])
 
   console.log(indicators.getLastValues())
+  //console.log(VolumeProfile(BigNumber, indicators.getData(), 5))
 }
 
 TEST()
