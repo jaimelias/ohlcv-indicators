@@ -2,7 +2,7 @@ import { getSMA } from "./sma.js";
 
 
 export const BollingerBands = (main, size, times) => {
-  const ohlcv = main.getData()
+  const {ohlcv} = main
   const data = ohlcv['close'];
   const bb = getBollingerBands(main.BigNumber, data, size, times)
 

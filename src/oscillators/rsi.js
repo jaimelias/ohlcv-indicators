@@ -6,7 +6,7 @@ const ma = {getSMA, getEMA}
 
 export const RSI = (main, period, movingAverage, movingAveragePeriod) => {
 
-    const ohlcv = main.getData()
+    const {ohlcv} = main
     const data = ohlcv['close']
     const rsi = getRSI(main.BigNumber, data, period, movingAverage, movingAveragePeriod)
 

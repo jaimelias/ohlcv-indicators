@@ -37,11 +37,19 @@ export default class OHLCV_INDICATORS {
     }
     
     getHeaders(){
-        return Object.keys(this.getData())
+        return Object.keys(this.ohlcv)
     }
 
     getData() {
-        return this.ohlcv
+        const {BigNumber, ohlcv} = this
+        const output = {}
+
+        for(const[key, arr] of Object.entries(ohlcv))
+        {
+            output[key] = arr.map(v => (BigNumber.isBigNumber(v)) ? v.toNumber() : v)
+        }
+
+        return output
     }
     getLastValues(){
         const output = {}
@@ -70,7 +78,7 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr)
     {
-        const ohlcv = this.getData();
+        const ohlcv = this.ohlcv;
         const slowNumArrCache = {};
         
         // Helper function to create column if it doesn't exist

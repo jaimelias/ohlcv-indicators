@@ -1,6 +1,6 @@
 
 export const EMA = (main, size) => {
-  const ohlcv = main.getData()
+  const {ohlcv} = main
   const data = ohlcv['close']
   const ema = getEMA(main.BigNumber, data, size)
   main.addColumn(`ema_${size}`, ema)

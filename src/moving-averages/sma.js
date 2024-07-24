@@ -1,6 +1,6 @@
 
 export const SMA = (main, size) => {
-    const ohlcv = main.getData()
+    const {ohlcv} = main
     const data = ohlcv['close']
     const sma = getSMA(main.BigNumber, data, size)
     main.addColumn(`sma_${size}`, sma)

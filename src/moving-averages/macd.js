@@ -3,7 +3,7 @@ import { getEMA } from "./ema.js";
 
 
 export const MACD = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
-    const ohlcv = main.getData()
+    const {ohlcv} = main
     const data = ohlcv['close'];
     const macd = getMACD(main.BigNumber, data, fastLine, slowLine, signalLine)
 

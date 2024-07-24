@@ -1,7 +1,7 @@
 import { getSMA } from './sma.js'
 
 export const RelativeVolume = (main, size) => {
-    const ohlcv = main.getData()
+    const {ohlcv} = main
     const data = ohlcv['volume']
     const relVolume = getRelativeVolume(main.BigNumber, data, size)
     main.addColumn(`relative_volume_${size}`, relVolume)

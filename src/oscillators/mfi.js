@@ -1,5 +1,5 @@
 export const MFI = (main, period = 14) => {
-    const ohlcv = main.getData()
+    const {ohlcv} = main
     const mfi = getMFI(main.BigNumber, ohlcv, period)
     main.addColumn(`mfi_${period}`, mfi)
 }

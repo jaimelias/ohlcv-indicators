@@ -1,6 +1,6 @@
 export const IchimokuCloud = (main, tenkan, kijun, senkou) => {
 
-  const ohlcv = main.getData()
+  const {ohlcv} = main
   const ichi = getIchimokuCloud(main.BigNumber, ohlcv, tenkan, kijun, senkou)
 
   for(let k in ichi)

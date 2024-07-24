@@ -33,10 +33,10 @@ const TEST = async () => {
 const isMacdHistogramUp = ({histogram, slice=4}) => {
 
   histogram = histogram.slice(-slice)
-  const histogramDiff = histogram.slice(1).map((value, index) => value.minus(histogram[index]))
-  const condition1 = histogram[histogram.length -1].isGreaterThan(0)
-  const condition2 = histogram[histogram.length -1].isGreaterThan(histogram[histogram.length -2])
-  const condition3 = histogramDiff.filter(diff => diff.isGreaterThan(0)).length > histogramDiff.filter(diff => diff.isLessThan(0)).length
+  const histogramDiff = histogram.slice(1).map((value, index) => value - histogram[index])
+  const condition1 = histogram[histogram.length -1] > 0
+  const condition2 = histogram[histogram.length -1] > histogram[histogram.length -2]
+  const condition3 = histogramDiff.filter(diff => diff >  0).length > histogramDiff.filter(diff => diff < 0).length
   
   if(condition1 && condition2 && condition3)
   {
