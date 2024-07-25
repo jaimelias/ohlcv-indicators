@@ -11,9 +11,8 @@ export const getRelativeVolume = (BigNumber, data, size = 10) => {
     const sma = getSMA(BigNumber, data, size)
 
     return data.map((v, i) => {
-        if (i === 0 || !sma[i - 2]) return NaN
-        // Avoid division by zero
-        if (sma[i - 2].isZero()) return NaN
-        return v.dividedBy(sma[i - 2])
+        const prevSma = sma[i - 1]
+        if (i === 0 || !prevSma || prevSma.isZero()) return NaN
+        return v.dividedBy(prevSma)
     }).filter(v => !Number.isNaN(v))
 }

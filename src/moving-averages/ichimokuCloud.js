@@ -17,8 +17,8 @@ export const getIchimokuCloud = (BigNumber, data, tenkan = 9, kijun = 26, senkou
     const SENKOU_SPAN_A_PERIOD = KIJUN_SEN_PERIOD-TENKAN_SEN_PERIOD
     const SENKOU_SPAN_B_PERIOD = senkou
     const { high, low, close } = data
-    const tenkanSen = calculateAverage(BigNumber, high, low, TENKAN_SEN_PERIOD)
-    const kijunSen = calculateAverage(BigNumber, high, low, KIJUN_SEN_PERIOD)
+    const tenkanSen = calculateAverage(high, low, TENKAN_SEN_PERIOD)
+    const kijunSen = calculateAverage(high, low, KIJUN_SEN_PERIOD)
     const senkouSpanA = calculateSenkouSpanA(tenkanSen, kijunSen, SENKOU_SPAN_A_PERIOD, KIJUN_SEN_PERIOD)
     const senkouSpanB = calculateSenkouSpanB(BigNumber, high, low, SENKOU_SPAN_B_PERIOD, KIJUN_SEN_PERIOD)
     const chikouSpan = calculateChikouSpan(close, KIJUN_SEN_PERIOD)
@@ -32,31 +32,59 @@ export const getIchimokuCloud = (BigNumber, data, tenkan = 9, kijun = 26, senkou
     }
 }
   
-const calculateAverage = (BigNumber, high, low, period) => {
+const calculateAverage = (high, low, period) => {
+  const result = [];
+  const length = high.length;
 
-  return high.slice(0, high.length - period + 1).map((_, i) => {
-    const highSlice = high.slice(i, i + period)
-    const lowSlice = low.slice(i, i + period)
-    return BigNumber.maximum(...highSlice).plus(BigNumber.minimum(...lowSlice)).dividedBy(2)
-  });
-}
+  for (let i = 0; i <= length - period; i++) {
+    let maxHigh = high[i];
+    let minLow = low[i];
+
+
+    for (let j = 1; j < period; j++) {
+      if (high[i + j].isGreaterThan(maxHigh)) {
+        maxHigh = high[i + j];
+      }
+      if (low[i + j].isLessThan(minLow)) {
+        minLow = low[i + j];
+      }
+    }
+
+    result.push(maxHigh.plus(minLow).dividedBy(2));
+  }
+
+  return result;
+};
+
 
 const calculateSenkouSpanA = (tenkanSen, kijunSen, period, slice) => {
-  const spanA =  tenkanSen.slice(period).map((value, i) =>
-    i < kijunSen.length ? value.plus(kijunSen[i]).dividedBy(2) : null
-  ).filter(val => val !== null)
-
-  return spanA.slice(0, (spanA.length - slice)+1)
+  const spanA = [];
+  const length = tenkanSen.length;
+  
+  for (let i = period; i < length; i++) {
+    if (i - period < kijunSen.length) {
+      spanA.push(tenkanSen[i].plus(kijunSen[i - period]).dividedBy(2));
+    }
+  }
+  
+  return spanA.slice(0, spanA.length - slice + 1);
 };
 
 const calculateSenkouSpanB = (BigNumber, high, low, period, slice) => {
-  let spanB = high.slice(period).map((_, i) => {  // Adjusted slicing
-    const highSlice = high.slice(i, i + period)
-    const lowSlice = low.slice(i, i + period)
-    return BigNumber.maximum(...highSlice).plus(BigNumber.minimum(...lowSlice)).dividedBy(2)
-  })
-
-  return spanB.slice(0, (spanB.length -slice)+2)
+  let spanB = [];
+  for (let i = 0; i <= high.length - period; i++) {
+    let highSlice = high.slice(i, i + period);
+    let lowSlice = low.slice(i, i + period);
+  
+    let maxHigh = BigNumber.maximum(...highSlice);
+    let minLow = BigNumber.minimum(...lowSlice);
+    let spanBValue = maxHigh.plus(minLow).dividedBy(2);
+  
+    spanB.push(spanBValue);
+  }
+  
+  return spanB.slice(0, spanB.length - slice + 1);
+  
 }
 
 
