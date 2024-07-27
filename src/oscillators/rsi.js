@@ -21,6 +21,11 @@ export const getRSI = (BigNumber, data, period = 14, movingAverage = 'SMA', movi
         return [];
     }
 
+
+    period = parseInt(period)
+    movingAverage = parseInt(movingAverage)
+    movingAveragePeriod = parseInt(movingAveragePeriod)
+
     const zero = new BigNumber(0)
     const hundred = new BigNumber(100)
     const one = new BigNumber(1)

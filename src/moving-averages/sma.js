@@ -9,6 +9,7 @@ export const SMA = (main, size) => {
 
 export const getSMA = (BigNumber, data, size) => {
   
+    size = parseInt(size)
     let result = []
     let sum = BigNumber(0)
     let arr = []

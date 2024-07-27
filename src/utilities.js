@@ -10,8 +10,6 @@ export const findCrosses = (BigNumber, fast, slow) => {
     }).reverse();
 
 
-    console.log(JSON.stringify(states))
-
     const groups = groupConsecutiveValues(states)
 
     const crosses = groups.map(chunk => {

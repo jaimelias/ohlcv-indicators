@@ -1,10 +1,12 @@
 export const MFI = (main, period = 14) => {
+    
     const {ohlcv} = main
     const mfi = getMFI(main.BigNumber, ohlcv, period)
     main.addColumn(`mfi_${period}`, mfi)
 }
 
 export const getMFI = (BigNumber, ohlcv, period = 14) => {
+    period = parseInt(14)
     const { high, low, close, volume } = ohlcv;
     const zero = BigNumber(0)
     const hundred = BigNumber(100)

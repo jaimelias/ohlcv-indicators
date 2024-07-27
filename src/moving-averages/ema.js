@@ -7,6 +7,7 @@ export const EMA = (main, size) => {
 }
 
 export const getEMA = (BigNumber, data, size) => {
+    size = parseInt(size)
     const alpha = BigNumber(2 / (size + 1))
     const length = data.length
     const ret = []
