@@ -7,31 +7,62 @@ export const findCrosses = (BigNumber, fast, slow) => {
         } else {
             return 'neutral';
         }
-    });
+    }).reverse();
 
-    const crosses = [];
-    let currentCrossValue = 0;
-    let lastState = 'neutral';
 
-    for (let i = 0; i < states.length; i++) {
-        if (states[i] === 'up') {
-            if (lastState === 'down' || lastState === 'neutral') {
-                currentCrossValue = 1;
-            } else {
-                currentCrossValue += 1;
+    console.log(JSON.stringify(states))
+
+    const groups = groupConsecutiveValues(states)
+
+    const crosses = groups.map(chunk => {
+
+        const chunkLength = chunk.length
+        return chunk.map((state, index) => {
+
+            let value = chunkLength-index
+
+            if(state === 'down')
+            {
+                return -value
             }
-        } else if (states[i] === 'down') {
-            if (lastState === 'up' || lastState === 'neutral') {
-                currentCrossValue = -1;
-            } else {
-                currentCrossValue -= 1;
+            else if(state === 'up')
+            {
+                return value
             }
-        } else {
-            currentCrossValue = 0;
-        }
-        crosses.push(currentCrossValue);
-        lastState = states[i];
-    }
+            else
+            {
+                return 0
+            }
 
-    return crosses;
+        })
+
+    }).flat()
+
+    return crosses.reverse();
 };
+
+
+function groupConsecutiveValues(arr) {
+    if (arr.length === 0) return [];
+
+    return arr.reduce((acc, currentValue, index, array) => {
+        if (index === 0) {
+            // Start the first group with the first element
+            acc.push([currentValue]);
+        } else {
+            // Get the previous value
+            const prevValue = array[index - 1];
+            const currentGroup = acc[acc.length - 1];
+
+            // Check the direction of the previous and current values
+            if (currentValue !== prevValue) {
+                // Start a new group if the direction changes
+                acc.push([currentValue]);
+            } else {
+                // Otherwise, add to the current group
+                currentGroup.push(currentValue);
+            }
+        }
+        return acc;
+    }, []);
+}
