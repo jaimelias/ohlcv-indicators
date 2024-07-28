@@ -5,11 +5,11 @@ import { getEMA } from "./ema.js";
 export const macd = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
     const {ohlcv} = main
     const data = ohlcv['close']
-    const macd = getMACD(data, fastLine, slowLine, signalLine)
+    const col = getMACD(data, fastLine, slowLine, signalLine)
 
-    for(let k in macd)
+    for(let k in col)
     {
-        main.addColumn(k, macd[k]);
+        main.addColumn(k, col[k]);
     }
 }
 

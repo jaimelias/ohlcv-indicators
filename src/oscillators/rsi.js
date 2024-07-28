@@ -9,11 +9,11 @@ export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
 
     const {ohlcv} = main
     const data = ohlcv['close']
-    const rsi = getRSI(data, period, movingAverage, movingAveragePeriod)
+    const col = getRSI(data, period, movingAverage, movingAveragePeriod)
 
-    for(let k in rsi)
+    for(let k in col)
     {
-        main.addColumn(`${k}`.toLowerCase(), rsi[k])
+        main.addColumn(`${k}`.toLowerCase(), col[k])
     }
 }
 

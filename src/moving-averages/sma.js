@@ -4,8 +4,8 @@ import { SMA } from '@debut/indicators';
 export const sma = (main, size) => {
   const {ohlcv} = main
   const data = ohlcv['close']
-  const ema = getSMA(data, size)
-  main.addColumn(`sma_${size}`, ema)
+  const col = getSMA(data, size)
+  main.addColumn(`sma_${size}`, col)
 }
 
 export const getSMA = (data, size) => {

@@ -4,11 +4,11 @@ import { BollingerBands } from '@debut/indicators';
 export const bollingerBands = (main, size, times) => {
   const {ohlcv} = main
   const data = ohlcv['close'];
-  const bb = getBollingerBands(data, size, times)
+  const col = getBollingerBands(data, size, times)
 
-  for(let k in bb)
+  for(let k in col)
   {
-    main.addColumn(`bollinger_bands_${k}`, bb[k])
+    main.addColumn(`bollinger_bands_${k}`, col[k])
   }
 }
 

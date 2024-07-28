@@ -1,17 +1,13 @@
-import BigNumber from 'bignumber.js'
 import {ema} from './src/moving-averages/ema.js'
 import {sma} from './src/moving-averages/sma.js'
 import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
-import { IchimokuCloud } from './src/moving-averages/ichimokuCloud.js'
 import { rsi } from './src/oscillators/rsi.js'
-import { RelativeVolume} from './src/moving-averages/relativeVolume.js'
 import { VolumeProfile } from './src/studies/volumeProfile.js'
 import {findCrosses} from './src/utilities.js'
 
 export default class OHLCV_INDICATORS {
     constructor() {
-        this.BigNumber = BigNumber
         this.VolumeProfile = VolumeProfile
     }
 
@@ -54,7 +50,7 @@ export default class OHLCV_INDICATORS {
 
         for (const [k, arr] of Object.entries(this.ohlcv)) {
             let value = arr[arr.length - 1];
-            output[k] = (BigNumber.isBigNumber(value)) ? value.toNumber() : value;
+            output[k] = value;
         }
 
         return output
@@ -92,8 +88,6 @@ export default class OHLCV_INDICATORS {
             }
         };
         
-        console.log(arr)
-
         for (const { fast, slow } of arr) {
             // Validate parameters
             if (!fast || !slow) continue;
@@ -138,19 +132,9 @@ export default class OHLCV_INDICATORS {
         bollingerBands(this, data, size, times)
         return this
     }
-    IchimokuCloud(tenkan, kijun, senkou)
-    {
-        IchimokuCloud(this, tenkan, kijun, senkou)
-        return this
-    }
     rsi(period, movingAverage, movingAveragePeriod)
     {
         rsi(this, period, movingAverage, movingAveragePeriod)
-        return this
-    }
-    RelativeVolume(size)
-    {
-        RelativeVolume(this, size)
         return this
     }
 }
