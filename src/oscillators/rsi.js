@@ -9,6 +9,12 @@ export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
 
     const {ohlcv} = main
     const data = ohlcv['close']
+
+    if(typeof period === 'number' && typeof movingAveragePeriod === 'undefined')
+    {
+        movingAveragePeriod = period
+    }
+
     const col = getRSI(data, period, movingAverage, movingAveragePeriod)
 
     for(let k in col)
@@ -18,6 +24,8 @@ export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
 }
 
 export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14) => {
+
+
     if (data.length < period) {
         return [];
     }
