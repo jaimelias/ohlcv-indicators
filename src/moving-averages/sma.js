@@ -1,35 +1,25 @@
 
-export const SMA = (main, size) => {
-    const {ohlcv} = main
-    const data = ohlcv['close']
-    const sma = getSMA(main.BigNumber, data, size)
-    main.addColumn(`sma_${size}`, sma)
+import { SMA } from '@debut/indicators';
+
+export const sma = (main, size) => {
+  const {ohlcv, compute} = main
+  const data = ohlcv['close']
+  const ema = getSMA(data, size, compute)
+  main.addColumn(`sma_${size}`, ema)
 }
 
+export const getSMA = (data, size) => {
+  
 
-export const getSMA = (BigNumber, data, size) => {
-  
-    size = parseInt(size)
-    let result = []
-    let sum = BigNumber(0)
-    let arr = []
-  
-    for (let i = 0; i < data.length; i++) {
-  
-        arr.push(data[i])
-        sum = sum.plus(data[i])
-  
-        if (arr.length > size) {
-            sum = sum.minus(arr.shift())
-        }
-  
-        if (i >= size - 1) {
-            result.push(sum.dividedBy(size))
-        } else {
-  
-          result.push(sum.dividedBy(arr.length))
-        }
-    }
-  
-    return result;
-  }
+  const output = []
+  const instance = new SMA(size)
+
+  data.forEach(c => {
+
+    output.push(instance.nextValue(c))
+
+  })
+
+  return output
+
+}

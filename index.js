@@ -1,11 +1,10 @@
 import BigNumber from 'bignumber.js'
-import {EMA} from './src/moving-averages/ema.js'
-import {SMA} from './src/moving-averages/sma.js'
+import {ema} from './src/moving-averages/ema.js'
+import {sma} from './src/moving-averages/sma.js'
 import {MACD} from './src/moving-averages/macd.js'
-import {BollingerBands} from './src/moving-averages/bollingerBands.js'
+import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { IchimokuCloud } from './src/moving-averages/ichimokuCloud.js'
 import { RSI} from './src/oscillators/rsi.js'
-import { MFI} from './src/oscillators/mfi.js'
 import { RelativeVolume} from './src/moving-averages/relativeVolume.js'
 import { VolumeProfile } from './src/studies/volumeProfile.js'
 import {findCrosses} from './src/utilities.js'
@@ -17,14 +16,14 @@ export default class OHLCV_INDICATORS {
     }
 
     init(ohlcv) {
-        const { BigNumber } = this
-    
+
+
         this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
-            acc.open.push(BigNumber(open))
-            acc.high.push(BigNumber(high))
-            acc.low.push(BigNumber(low))
-            acc.close.push(BigNumber(close))
-            acc.volume.push(BigNumber(volume))
+            acc.open.push(open)
+            acc.high.push(high)
+            acc.low.push(low)
+            acc.close.push(close)
+            acc.volume.push(volume)
             for (const key of Object.keys(rest)) {
                 if (!acc[key]) acc[key] = [];
                 acc[key].push(rest[key]);
@@ -69,8 +68,8 @@ export default class OHLCV_INDICATORS {
             throw new Error(`Invalid column data: The length of the new column exceeds the length of the OHLCV data`);
         }
         
-        // Use Array.prototype.unshift to add NaN elements efficiently
-        const nanArray = new Array(ohlcvLength - arr.length).fill(NaN)
+        // Use Array.prototype.unshift to add null elements efficiently
+        const nanArray = new Array(ohlcvLength - arr.length).fill(null)
         arr = [...nanArray, ...arr]
 
         this.ohlcv[key] = arr
@@ -106,10 +105,10 @@ export default class OHLCV_INDICATORS {
         
             // Find and add crosses
             if (ohlcv[fast] && ohlcv[slow]) {
-                const cross = findCrosses(this.BigNumber, ohlcv[fast], ohlcv[slow]);
+                const cross = findCrosses(ohlcv[fast], ohlcv[slow]);
                 this.addColumn(`${fast}_x_${slow}`, cross);
             } else if (ohlcv[fast] && slowNumArrCache[slow]) {
-                const cross = findCrosses(this.BigNumber, ohlcv[fast], slowNumArrCache[slow]);
+                const cross = findCrosses(ohlcv[fast], slowNumArrCache[slow]);
                 this.addColumn(`${fast}_x_${slow}`, cross);
             } else {
                 console.error(`Missing ohlcv properties for ${fast} or ${slow}`);
@@ -118,21 +117,21 @@ export default class OHLCV_INDICATORS {
            
     }
 
-    EMA(size) {
-        EMA(this, size)
+    ema(size) {
+        ema(this, size)
         return this
     }
-    SMA(size) {
-        SMA(this, size)
+    sma(size) {
+        sma(this, size)
         return this
     }
     MACD(fastLine, slowLine, signalLine) {
         MACD(this, fastLine, slowLine, signalLine)
         return this
     }
-    BollingerBands(data, size, times)
+    bollingerBands(data, size, times)
     {
-        BollingerBands(this, data, size, times)
+        bollingerBands(this, data, size, times)
         return this
     }
     IchimokuCloud(tenkan, kijun, senkou)
@@ -143,11 +142,6 @@ export default class OHLCV_INDICATORS {
     RSI(period, movingAverage, movingAveragePeriod)
     {
         RSI(this, period, movingAverage, movingAveragePeriod)
-        return this
-    }
-    MFI(period)
-    {
-        MFI(this, period)
         return this
     }
     RelativeVolume(size)

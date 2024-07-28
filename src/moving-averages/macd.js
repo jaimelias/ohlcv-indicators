@@ -4,8 +4,8 @@ import { getEMA } from "./ema.js";
 
 export const MACD = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
     const {ohlcv} = main
-    const data = ohlcv['close'];
-    const macd = getMACD(main.BigNumber, data, fastLine, slowLine, signalLine)
+    const data = ohlcv['close']
+    const macd = getMACD(data, fastLine, slowLine, signalLine)
 
     for(let k in macd)
     {
@@ -13,21 +13,20 @@ export const MACD = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
     }
 }
 
-export const getMACD = (BigNumber, data, fastLine = 12, slowLine = 26, signalLine = 9) => {
+export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9) => {
 
-    const fastEMA = getEMA(BigNumber, data, fastLine)
-    const slowEMA = getEMA(BigNumber, data, slowLine)
+    const fastEMA = getEMA(data, fastLine)
+    const slowEMA = getEMA(data, slowLine)
 
     // Calculate the MACD line (diff)
-    const diff = fastEMA.map((o, i) => o.minus(slowEMA[i]));
-    
+    const diff = fastEMA.map((o, i) => (isNaN(o) || isNaN(slowEMA[i])) ? null : o - slowEMA[i]);    
 
     // Calculate the MACD line (dea)
-    const dea = getEMA(BigNumber, diff, signalLine)
+    const dea = getEMA(diff, signalLine)
 
     // Calculate the MACD line (histogram)
-    const histogram = diff.map((d, i) => d.minus(dea[i]))
-    const x = findCrosses(BigNumber, diff, dea)
+    const histogram = diff.map((d, i) => d - dea[i])
+    const x = findCrosses(diff, dea)
 
 	return {
 		'macd_diff': diff, 

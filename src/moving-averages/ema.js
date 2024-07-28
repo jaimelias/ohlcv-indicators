@@ -1,56 +1,26 @@
 
-export const EMA = (main, size) => {
-  const {ohlcv} = main
+import { EMA } from '@debut/indicators';
+
+
+export const ema = (main, size) => {
+  const {ohlcv, compute} = main
   const data = ohlcv['close']
-  const ema = getEMA(main.BigNumber, data, size)
+  const ema = getEMA(data, size, compute)
   main.addColumn(`ema_${size}`, ema)
 }
 
-export const getEMA = (BigNumber, data, size) => {
-    size = parseInt(size)
-    const alpha = BigNumber(2 / (size + 1))
-    const length = data.length
-    const ret = []
+export const getEMA = (data, size) => {
   
-    if (alpha.isGreaterThan(1)) {
-      return Array(length)
-    }
-  
-    if (alpha.isEqualTo(1)) {
-      return [...data]
-    }
-  
-    let s = 0
-  
-    // Handles head
-    let i = 0;
-    for (; i < length; i++) {
-      const datum = data[i]
-      if (typeof datum === 'object') {
-        ret[i] = datum
-        s = datum
-        i++
-        break
-      }
-    }
-  
-    if (Array.isArray(alpha)) {
-      for (; i < length; i++) {
-        const datum = data[i]
-        if (typeof datum === 'object' && typeof alpha[i] === 'object') {
-          s = ret[i] = alpha[i].multipliedBy(datum).plus(alpha[i].minus(1).multipliedBy(s))
-        } else {
-          ret[i] = ret[i - 1]
-        }
-      }
-    } else {
-      const o = BigNumber(1).minus(alpha);
-      for (; i < length; i++) {
-        const datum = data[i]
-        s = typeof datum === 'object' ? alpha.multipliedBy(datum).plus(o.multipliedBy(s)) : ret[i - 1]
-        ret[i] = s
-      }
-    }
-  
-    return ret
-  }
+
+  const output = []
+  const instance = new EMA(size)
+
+  data.forEach(c => {
+
+    output.push(instance.nextValue(c))
+
+  })
+
+  return output
+
+}

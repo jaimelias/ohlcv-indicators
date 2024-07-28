@@ -6,9 +6,9 @@ const ma = {getSMA, getEMA}
 
 export const RSI = (main, period, movingAverage, movingAveragePeriod) => {
 
-    const {ohlcv} = main
+    const {ohlcv, compute} = main
     const data = ohlcv['close']
-    const rsi = getRSI(main.BigNumber, data, period, movingAverage, movingAveragePeriod)
+    const rsi = getRSI(main.BigNumber, data, period, movingAverage, movingAveragePeriod, compute)
 
     for(let k in rsi)
     {
@@ -16,14 +16,13 @@ export const RSI = (main, period, movingAverage, movingAveragePeriod) => {
     }
 }
 
-export const getRSI = (BigNumber, data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14) => {
+export const getRSI = (BigNumber, data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14, compute) => {
     if (data.length < period) {
         return [];
     }
 
 
     period = parseInt(period)
-    movingAverage = parseInt(movingAverage)
     movingAveragePeriod = parseInt(movingAveragePeriod)
 
     const zero = new BigNumber(0)
@@ -79,7 +78,7 @@ export const getRSI = (BigNumber, data, period = 14, movingAverage = 'SMA', movi
     {
         if(ma.hasOwnProperty(`get${movingAverage}`))
         {
-            const rsi_smoothed = ma[`get${movingAverage}`](BigNumber, rsi, movingAveragePeriod)
+            const rsi_smoothed = ma[`get${movingAverage}`](BigNumber, rsi, movingAveragePeriod, compute)
             output[`rsi_${movingAverage}_${movingAveragePeriod}`] = rsi_smoothed
             output[`rsi_${period}_x_rsi_${movingAverage}_${movingAveragePeriod}`] = findCrosses(BigNumber, rsi, rsi_smoothed)
         }

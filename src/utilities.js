@@ -1,44 +1,33 @@
-export const findCrosses = (BigNumber, fast, slow) => {
+export const findCrosses = (fast, slow) => {
     const states = fast.map((f, i) => {
-        if (f.isGreaterThan(slow[i])) {
+        if (f > slow[i]) {
             return 'up';
-        } else if (f.isLessThan(slow[i])) {
+        } else if (f < slow[i]) {
             return 'down';
         } else {
             return 'neutral';
         }
     }).reverse();
 
-
-    const groups = groupConsecutiveValues(states)
+    const groups = groupConsecutiveValues(states);
 
     const crosses = groups.map(chunk => {
-
-        const chunkLength = chunk.length
+        const chunkLength = chunk.length;
         return chunk.map((state, index) => {
+            let value = chunkLength - index;
 
-            let value = chunkLength-index
-
-            if(state === 'down')
-            {
-                return -value
+            if (state === 'down') {
+                return -value;
+            } else if (state === 'up') {
+                return value;
+            } else {
+                return 0;
             }
-            else if(state === 'up')
-            {
-                return value
-            }
-            else
-            {
-                return 0
-            }
-
-        })
-
-    }).flat()
+        });
+    }).flat();
 
     return crosses.reverse();
 };
-
 
 function groupConsecutiveValues(arr) {
     if (arr.length === 0) return [];
