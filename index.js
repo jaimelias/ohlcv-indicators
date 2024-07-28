@@ -35,12 +35,12 @@ export default class OHLCV_INDICATORS {
     }
 
     getData() {
-        const {BigNumber, ohlcv} = this
+        const {ohlcv} = this
         const output = {}
 
         for(const[key, arr] of Object.entries(ohlcv))
         {
-            output[key] = arr.map(v => (BigNumber.isBigNumber(v)) ? v.toNumber() : v)
+            output[key] = arr
         }
 
         return output
