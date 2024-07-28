@@ -2,9 +2,9 @@ import { BollingerBands } from '@debut/indicators';
 
 
 export const bollingerBands = (main, size, times) => {
-  const {ohlcv, compute} = main
+  const {ohlcv} = main
   const data = ohlcv['close'];
-  const bb = getBollingerBands(data, size, times, compute)
+  const bb = getBollingerBands(data, size, times)
 
   for(let k in bb)
   {
@@ -14,7 +14,7 @@ export const bollingerBands = (main, size, times) => {
 
 
 
-export const getBollingerBands = (data, size = 20, times = 2, compute) => {
+export const getBollingerBands = (data, size = 20, times = 2) => {
 
 
   const output = {lower: [], middle: [], upper: []}

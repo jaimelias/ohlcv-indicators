@@ -2,7 +2,7 @@ import { findCrosses } from "../utilities.js";
 import { getEMA } from "./ema.js";
 
 
-export const MACD = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
+export const macd = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
     const {ohlcv} = main
     const data = ohlcv['close']
     const macd = getMACD(data, fastLine, slowLine, signalLine)

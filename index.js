@@ -1,10 +1,10 @@
 import BigNumber from 'bignumber.js'
 import {ema} from './src/moving-averages/ema.js'
 import {sma} from './src/moving-averages/sma.js'
-import {MACD} from './src/moving-averages/macd.js'
+import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { IchimokuCloud } from './src/moving-averages/ichimokuCloud.js'
-import { RSI} from './src/oscillators/rsi.js'
+import { rsi } from './src/oscillators/rsi.js'
 import { RelativeVolume} from './src/moving-averages/relativeVolume.js'
 import { VolumeProfile } from './src/studies/volumeProfile.js'
 import {findCrosses} from './src/utilities.js'
@@ -16,7 +16,6 @@ export default class OHLCV_INDICATORS {
     }
 
     init(ohlcv) {
-
 
         this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
             acc.open.push(open)
@@ -82,14 +81,19 @@ export default class OHLCV_INDICATORS {
         
         // Helper function to create column if it doesn't exist
         const createColumnIfNeeded = (v) => {
+
             if (!ohlcv.hasOwnProperty(v) && typeof v === 'string') {
+
                 const [funcName, ...params] = v.split('_');
-                if (this[funcName.toUpperCase()] && params.length > 0) {
-                    this[funcName.toUpperCase()](...params);
+
+                if (this[funcName] && params.length > 0) {
+                    this[funcName](...params);
                 }
             }
         };
         
+        console.log(arr)
+
         for (const { fast, slow } of arr) {
             // Validate parameters
             if (!fast || !slow) continue;
@@ -125,8 +129,8 @@ export default class OHLCV_INDICATORS {
         sma(this, size)
         return this
     }
-    MACD(fastLine, slowLine, signalLine) {
-        MACD(this, fastLine, slowLine, signalLine)
+    macd(fastLine, slowLine, signalLine) {
+        macd(this, fastLine, slowLine, signalLine)
         return this
     }
     bollingerBands(data, size, times)
@@ -139,9 +143,9 @@ export default class OHLCV_INDICATORS {
         IchimokuCloud(this, tenkan, kijun, senkou)
         return this
     }
-    RSI(period, movingAverage, movingAveragePeriod)
+    rsi(period, movingAverage, movingAveragePeriod)
     {
-        RSI(this, period, movingAverage, movingAveragePeriod)
+        rsi(this, period, movingAverage, movingAveragePeriod)
         return this
     }
     RelativeVolume(size)

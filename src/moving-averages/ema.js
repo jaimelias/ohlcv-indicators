@@ -3,9 +3,9 @@ import { EMA } from '@debut/indicators';
 
 
 export const ema = (main, size) => {
-  const {ohlcv, compute} = main
+  const {ohlcv} = main
   const data = ohlcv['close']
-  const ema = getEMA(data, size, compute)
+  const ema = getEMA(data, size)
   main.addColumn(`ema_${size}`, ema)
 }
 

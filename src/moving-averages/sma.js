@@ -2,9 +2,9 @@
 import { SMA } from '@debut/indicators';
 
 export const sma = (main, size) => {
-  const {ohlcv, compute} = main
+  const {ohlcv} = main
   const data = ohlcv['close']
-  const ema = getSMA(data, size, compute)
+  const ema = getSMA(data, size)
   main.addColumn(`sma_${size}`, ema)
 }
 
