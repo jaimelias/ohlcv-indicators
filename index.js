@@ -5,6 +5,7 @@ import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
 import { VolumeProfile } from './src/studies/volumeProfile.js'
 import {findCrosses} from './src/utilities.js'
+import { candles } from './src/studies/candles.js'
 
 export default class OHLCV_INDICATORS {
     constructor() {
@@ -135,6 +136,11 @@ export default class OHLCV_INDICATORS {
     rsi(period, movingAverage, movingAveragePeriod)
     {
         rsi(this, period, movingAverage, movingAveragePeriod)
+        return this
+    }
+    candles()
+    {
+        candles(this)
         return this
     }
 }
