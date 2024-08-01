@@ -1,4 +1,6 @@
+// Function to find crosses between two arrays: fast and slow
 export const findCrosses = (fast, slow) => {
+    // Map states based on comparison of fast and slow arrays
     const states = fast.map((f, i) => {
         if (f > slow[i]) {
             return 'up';
@@ -7,10 +9,12 @@ export const findCrosses = (fast, slow) => {
         } else {
             return 'neutral';
         }
-    }).reverse();
+    }).reverse(); // Reverse for processing from the end
 
+    // Group consecutive values
     const groups = groupConsecutiveValues(states);
 
+    // Map groups to cross values
     const crosses = groups.map(chunk => {
         const chunkLength = chunk.length;
         return chunk.map((state, index) => {
@@ -26,9 +30,10 @@ export const findCrosses = (fast, slow) => {
         });
     }).flat();
 
-    return crosses.reverse();
+    return crosses.reverse(); // Reverse back to original order
 };
 
+// Helper function to group consecutive values
 function groupConsecutiveValues(arr) {
     if (arr.length === 0) return [];
 

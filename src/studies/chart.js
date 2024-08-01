@@ -1,17 +1,23 @@
 export default class ChartPatterns {
-    constructor({ open, high, low, close, volume }) {
-      this.open = open;
-      this.high = high;
-      this.low = low;
-      this.close = close;
-      this.volume = volume;
+    constructor(ohlcv, period = 100) {
+
+        const validProps = ['open', 'high', 'low', 'close']
+
+        for(let [key, arr] of Object.entries(ohlcv))
+        {   
+            if(validProps.includes(key))
+            {
+                this[key] = arr.splice(-period)
+            }
+            
+        }
     }
 
     init() {
       const length = this.close.length;
-      if (length < 200) {
-        console.log('PatternRecognizer requires at least 200 datapoints')
-        return { pattern: 'Neutral', name: 'No Pattern', score: 0 };
+      if (length < 50) {
+        console.log('PatternRecognizer requires at least 50 datapoints')
+        return { chart_parttern: 'Neutral', chart_score: 0 };
       }
   
       const patterns = [
@@ -19,14 +25,14 @@ export default class ChartPatterns {
         { name: 'Bearish Flag', condition: this.isBearishFlag.bind(this), score: -2 },
         { name: 'Bullish Pennant', condition: this.isBullishPennant.bind(this), score: 2 },
         { name: 'Bearish Pennant', condition: this.isBearishPennant.bind(this), score: -2 },
-        { name: 'Double Top', condition: this.isDoubleTop.bind(this), score: -1 },
-        { name: 'Double Bottom', condition: this.isDoubleBottom.bind(this), score: 1 },
-        { name: 'Triple Top', condition: this.isTripleTop.bind(this), score: -1 },
-        { name: 'Triple Bottom', condition: this.isTripleBottom.bind(this), score: 1 },
-        { name: 'Head And Shoulders', condition: this.isHeadAndShoulders.bind(this), score: -1 },
-        { name: 'Inverse Head And Shoulders', condition: this.isInverseHeadAndShoulders.bind(this), score: 1 },
-        { name: 'Rising Wedge', condition: this.isRisingWedge.bind(this), score: -1 },
-        { name: 'Falling Wedge', condition: this.isFallingWedge.bind(this), score: 1 },
+        { name: 'Bearish Double Top', condition: this.isDoubleTop.bind(this), score: -1 },
+        { name: 'Bullish Double Bottom', condition: this.isDoubleBottom.bind(this), score: 1 },
+        { name: 'Bearish Triple Top', condition: this.isTripleTop.bind(this), score: -1 },
+        { name: 'Bullish Triple Bottom', condition: this.isTripleBottom.bind(this), score: 1 },
+        { name: 'Bearish Head And Shoulders', condition: this.isHeadAndShoulders.bind(this), score: -1 },
+        { name: 'Bullish Inverse Head And Shoulders', condition: this.isInverseHeadAndShoulders.bind(this), score: 1 },
+        { name: 'Bearish Rising Wedge', condition: this.isRisingWedge.bind(this), score: -1 },
+        { name: 'Bullish Falling Wedge', condition: this.isFallingWedge.bind(this), score: 1 },
         { name: 'Bullish Triangle', condition: this.isBullishTriangle.bind(this), score: 1 },
         { name: 'Bearish Triangle', condition: this.isBearishTriangle.bind(this), score: -1 },
         { name: 'Bullish Rectangle', condition: this.isBullishRectangle.bind(this), score: 1 },
@@ -35,11 +41,11 @@ export default class ChartPatterns {
   
       for (const { name, condition, score } of patterns) {
         if (condition()) {
-          return { pattern: score > 0 ? 'Bullish' : 'Bearish', name, score };
+          return { chart_parttern: name, chart_score: score };
         }
       }
   
-      return { pattern: '', name: '', score: 0 };
+      return { chart_parttern: 'Neutral', chart_score: 0 };
     }
   
 
