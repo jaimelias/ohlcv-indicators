@@ -29,7 +29,7 @@ export const getCandlestickPattern = ohlcv => {
           {
               name: 'Marubozu',
               condition: (prev, curr) => isCloseTo(curr.open, curr.low) && isCloseTo(curr.close, curr.high),
-              score: 3
+              score: 2
           },
           {
               name: 'Engulfing',
@@ -71,7 +71,7 @@ export const getCandlestickPattern = ohlcv => {
           {
               name: 'Marubozu',
               condition: (prev, curr) => isCloseTo(curr.open, curr.high) && isCloseTo(curr.close, curr.low),
-              score: -3
+              score: -2
           },
           {
               name: 'Engulfing',

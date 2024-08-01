@@ -6,10 +6,12 @@ import { rsi } from './src/oscillators/rsi.js'
 import { VolumeProfile } from './src/studies/volumeProfile.js'
 import {findCrosses} from './src/utilities.js'
 import { candles } from './src/studies/candles.js'
+import ChartPatterns from './src/studies/chart.js'
 
 export default class OHLCV_INDICATORS {
     constructor() {
         this.VolumeProfile = VolumeProfile
+        this.ChartPatterns = ohlcv => new ChartPatterns(ohlcv).init()
     }
 
     init(ohlcv) {
