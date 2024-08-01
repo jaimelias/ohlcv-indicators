@@ -17,7 +17,7 @@ export default class ChartPatterns {
       const length = this.close.length;
       if (length < 50) {
         console.log('PatternRecognizer requires at least 50 datapoints')
-        return { chart_parttern: 'Neutral', chart_score: 0 };
+        return { chart_pattern: 'Neutral', chart_score: 0 };
       }
   
       const patterns = [
@@ -41,11 +41,11 @@ export default class ChartPatterns {
   
       for (const { name, condition, score } of patterns) {
         if (condition()) {
-          return { chart_parttern: name, chart_score: score };
+          return { chart_pattern: name, chart_score: score };
         }
       }
   
-      return { chart_parttern: 'Neutral', chart_score: 0 };
+      return { chart_pattern: 'Neutral', chart_score: 0 };
     }
   
 
