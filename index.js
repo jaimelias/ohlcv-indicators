@@ -37,14 +37,21 @@ export default class OHLCV_INDICATORS {
 
     getData() {
         const {ohlcv} = this
-        const output = {}
+        const keys = Object.keys(ohlcv)
+        const keysLength = keys.length
 
-        for(const[key, arr] of Object.entries(ohlcv))
-        {
-            output[key] = arr
-        }
+        return ohlcv.open.map((_, i) => {
 
-        return output
+            const row = {}
+
+            for(let x = 0; x < keysLength; x++)
+            {
+                const header = keys[x]
+                row[header] = ohlcv[header][i]
+            }
+
+            return row
+        })
     }
     getLastValues(){
         const output = {}
