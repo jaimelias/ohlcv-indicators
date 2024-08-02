@@ -3,19 +3,19 @@ import {sma} from './src/moving-averages/sma.js'
 import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
-import { VolumeProfile } from './src/studies/volumeProfile.js'
+import { volumeProfile } from './src/studies/volumeProfile.js'
 import {findCrosses} from './src/utilities.js'
 import { candles } from './src/studies/candles.js'
 import ChartPatterns from './src/studies/chart.js'
 
 export default class OHLCV_INDICATORS {
     constructor() {
-        this.VolumeProfile = VolumeProfile
         this.ChartPatterns = ohlcv => new ChartPatterns(ohlcv).init()
     }
 
     init(ohlcv) {
 
+        this.rawOhlcv = ohlcv
         this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
             acc.open.push(open)
             acc.high.push(high)
@@ -150,6 +150,11 @@ export default class OHLCV_INDICATORS {
     candles()
     {
         candles(this)
+        return this
+    }
+    volumeProfile(numBins, daysBack, targetDateKey)
+    {
+        volumeProfile(this, numBins, daysBack, targetDateKey)
         return this
     }
 }

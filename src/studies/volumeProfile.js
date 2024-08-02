@@ -1,4 +1,18 @@
-export const VolumeProfile = (ohlcv, numBins = 10) => {
+export const volumeProfile = (main, numBins, daysBack = 1, targetDateKey) => {
+
+  let {ohlcv} = main
+
+  const filteredOhlcv = filterLastDays(ohlcv, daysBack, targetDateKey)
+  const vP = calculateBins(filteredOhlcv, numBins)
+  const vp_high = vP.nodes.high.price
+  const vp_low = vP.nodes.low.price
+
+  main.addColumn(`volume_profile_high`, [vp_high])
+  main.addColumn(`volume_profile_low`, [vp_low])
+}
+
+
+export const calculateBins = (ohlcv, numBins = 5) => {
   const { open, high, low, close, volume } = ohlcv;
 
   // Determine the range of prices
@@ -53,30 +67,61 @@ export const VolumeProfile = (ohlcv, numBins = 10) => {
     totals.grossVolume += grossVolume;
   }
 
-  const nodes = findVolumeNodes(bins);
+  const nodes = getPointsOfControl(bins);
   return { bins, nodes };
 }
 
-const findVolumeNodes = bins => {
+const getPointsOfControl = bins => {
   if (!bins || bins.length === 0) {
     throw new Error('Bins array is empty or not provided');
   }
 
-  let highestVolumeNode = bins[0];
-  let lowestVolumeNode = bins[0];
+  let high = bins[0];
+  let low = bins[0];
 
   bins.forEach(bin => {
-    if (bin.grossVolume > highestVolumeNode.grossVolume) {
-      highestVolumeNode = bin;
+    if (bin.grossVolume > high.grossVolume) {
+      high = bin;
     }
 
-    if (bin.grossVolume < lowestVolumeNode.grossVolume) {
-      lowestVolumeNode = bin;
+    if (bin.grossVolume < low.grossVolume) {
+      low = bin;
     }
   });
 
-  return {
-    highestVolumeNode,
-    lowestVolumeNode
-  };
+  return {high, low}
 }
+
+
+const filterLastDays = (data, daysBack, targetDateKey) => {
+  // Get the latest date and calculate the cutoff date
+  const latestDate = new Date(data[targetDateKey][data[targetDateKey].length - 1]);
+  const prevDays = new Date(latestDate);
+  prevDays.setDate(prevDays.getDate() - daysBack);
+  prevDays.setHours(0, 0, 0, 0);
+
+  // Initialize result object
+  const result = {
+    open: [],
+    high: [],
+    low: [],
+    close: [],
+    volume: [],
+    [targetDateKey]: [],
+  };
+
+  // Filter and transform data in a single pass
+  for (let i = 0; i < data[targetDateKey].length; i++) {
+    const currentDate = new Date(data[targetDateKey][i]);
+    if (currentDate >= prevDays) {
+      result.open.push(data.open[i]);
+      result.high.push(data.high[i]);
+      result.low.push(data.low[i]);
+      result.close.push(data.close[i]);
+      result.volume.push(data.volume[i]);
+      result[targetDateKey].push(data[targetDateKey][i]);
+    }
+  }
+
+  return result;
+};
