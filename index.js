@@ -15,7 +15,6 @@ export default class OHLCV_INDICATORS {
 
     init(ohlcv) {
 
-        this.rawOhlcv = ohlcv
         this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
             acc.open.push(open)
             acc.high.push(high)
