@@ -59,11 +59,11 @@ const bollingerBandsRange = (data, bollingerBands) => {
       const dataBig = new Big(data[i]);
 
       const range = upperBig.minus(lowerBig);
-      output[i] = dataBig.minus(lowerBig).div(range).times(100).toNumber();
+      output[i] = dataBig.minus(lowerBig).div(range).times(100)
     } else {
       output[i] = null;
     }
   }
-
+  
   return output;
 }
