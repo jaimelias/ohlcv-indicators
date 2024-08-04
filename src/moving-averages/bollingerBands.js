@@ -1,4 +1,5 @@
-import { BollingerBands } from '@debut/indicators';
+
+import {BollingerBands, Big} from 'trading-signals';
 
 
 export const bollingerBands = (main, size, times) => {
@@ -16,46 +17,53 @@ export const bollingerBands = (main, size, times) => {
 
 export const getBollingerBands = (data, size = 20, times = 2) => {
 
-
-  const output = {lower: [], middle: [], upper: []}
+  const dataLength = data.length
+  const output = {upper: [], middle: [], lower: []}
   const instance = new BollingerBands(size, times)
 
-  data.forEach(c => {
 
+  for(let x = 0; x < dataLength; x++) {
+    let obj = {}
+    instance.update(data[x])
 
-    const bb = instance.nextValue(c)
-
-    if(typeof bb === 'object')
+    try
     {
-      const {lower, middle, upper} = bb
-      output.lower.push(lower)
-      output.middle.push(middle)
-      output.upper.push(upper)
-
+        obj = instance.getResult()
     }
-    else
+    catch(err)
     {
-      output.lower.push(null)
-      output.middle.push(null)
-      output.upper.push(null)    
+        obj = {upper: null, middle: null, lower: null}
     }
-  })
+
+    output.upper.push(obj.upper)
+    output.middle.push(obj.middle)
+    output.lower.push(obj.lower)
+
+  }
 
   const range = bollingerBandsRange(data, {upper: output.upper, lower: output.lower})
 
-
   return {...output, range}
-
 }
   
 
 
 const bollingerBandsRange = (data, bollingerBands) => {
-  let {upper, lower} = bollingerBands;
+  const { upper, lower } = bollingerBands;
+  const output = new Array(data.length);
 
-  const range = upper.map((v, i) => v - lower[i]);
+  for (let i = 0; i < data.length; i++) {
+    if (upper[i] != null && lower[i] != null && data[i] != null) {
+      const upperBig = new Big(upper[i]);
+      const lowerBig = new Big(lower[i]);
+      const dataBig = new Big(data[i]);
 
-  const output = data.map((v, i) => ((v - lower[i]) / range[i]) * 100);
+      const range = upperBig.minus(lowerBig);
+      output[i] = dataBig.minus(lowerBig).div(range).times(100).toNumber();
+    } else {
+      output[i] = null;
+    }
+  }
 
   return output;
-};
+}
