@@ -111,7 +111,7 @@ export default class OHLCV_INDICATORS {
         
             // Prepare slowNumArr if 'slow' is a number
             if (typeof slow === 'number' && !slowNumArrCache[slow]) {
-                slowNumArrCache[slow] = ohlcv.close.map(() => slow);
+                slowNumArrCache[slow] = ohlcv.close.map(() => new Big(slow));
             }
         
             // Find and add crosses
