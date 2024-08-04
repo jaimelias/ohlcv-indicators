@@ -1,7 +1,7 @@
 import { getSMA } from "../moving-averages/sma.js";
 import { getEMA } from "../moving-averages/ema.js";
 import { findCrosses } from "../utilities.js";
-import { RSI } from "@debut/indicators";
+import {RSI} from 'trading-signals';
 
 const ma = {getSMA, getEMA}
 
@@ -34,12 +34,24 @@ export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePe
     period = parseInt(period)
     movingAveragePeriod = parseInt(movingAveragePeriod)
     const instance = new RSI(period)
+    const dataLength = data.length
 
-    data.forEach(c => {
-
-        rsi.push(instance.nextValue(c))
-
-    })
+    for(let x = 0; x < dataLength; x++)
+    {
+        let value = null
+        instance.update(data[x])
+        
+        try
+        {
+            value = instance.getResult()
+        }
+        catch(err)
+        {
+            value = null
+        }
+    
+        rsi.push(value)
+    }
 
     rsi = rsi.filter(v => v)
 

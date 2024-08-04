@@ -1,5 +1,5 @@
 
-import { SMA } from '@debut/indicators';
+import {SMA, Big} from 'trading-signals';
 
 export const sma = (main, size) => {
   const {ohlcv} = main
@@ -10,16 +10,28 @@ export const sma = (main, size) => {
 
 export const getSMA = (data, size) => {
   
-
   const output = []
   const instance = new SMA(size)
+  const dataLength = data.length
 
-  data.forEach(c => {
 
-    output.push(instance.nextValue(c))
+  
+  for(let x = 0; x < dataLength; x++)
+  {
+      let value = null
+      instance.update(data[x])
+    
+      try
+      {
+        value = instance.getResult()
+      }
+      catch(err)
+      {
+        value = null
+      }
 
-  })
+      output.push(value)
+  }
 
   return output
-
 }

@@ -7,6 +7,7 @@ import { volumeProfile } from './src/studies/volumeProfile.js'
 import {findCrosses} from './src/utilities.js'
 import { candles } from './src/studies/candles.js'
 import ChartPatterns from './src/studies/chart.js'
+import {Big} from 'trading-signals';
 
 export default class OHLCV_INDICATORS {
     constructor() {
@@ -48,7 +49,10 @@ export default class OHLCV_INDICATORS {
             for(let x = 0; x < keysLength; x++)
             {
                 const header = keys[x]
-                row[header] = ohlcv[header][i]
+                const value = ohlcv[header][i]
+
+
+                row[header] = (value instanceof Big) ? value.toNumber() : value
             }
 
             return row
@@ -58,8 +62,8 @@ export default class OHLCV_INDICATORS {
         const output = {}
 
         for (const [k, arr] of Object.entries(this.ohlcv)) {
-            let value = arr[arr.length - 1];
-            output[k] = value;
+            let value = arr[arr.length - 1]
+            output[k] = (value instanceof Big) ? value.toNumber(): value;
         }
 
         return output

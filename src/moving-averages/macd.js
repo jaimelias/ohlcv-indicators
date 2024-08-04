@@ -1,5 +1,5 @@
 import { findCrosses } from "../utilities.js";
-import { getEMA } from "./ema.js";
+import {EMA, MACD} from 'trading-signals';
 
 
 export const macd = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
@@ -15,23 +15,44 @@ export const macd = (main, fastLine = 12, slowLine = 26, signalLine = 9) => {
 
 export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9) => {
 
-    const fastEMA = getEMA(data, fastLine)
-    const slowEMA = getEMA(data, slowLine)
+    const diff = []
+    const dea = []
+    const histogram = []
 
-    // Calculate the MACD line (diff)
-    const diff = fastEMA.map((o, i) => (isNaN(o) || isNaN(slowEMA[i])) ? null : o - slowEMA[i]);    
+    const instance = new MACD({
+        indicator: EMA,
+        shortInterval: fastLine,
+        longInterval: slowLine,
+        signalInterval: signalLine
+    })
 
-    // Calculate the MACD line (dea)
-    const dea = getEMA(diff, signalLine)
+    const dataLength = data.length
 
-    // Calculate the MACD line (histogram)
-    const histogram = diff.map((d, i) => d - dea[i])
+    for(let x = 0; x < dataLength; x++)
+    {
+        let obj = {}
+        instance.update(data[x])
+        
+        try
+        {
+            obj = instance.getResult()
+        }
+        catch(err)
+        {
+            obj = {macd: null, signal: null, histogram: null}
+        }
+    
+        diff.push(obj.macd)
+        dea.push(obj.signal)
+        histogram.push(obj.histogram)
+    }
+
     const x = findCrosses(diff, dea)
 
 	return {
-		'macd_diff': diff, 
-		'macd_dea': dea,
-		'macd_histogram': histogram,
-        'macd_diff_x_macd_dea': x
+		macd_diff: diff, 
+		macd_dea: dea,
+		macd_histogram: histogram,
+        macd_diff_x_macd_dea: x
     }
 }

@@ -1,50 +1,64 @@
+import {Big} from 'trading-signals';
+
+
 // Function to find crosses between two arrays: fast and slow
 export const findCrosses = (fast, slow) => {
     // Map states based on comparison of fast and slow arrays
-    const states = fast.map((f, i) => {
-        if (f > slow[i]) {
-            return 'up';
-        } else if (f < slow[i]) {
-            return 'down';
-        } else {
-            return 'neutral';
-        }
-    }).reverse(); // Reverse for processing from the end
 
-    // Group consecutive values
-    const groups = groupConsecutiveValues(states);
+    fast = fast.filter(o => o instanceof Big)
+    slow = slow.filter(o => o instanceof Big)
+    const min = Math.min(fast.length, slow.length)
 
-    // Map groups to cross values
-    const crosses = groups.map(chunk => {
-        const chunkLength = chunk.length;
-        return chunk.map((state, index) => {
-            let value = chunkLength - index;
+    fast = fast.slice(-min);
+    slow = slow.slice(-min);
 
-            if (state === 'down') {
-                return -value;
-            } else if (state === 'up') {
-                return value;
-            } else {
-                return 0;
+    let state = fast.map((f, i) => {
+        if(f.eq(slow[i])) return 'neutral'
+        else if(f.gt(slow[i])) return 'up'
+        else if(f.lt(slow[i])) return 'down'
+        else throw Error('undefined error in findCrosses')
+    })
+
+    const groups = groupConsecutiveValues(state)
+    const groupLengths = groups.map(g => g.length)
+
+    return groups.map((group, gIndex) => {
+        let initialValue = groupLengths[gIndex]
+
+        return group.map((s, i) => {
+            let v = initialValue - i
+
+            if(s === 'neutral')
+            {
+                v = 0
             }
-        });
-    }).flat();
+            if(s === 'up')
+            {
+                v = v * 1
+            }
+            if(s === 'down')
+            {
+                v = v * -1
+            }
 
-    return crosses.reverse(); // Reverse back to original order
-};
+            return v
+        }).reverse()
+    }).flat()
+
+}
 
 // Helper function to group consecutive values
-function groupConsecutiveValues(arr) {
-    if (arr.length === 0) return [];
+const groupConsecutiveValues = arr => {
+    if (arr.length === 0) return []
 
     return arr.reduce((acc, currentValue, index, array) => {
         if (index === 0) {
             // Start the first group with the first element
-            acc.push([currentValue]);
+            acc.push([currentValue])
         } else {
             // Get the previous value
-            const prevValue = array[index - 1];
-            const currentGroup = acc[acc.length - 1];
+            const prevValue = array[index - 1]
+            const currentGroup = acc[acc.length - 1]
 
             // Check the direction of the previous and current values
             if (currentValue !== prevValue) {
@@ -55,6 +69,6 @@ function groupConsecutiveValues(arr) {
                 currentGroup.push(currentValue);
             }
         }
-        return acc;
-    }, []);
+        return acc
+    }, [])
 }
