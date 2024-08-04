@@ -17,11 +17,11 @@ export default class OHLCV_INDICATORS {
     init(ohlcv) {
 
         this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
-            acc.open.push(open)
-            acc.high.push(high)
-            acc.low.push(low)
-            acc.close.push(close)
-            acc.volume.push(volume)
+            acc.open.push(new Big(open))
+            acc.high.push(new Big(high))
+            acc.low.push(new Big(low))
+            acc.close.push(new Big(close))
+            acc.volume.push(new Big(volume))
             for (const key of Object.keys(rest)) {
                 if (!acc[key]) acc[key] = [];
                 acc[key].push(rest[key]);
