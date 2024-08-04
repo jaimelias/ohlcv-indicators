@@ -5,7 +5,8 @@ import {BollingerBands, Big} from 'trading-signals';
 export const bollingerBands = (main, size, times) => {
   const {ohlcv} = main
   const data = ohlcv['close'];
-  const col = getBollingerBands(data, size, times)
+  const sliceData = data.slice(-(size*3))
+  const col = getBollingerBands(sliceData, size, times)
 
   for(let k in col)
   {
@@ -20,7 +21,6 @@ export const getBollingerBands = (data, size = 20, times = 2) => {
   const dataLength = data.length
   const output = {upper: [], middle: [], lower: []}
   const instance = new BollingerBands(size, times)
-
 
   for(let x = 0; x < dataLength; x++) {
     let obj = {}
