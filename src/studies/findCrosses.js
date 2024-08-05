@@ -72,3 +72,65 @@ const groupConsecutiveValues = arr => {
         return acc
     }, [])
 }
+
+
+
+export const crossPairs = async (main, arr) => {
+
+    const {ohlcv} = main;
+    const slowNumArrCache = {};
+    const promises = []
+    
+    // Helper function to create column if it doesn't exist
+    const createColumnIfNeeded = v => {
+
+        if (!ohlcv.hasOwnProperty(v) && typeof v === 'string') {
+
+            const [funcName, ...params] = v.split('_');
+
+            if (main[funcName] && params.length > 0) {
+                main[funcName](...params);
+            }
+        }
+    }
+
+    for (const { fast, slow } of arr) {
+        // Validate parameters
+        if (!fast || !slow) continue;
+    
+        // Create columns if needed
+        createColumnIfNeeded(fast);
+        createColumnIfNeeded(slow);
+    
+        // Prepare slowNumArr if 'slow' is a number
+        if (typeof slow === 'number' && !slowNumArrCache[slow]) {
+            slowNumArrCache[slow] = ohlcv.close.map(() => new Big(slow));
+        }
+    
+        // Find and add crosses
+        if (ohlcv[fast] && ohlcv[slow]) {
+
+            const cross = findCrosses(ohlcv[fast], ohlcv[slow]);
+
+            promises.push(Promise.resolve({[`${fast}_x_${slow}`]: cross}))
+
+        } else if (ohlcv[fast] && slowNumArrCache[slow]) {
+            const cross = findCrosses(ohlcv[fast], slowNumArrCache[slow])
+            
+            promises.push(Promise.resolve({[`${fast}_x_${slow}`]: cross}))
+
+        } else {
+            console.error(`Missing ohlcv properties for ${fast} or ${slow}`);
+        }
+    }
+
+    const resolvedPromises = await Promise.all(promises)
+    
+    for (let i = 0; i < resolvedPromises.length; i++) {
+        const item = resolvedPromises[i];
+        const key = Object.keys(item)[0];
+        main.addColumn(key, item[key]);
+    }
+
+    return resolvedPromises
+}

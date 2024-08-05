@@ -7,8 +7,10 @@ export const volumeProfile = (main, numBins, daysBack = 1, targetDateKey) => {
   const vp_high = vP.nodes.high.price
   const vp_low = vP.nodes.low.price
 
-  main.addColumn(`volume_profile_high`, [vp_high])
-  main.addColumn(`volume_profile_low`, [vp_low])
+  return {
+    volume_profile_high: [vp_high],
+    volume_profile_low: [vp_low]
+  }
 }
 
 

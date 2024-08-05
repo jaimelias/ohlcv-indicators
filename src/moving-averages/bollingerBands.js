@@ -7,19 +7,13 @@ export const bollingerBands = (main, size, times) => {
   const data = ohlcv['close'];
   const sliceData = data.slice(-(size*3))
   const col = getBollingerBands(sliceData, size, times)
-
-  for(let k in col)
-  {
-    main.addColumn(`bollinger_bands_${k}`, col[k])
-  }
+  return col
 }
-
-
 
 export const getBollingerBands = (data, size = 20, times = 2) => {
 
   const dataLength = data.length
-  const output = {upper: [], middle: [], lower: []}
+  const output = {bollinger_bands_upper: [], bollinger_bands_middle: [], bollinger_bands_lower: []}
   const instance = new BollingerBands(size, times)
 
   for(let x = 0; x < dataLength; x++) {
@@ -35,27 +29,28 @@ export const getBollingerBands = (data, size = 20, times = 2) => {
         obj = {upper: null, middle: null, lower: null}
     }
 
-    output.upper.push(obj.upper)
-    output.middle.push(obj.middle)
-    output.lower.push(obj.lower)
+    output.bollinger_bands_upper.push(obj.upper)
+    output.bollinger_bands_middle.push(obj.middle)
+    output.bollinger_bands_lower.push(obj.lower)
 
   }
 
-  const range = bollingerBandsRange(data, {upper: output.upper, lower: output.lower})
+  const {bollinger_bands_upper, bollinger_bands_middle, bollinger_bands_lower} = output
+  const bollinger_bands_range = bollingerBandsRange(data, {bollinger_bands_upper, bollinger_bands_lower})
 
-  return {...output, range}
+  return {bollinger_bands_upper, bollinger_bands_middle, bollinger_bands_lower, bollinger_bands_range}
 }
   
 
 
 const bollingerBandsRange = (data, bollingerBands) => {
-  const { upper, lower } = bollingerBands;
+  const { bollinger_bands_upper, bollinger_bands_lower } = bollingerBands;
   const output = new Array(data.length);
 
   for (let i = 0; i < data.length; i++) {
-    if (upper[i] != null && lower[i] != null && data[i] != null) {
-      const upperBig = new Big(upper[i]);
-      const lowerBig = new Big(lower[i]);
+    if (bollinger_bands_upper[i] != null && bollinger_bands_lower[i] != null && data[i] != null) {
+      const upperBig = new Big(bollinger_bands_upper[i]);
+      const lowerBig = new Big(bollinger_bands_lower[i]);
       const dataBig = new Big(data[i]);
 
       const range = upperBig.minus(lowerBig);

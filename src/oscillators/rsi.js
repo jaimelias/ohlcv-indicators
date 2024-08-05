@@ -1,6 +1,6 @@
 import { getSMA } from "../moving-averages/sma.js";
 import { getEMA } from "../moving-averages/ema.js";
-import { findCrosses } from "../utilities.js";
+import { findCrosses } from "../studies/findCrosses.js";
 import {RSI} from 'trading-signals';
 
 const ma = {getSMA, getEMA}
@@ -18,10 +18,14 @@ export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
 
     const col = getRSI(sliceData, period, movingAverage, movingAveragePeriod)
 
+    return col
+
     for(let k in col)
     {
         main.addColumn(`${k}`.toLowerCase(), col[k])
     }
+
+   
 }
 
 export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14) => {

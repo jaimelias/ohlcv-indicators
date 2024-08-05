@@ -4,11 +4,7 @@ export const candles = main => {
     
     const cols = getCandlestickPattern(ohlcv)
 
-    for(let k in cols)
-    {
-        main.addColumn(`candle_${k}`.toLowerCase(), cols[k])
-    }
-
+    return cols
 }
 
 export const getCandlestickPattern = ohlcv => {
@@ -156,8 +152,8 @@ export const getCandlestickPattern = ohlcv => {
   }
 
   return {
-      pattern: patternArray,
-      name: nameArray,
-      score: scoreArray
-  };
-};
+      candle_pattern: patternArray,
+      candle_name: nameArray,
+      candle_score: scoreArray
+  }
+}

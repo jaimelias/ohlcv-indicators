@@ -1,4 +1,4 @@
-import { findCrosses } from "../utilities.js";
+import { findCrosses } from "../studies/findCrosses.js";
 import {EMA, MACD} from 'trading-signals';
 
 
@@ -9,10 +9,7 @@ export const macd = (main, fastLine, slowLine, signalLine) => {
     const sliceData = data.slice(-(maxSize*3))
     const col = getMACD(sliceData, fastLine, slowLine, signalLine)
 
-    for(let k in col)
-    {
-        main.addColumn(k, col[k]);
-    }
+    return col
 }
 
 export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9) => {

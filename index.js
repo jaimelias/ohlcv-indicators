@@ -4,7 +4,7 @@ import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
 import { volumeProfile } from './src/studies/volumeProfile.js'
-import {findCrosses} from './src/utilities.js'
+import {crossPairs} from './src/studies/findCrosses.js'
 import { candles } from './src/studies/candles.js'
 import ChartPatterns from './src/studies/chart.js'
 import {Big} from 'trading-signals';
@@ -16,6 +16,8 @@ export default class OHLCV_INDICATORS {
 
     init(ohlcv) {
 
+        this.promises = []
+        this.crossPairsArr = []
         this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
             acc.open.push(new Big(open))
             acc.high.push(new Big(high))
@@ -32,12 +34,35 @@ export default class OHLCV_INDICATORS {
         
         return this
     }
-    
-    getHeaders(){
-        return Object.keys(this.ohlcv)
+
+    async computePromises()
+    {
+        const resolvePromises = async (main, promiseName) => {
+
+            Promise.all(main[promiseName]).then(thisPromise => {
+
+                if(Array.isArray(thisPromise))
+                {
+                    for(let x = 0; x < thisPromise.length; x++)
+                    {                    
+                        for(const [key, arr] of Object.entries(thisPromise[x]))
+                        {
+                            this.addColumn(`${key}`.toLowerCase(), arr)
+                        }
+                    }
+                }
+            })
+        }
+
+        await resolvePromises(this, 'promises')
+        await crossPairs(this, this.crossPairsArr)
+
+        return this.ohlcv
     }
 
-    getData() {
+    async getData() {
+
+        await this.computePromises()
         const {ohlcv} = this
         const keys = Object.keys(ohlcv)
         const keysLength = keys.length
@@ -58,7 +83,8 @@ export default class OHLCV_INDICATORS {
             return row
         })
     }
-    getLastValues(){
+    async getLastValues(){
+        await this.computePromises()
         const output = {}
 
         for (const [k, arr] of Object.entries(this.ohlcv)) {
@@ -70,6 +96,7 @@ export default class OHLCV_INDICATORS {
     }
 
     addColumn(key, arr) {
+
         const ohlcvLength = this.ohlcv.open.length;
 
         if (arr.length > ohlcvLength) {
@@ -85,79 +112,68 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr)
     {
-        const ohlcv = this.ohlcv;
-        const slowNumArrCache = {};
-        
-        // Helper function to create column if it doesn't exist
-        const createColumnIfNeeded = (v) => {
+        this.crossPairsArr = arr
 
-            if (!ohlcv.hasOwnProperty(v) && typeof v === 'string') {
-
-                const [funcName, ...params] = v.split('_');
-
-                if (this[funcName] && params.length > 0) {
-                    this[funcName](...params);
-                }
-            }
-        };
-        
-        for (const { fast, slow } of arr) {
-            // Validate parameters
-            if (!fast || !slow) continue;
-        
-            // Create columns if needed
-            createColumnIfNeeded(fast);
-            createColumnIfNeeded(slow);
-        
-            // Prepare slowNumArr if 'slow' is a number
-            if (typeof slow === 'number' && !slowNumArrCache[slow]) {
-                slowNumArrCache[slow] = ohlcv.close.map(() => new Big(slow));
-            }
-        
-            // Find and add crosses
-            if (ohlcv[fast] && ohlcv[slow]) {
-                const cross = findCrosses(ohlcv[fast], ohlcv[slow]);
-                this.addColumn(`${fast}_x_${slow}`, cross);
-            } else if (ohlcv[fast] && slowNumArrCache[slow]) {
-                const cross = findCrosses(ohlcv[fast], slowNumArrCache[slow]);
-                this.addColumn(`${fast}_x_${slow}`, cross);
-            } else {
-                console.error(`Missing ohlcv properties for ${fast} or ${slow}`);
-            }
-        }
-           
+        return this
     }
 
     ema(size) {
-        ema(this, size)
+
+        this.promises.push(
+            Promise.resolve(ema(this, size))
+        )
+
         return this
     }
     sma(size) {
-        sma(this, size)
+
+        this.promises.push(
+            Promise.resolve(sma(this, size))
+        )
+        
         return this
     }
     macd(fastLine, slowLine, signalLine) {
-        macd(this, fastLine, slowLine, signalLine)
+
+        this.promises.push(
+            Promise.resolve(macd(this, fastLine, slowLine, signalLine))
+        )
+        
         return this
     }
     bollingerBands(data, size, times)
     {
-        bollingerBands(this, data, size, times)
+
+        this.promises.push(
+            Promise.resolve(bollingerBands(this, data, size, times))
+        )
+
+        
         return this
     }
     rsi(period, movingAverage, movingAveragePeriod)
     {
-        rsi(this, period, movingAverage, movingAveragePeriod)
+        this.promises.push(Promise.resolve(rsi(this, period, movingAverage, movingAveragePeriod)))
+        
         return this
     }
     candles()
     {
-        candles(this)
+
+        this.promises.push(
+            Promise.resolve(candles(this))
+        )
+
+        
         return this
     }
     volumeProfile(numBins, daysBack, targetDateKey)
     {
-        volumeProfile(this, numBins, daysBack, targetDateKey)
+
+        this.promises.push(
+            Promise.resolve(volumeProfile(this, numBins, daysBack, targetDateKey))
+        )
+
         return this
     }
 }

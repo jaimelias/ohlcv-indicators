@@ -1,11 +1,14 @@
 
-import {SMA, Big} from 'trading-signals';
+import {SMA} from 'trading-signals';
 
 export const sma = (main, size) => {
   const {ohlcv} = main
   const data = ohlcv['close']
   const col = getSMA(data, size)
-  main.addColumn(`sma_${size}`, col)
+ 
+  return {
+    [`sma_${size}`]: col
+  }
 }
 
 export const getSMA = (data, size) => {

@@ -1,12 +1,14 @@
 
-import {EMA} from 'trading-signals';
-
+import {EMA} from 'trading-signals'
 
 export const ema = (main, size) => {
   const {ohlcv} = main
   const data = ohlcv['close']
   const col = getEMA(data, size)
-  main.addColumn(`ema_${size}`, col)
+
+  return {
+    [`ema_${size}`]: col
+  }
 }
 
 export const getEMA = (data, size) => {
