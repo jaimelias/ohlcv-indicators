@@ -39,7 +39,7 @@ export default class OHLCV_INDICATORS {
     {
         const resolvePromises = async (main, promiseName) => {
 
-            Promise.all(main[promiseName]).then(thisPromise => {
+            return Promise.all(main[promiseName]).then(thisPromise => {
 
                 if(Array.isArray(thisPromise))
                 {
@@ -51,6 +51,8 @@ export default class OHLCV_INDICATORS {
                         }
                     }
                 }
+
+                return true
             })
         }
 
