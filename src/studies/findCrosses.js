@@ -90,29 +90,24 @@ export const crossPairs = async (main, arr) => {
             slowNumArrCache[slow] = Array(ohlcv.close.length).fill(new Big(slow))
         }
     
+        const keyName = `${fast}_x_${slow}`
+
         // Find and add crosses
         if (ohlcv[fast] && ohlcv[slow]) {
 
             const cross = findCrosses(ohlcv[fast], ohlcv[slow]);
 
-            promises.push(Promise.resolve({[`${fast}_x_${slow}`]: cross}))
+            main.addColumn(keyName, cross)
+            
 
         } else if (ohlcv[fast] && slowNumArrCache[slow]) {
             const cross = findCrosses(ohlcv[fast], slowNumArrCache[slow])
             
-            promises.push(Promise.resolve({[`${fast}_x_${slow}`]: cross}))
+            main.addColumn(keyName, cross)
 
         } else {
             console.log(`Missing ohlcv properties for ${fast} or ${slow}`);
         }
-    }
-
-    const resolvedPromises = await Promise.all(promises)
-    
-    for (let i = 0; i < resolvedPromises.length; i++) {
-        const item = resolvedPromises[i];
-        const key = Object.keys(item)[0];
-        main.addColumn(key, item[key]);
     }
 
     return true

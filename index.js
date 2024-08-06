@@ -16,7 +16,6 @@ export default class OHLCV_INDICATORS {
 
     init(ohlcv) {
 
-        this.promises = []
         this.crossPairsArr = []
         this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
             acc.open.push(new Big(open))
@@ -35,36 +34,9 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    async computePromises()
-    {
-        const resolvePromises = async (main, promiseName) => {
+    getData() {
 
-            return Promise.all(main[promiseName]).then(thisPromise => {
-
-                if(Array.isArray(thisPromise))
-                {
-                    for(let x = 0; x < thisPromise.length; x++)
-                    {                    
-                        for(const [key, arr] of Object.entries(thisPromise[x]))
-                        {
-                            this.addColumn(`${key}`.toLowerCase(), arr)
-                        }
-                    }
-                }
-
-                return true
-            })
-        }
-
-        await resolvePromises(this, 'promises')
-        await crossPairs(this, this.crossPairsArr)
-
-        return this.ohlcv
-    }
-
-    async getData() {
-
-        await this.computePromises()
+        
         const {ohlcv} = this
         const keys = Object.keys(ohlcv)
         const keysLength = keys.length
@@ -85,8 +57,9 @@ export default class OHLCV_INDICATORS {
             return row
         })
     }
-    async getLastValues(){
-        await this.computePromises()
+    getLastValues(){
+
+
         const output = {}
 
         for (const [k, arr] of Object.entries(this.ohlcv)) {
@@ -97,8 +70,17 @@ export default class OHLCV_INDICATORS {
         return output
     }
 
+    addObjectColumns(obj) {
+
+        for(const [key, arr] of Object.entries(obj))
+        {
+            this.addColumn(key, arr)
+        }
+    }
+
     addColumn(key, arr) {
 
+        key = key.toLowerCase()
         const ohlcvLength = this.ohlcv.open.length;
 
         if (arr.length > ohlcvLength) {
@@ -114,67 +96,53 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr)
     {
-        this.crossPairsArr = arr
+        crossPairs(this, arr)
 
         return this
     }
 
     ema(size) {
 
-        this.promises.push(
-            Promise.resolve(ema(this, size))
-        )
+        this.addObjectColumns(ema(this, size))
 
         return this
     }
     sma(size) {
 
-        this.promises.push(
-            Promise.resolve(sma(this, size))
-        )
+        this.addObjectColumns(sma(this, size))
         
         return this
     }
     macd(fastLine, slowLine, signalLine) {
 
-        this.promises.push(
-            Promise.resolve(macd(this, fastLine, slowLine, signalLine))
-        )
+        this.addObjectColumns(macd(this, fastLine, slowLine, signalLine))
         
         return this
     }
     bollingerBands(data, size, times)
     {
+        this.addObjectColumns(bollingerBands(this, data, size, times))
 
-        this.promises.push(
-            Promise.resolve(bollingerBands(this, data, size, times))
-        )
-
-        
         return this
     }
     rsi(period, movingAverage, movingAveragePeriod)
     {
-        this.promises.push(Promise.resolve(rsi(this, period, movingAverage, movingAveragePeriod)))
+
+        this.addObjectColumns(rsi(this, period, movingAverage, movingAveragePeriod))
         
         return this
     }
     candles()
     {
 
-        this.promises.push(
-            Promise.resolve(candles(this))
-        )
-
+        this.addObjectColumns(candles(this))
+                
         
         return this
     }
     volumeProfile(numBins, daysBack, targetDateKey)
     {
-
-        this.promises.push(
-            Promise.resolve(volumeProfile(this, numBins, daysBack, targetDateKey))
-        )
+        this.addObjectColumns(volumeProfile(this, numBins, daysBack, targetDateKey))
 
         return this
     }

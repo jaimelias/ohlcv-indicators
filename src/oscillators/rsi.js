@@ -18,14 +18,7 @@ export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
 
     const col = getRSI(sliceData, period, movingAverage, movingAveragePeriod)
 
-    return col
-
-    for(let k in col)
-    {
-        main.addColumn(`${k}`.toLowerCase(), col[k])
-    }
-
-   
+    return col   
 }
 
 export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14) => {
