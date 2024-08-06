@@ -33,14 +33,14 @@ export const getCandlestickPattern = ohlcv => {
               score: 2
           },
           {
-              name: 'Kicker',
-              condition: (prev, curr) => curr.open < prev.open && curr.close > curr.open && prev.close < prev.open,
-              score: 2
+            name: 'Kicker',
+            condition: (prev, curr) => prev.close < prev.open && curr.open > prev.open && curr.close > curr.open,
+            score: 2
           },
           {
-              name: 'Morning Star',
-              condition: (prev, curr) => curr.close > prev.close && curr.open < prev.open && prev.close < prev.open,
-              score: 2
+            name: 'Morning Star',
+            condition: (prev, curr, next) => prev.close < prev.open && curr.close > prev.close && curr.close < curr.open && next.close > curr.close,
+            score: 2
           },
           {
               name: 'Piercing Line',
@@ -53,9 +53,9 @@ export const getCandlestickPattern = ohlcv => {
               score: 1
           },
           {
-              name: 'Harami',
-              condition: (prev, curr) => curr.open > prev.close && curr.close < prev.open && curr.open < prev.open && curr.close > prev.close,
-              score: 1
+            name: 'Harami',
+            condition: (prev, curr) => curr.open > prev.low && curr.close < prev.open && curr.open < prev.open && curr.close > prev.close,
+            score: 1
           },
           {
               name: 'Doji',
@@ -75,14 +75,14 @@ export const getCandlestickPattern = ohlcv => {
               score: -2
           },
           {
-              name: 'Kicker',
-              condition: (prev, curr) => curr.open > prev.open && curr.close < curr.open && prev.close > prev.open,
-              score: -2
+            name: 'Kicker',
+            condition: (prev, curr) => prev.close > prev.open && curr.open < prev.open && curr.close < curr.open,
+            score: -2
           },
           {
-              name: 'Evening Star',
-              condition: (prev, curr) => curr.close < prev.close && curr.open > prev.open && prev.close < prev.open,
-              score: -2
+            name: 'Evening Star',
+            condition: (prev, curr, next) => prev.close > prev.open && curr.close < prev.close && curr.close > curr.open && next.close < curr.close,
+            score: -2
           },
           {
               name: 'Dark Cloud Cover',
@@ -95,9 +95,9 @@ export const getCandlestickPattern = ohlcv => {
               score: -1
           },
           {
-              name: 'Harami',
-              condition: (prev, curr) => curr.open < prev.close && curr.close > prev.open && curr.open > prev.open && curr.close < prev.close,
-              score: -1
+            name: 'Harami',
+            condition: (prev, curr) => curr.open < prev.high && curr.close > prev.open && curr.open > prev.open && curr.close < prev.close,
+            score: -1
           },
           {
               name: 'Doji',
