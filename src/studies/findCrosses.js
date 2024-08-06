@@ -75,11 +75,10 @@ const groupConsecutiveValues = arr => {
 
 
 
-export const crossPairs = async (main, arr) => {
+export const crossPairs = (ohlcv, arr) => {
 
-    const {ohlcv} = main;
     const slowNumArrCache = {};
-    const promises = []
+    const output = {}
 
     for (const { fast, slow } of arr) {
         // Validate parameters
@@ -97,18 +96,18 @@ export const crossPairs = async (main, arr) => {
 
             const cross = findCrosses(ohlcv[fast], ohlcv[slow]);
 
-            main.addColumn(keyName, cross)
+            output[keyName] = cross
             
 
         } else if (ohlcv[fast] && slowNumArrCache[slow]) {
             const cross = findCrosses(ohlcv[fast], slowNumArrCache[slow])
             
-            main.addColumn(keyName, cross)
+            output[keyName] = cross
 
         } else {
             console.log(`Missing ohlcv properties for ${fast} or ${slow}`);
         }
     }
 
-    return true
+    return output
 }

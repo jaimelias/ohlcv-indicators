@@ -1,6 +1,4 @@
-export const volumeProfile = (main, numBins, daysBack = 1, targetDateKey) => {
-
-  let {ohlcv} = main
+export const volumeProfile = (ohlcv, numBins, daysBack = 1, targetDateKey) => {
 
   const filteredOhlcv = filterLastDays(ohlcv, daysBack, targetDateKey)
   const vP = calculateBins(filteredOhlcv, numBins)

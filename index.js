@@ -96,53 +96,109 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr)
     {
-        crossPairs(this, arr)
+        const {ohlcv} = this
+        const result = crossPairs(ohlcv, arr)
+
+        if(result)
+        {
+            this.addObjectColumns(result)
+        }    
 
         return this
     }
 
     ema(size) {
 
-        this.addObjectColumns(ema(this, size))
+        const {close} = this.ohlcv
+
+       const result = ema(close, size)
+
+        if(result)
+        {
+            this.addObjectColumns(result)
+        }      
 
         return this
     }
     sma(size) {
 
-        this.addObjectColumns(sma(this, size))
-        
-        return this
+        const {close} = this.ohlcv
+
+        const result = sma(close, size)
+
+        if(result)
+        {
+            this.addObjectColumns(result)
+        }
+
+        return this 
     }
     macd(fastLine, slowLine, signalLine) {
 
-        this.addObjectColumns(macd(this, fastLine, slowLine, signalLine))
+        const {close} = this.ohlcv
+
+        const result = macd(close, fastLine, slowLine, signalLine)
+
+        if(result)
+        {
+            this.addObjectColumns(result)
+        }   
         
         return this
+
     }
-    bollingerBands(data, size, times)
+    bollingerBands(size, times)
     {
-        this.addObjectColumns(bollingerBands(this, data, size, times))
+
+        const {close} = this.ohlcv
+
+        const result = bollingerBands(close, size, times)
+
+        if(result)
+        {
+            this.addObjectColumns(result)
+        }
 
         return this
     }
     rsi(period, movingAverage, movingAveragePeriod)
     {
+        const {close} = this.ohlcv
 
-        this.addObjectColumns(rsi(this, period, movingAverage, movingAveragePeriod))
+        const result = rsi(close, period, movingAverage, movingAveragePeriod)
         
+        if(result)
+        {
+            this.addObjectColumns(result)
+        }
+
         return this
     }
     candles()
     {
 
-        this.addObjectColumns(candles(this))
+        const {ohlcv} = this
+
+        const result = candles(ohlcv)
                 
-        
+        if(result)
+        {
+            this.addObjectColumns(result)
+        }
+
         return this
     }
     volumeProfile(numBins, daysBack, targetDateKey)
     {
-        this.addObjectColumns(volumeProfile(this, numBins, daysBack, targetDateKey))
+
+        const {ohlcv} = this
+
+        const result = volumeProfile(ohlcv, numBins, daysBack, targetDateKey)
+
+        if(result)
+        {
+            this.addObjectColumns(result)
+        }
 
         return this
     }

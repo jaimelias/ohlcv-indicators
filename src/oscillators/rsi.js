@@ -5,11 +5,9 @@ import {RSI} from 'trading-signals';
 
 const ma = {getSMA, getEMA}
 
-export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
+export const rsi = (close, period, movingAverage, movingAveragePeriod) => {
 
-    const {ohlcv} = main
-    const data = ohlcv['close']
-    const sliceData = data.slice(-(period*3))
+    const sliceData = close.slice(-(period*3))
 
     if(typeof period === 'number' && typeof movingAveragePeriod === 'undefined')
     {

@@ -1,10 +1,9 @@
 
 import {EMA} from 'trading-signals'
 
-export const ema = (main, size) => {
-  const {ohlcv} = main
-  const data = ohlcv['close']
-  const col = getEMA(data, size)
+export const ema = (close, size) => {
+
+  const col = getEMA(close, size)
 
   return {
     [`ema_${size}`]: col

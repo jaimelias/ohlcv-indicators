@@ -2,10 +2,9 @@
 import {BollingerBands, Big} from 'trading-signals';
 
 
-export const bollingerBands = (main, size, times) => {
-  const {ohlcv} = main
-  const data = ohlcv['close'];
-  const sliceData = data.slice(-(size*3))
+export const bollingerBands = (close, size, times) => {
+
+  const sliceData = close.slice(-(size*3))
   const col = getBollingerBands(sliceData, size, times)
   return col
 }

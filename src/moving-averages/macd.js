@@ -2,11 +2,10 @@ import { findCrosses } from "../studies/findCrosses.js";
 import {EMA, MACD} from 'trading-signals';
 
 
-export const macd = (main, fastLine, slowLine, signalLine) => {
-    const {ohlcv} = main
-    const data = ohlcv['close']
+export const macd = (close, fastLine, slowLine, signalLine) => {
+
     const maxSize = Math.max(fastLine, slowLine, signalLine)
-    const sliceData = data.slice(-(maxSize*3))
+    const sliceData = close.slice(-(maxSize*3))
     const col = getMACD(sliceData, fastLine, slowLine, signalLine)
 
     return col
