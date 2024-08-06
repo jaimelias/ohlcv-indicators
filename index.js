@@ -14,15 +14,17 @@ export default class OHLCV_INDICATORS {
         this.ChartPatterns = ohlcv => new ChartPatterns(ohlcv).init()
     }
 
-    init(ohlcv) {
+    init(ohlcv, precision = true) {
 
+        this.precision = precision
+        this.big = num => (this.precision) ? new Big(num) : num
         this.crossPairsArr = []
         this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
-            acc.open.push(new Big(open))
-            acc.high.push(new Big(high))
-            acc.low.push(new Big(low))
-            acc.close.push(new Big(close))
-            acc.volume.push(new Big(volume))
+            acc.open.push(this.big(open))
+            acc.high.push(this.big(high))
+            acc.low.push(this.big(low))
+            acc.close.push(this.big(close))
+            acc.volume.push(this.big(volume))
             for (const key of Object.keys(rest)) {
                 if (!acc[key]) acc[key] = [];
                 acc[key].push(rest[key]);
@@ -96,8 +98,8 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr)
     {
-        const {ohlcv} = this
-        const result = crossPairs(ohlcv, arr)
+        
+        const result = crossPairs(this, arr)
 
         if(result)
         {
@@ -109,9 +111,8 @@ export default class OHLCV_INDICATORS {
 
     ema(size) {
 
-        const {close} = this.ohlcv
 
-       const result = ema(close, size)
+       const result = ema(this, size)
 
         if(result)
         {
@@ -122,9 +123,7 @@ export default class OHLCV_INDICATORS {
     }
     sma(size) {
 
-        const {close} = this.ohlcv
-
-        const result = sma(close, size)
+        const result = sma(this, size)
 
         if(result)
         {
@@ -135,9 +134,7 @@ export default class OHLCV_INDICATORS {
     }
     macd(fastLine, slowLine, signalLine) {
 
-        const {close} = this.ohlcv
-
-        const result = macd(close, fastLine, slowLine, signalLine)
+        const result = macd(this, fastLine, slowLine, signalLine)
 
         if(result)
         {
@@ -150,9 +147,7 @@ export default class OHLCV_INDICATORS {
     bollingerBands(size, times)
     {
 
-        const {close} = this.ohlcv
-
-        const result = bollingerBands(close, size, times)
+        const result = bollingerBands(this, size, times)
 
         if(result)
         {
@@ -163,9 +158,8 @@ export default class OHLCV_INDICATORS {
     }
     rsi(period, movingAverage, movingAveragePeriod)
     {
-        const {close} = this.ohlcv
 
-        const result = rsi(close, period, movingAverage, movingAveragePeriod)
+        const result = rsi(this, period, movingAverage, movingAveragePeriod)
         
         if(result)
         {

@@ -1,22 +1,32 @@
 import {Big} from 'trading-signals';
 
-
 // Function to find crosses between two arrays: fast and slow
-export const findCrosses = (fast, slow) => {
+export const findCrosses = (fast, slow, precision) => {
     // Map states based on comparison of fast and slow arrays
 
-    fast = fast.filter(o => o instanceof Big)
-    slow = slow.filter(o => o instanceof Big)
+    fast = fast.filter(o => o instanceof Big || typeof o === 'number')
+    slow = slow.filter(o => o instanceof Big || typeof o === 'number')
+    
     const min = Math.min(fast.length, slow.length)
 
-    fast = fast.slice(-min);
-    slow = slow.slice(-min);
+    fast = fast.slice(-min)
+    slow = slow.slice(-min)
 
     let state = fast.map((f, i) => {
-        if(f.eq(slow[i])) return 'neutral'
-        else if(f.gt(slow[i])) return 'up'
-        else if(f.lt(slow[i])) return 'down'
-        else throw Error('undefined error in findCrosses')
+        if(precision)
+        {
+            if(f.eq(slow[i])) return 'neutral'
+            else if(f.gt(slow[i])) return 'up'
+            else if(f.lt(slow[i])) return 'down'
+        }
+        else
+        {
+            if(f === slow[i]) return 'neutral'
+            else if(f > slow[i]) return 'up'
+            else if(f < slow[i]) return 'down'
+        }
+
+        throw Error('undefined error in findCrosses')
     })
 
     const groups = groupConsecutiveValues(state)
@@ -75,8 +85,9 @@ const groupConsecutiveValues = arr => {
 
 
 
-export const crossPairs = (ohlcv, arr) => {
+export const crossPairs = (main, arr) => {
 
+    const {ohlcv, precision} = main
     const slowNumArrCache = {};
     const output = {}
 
@@ -86,6 +97,7 @@ export const crossPairs = (ohlcv, arr) => {
     
         // Prepare slowNumArr if 'slow' is a number
         if (typeof slow === 'number' && !slowNumArrCache[slow]) {
+
             slowNumArrCache[slow] = Array(ohlcv.close.length).fill(new Big(slow))
         }
     
@@ -94,13 +106,13 @@ export const crossPairs = (ohlcv, arr) => {
         // Find and add crosses
         if (ohlcv[fast] && ohlcv[slow]) {
 
-            const cross = findCrosses(ohlcv[fast], ohlcv[slow]);
+            const cross = findCrosses(ohlcv[fast], ohlcv[slow], precision);
 
             output[keyName] = cross
             
 
         } else if (ohlcv[fast] && slowNumArrCache[slow]) {
-            const cross = findCrosses(ohlcv[fast], slowNumArrCache[slow])
+            const cross = findCrosses(ohlcv[fast], slowNumArrCache[slow], precision)
             
             output[keyName] = cross
 

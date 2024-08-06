@@ -1,19 +1,27 @@
 
-import {SMA} from 'trading-signals';
+import {SMA, FasterSMA} from 'trading-signals';
 
-export const sma = (close, size) => {
+export const sma = (main, size) => {
 
-  const col = getSMA(close, size)
+  const {ohlcv, precision} = main
+  const {close} = ohlcv
+
+  const col = getSMA(close, size, precision)
  
   return {
     [`sma_${size}`]: col
   }
 }
 
-export const getSMA = (data, size) => {
+export const getSMA = (data, size, precision) => {
   
+  if(typeof precision === 'undefined' || typeof data === 'undefined' || typeof size === 'undefined')
+  {
+    throw Error('undefined param in getSMA')
+  }
+
   const output = []
-  const instance = new SMA(size)
+  const instance = (precision) ? new SMA(size) : new FasterSMA(size)
   const dataLength = data.length
 
   for(let x = 0; x < dataLength; x++)
