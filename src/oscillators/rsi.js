@@ -7,8 +7,8 @@ const ma = {getSMA, getEMA}
 
 export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
 
-    const {ohlcv, precision} = main
-    const {close} = ohlcv
+    const {verticalOhlcv, precision} = main
+    const {close} = verticalOhlcv
 
     const sliceData = close.slice(-(period*3))
 

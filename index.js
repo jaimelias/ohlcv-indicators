@@ -6,20 +6,16 @@ import { rsi } from './src/oscillators/rsi.js'
 import { volumeProfile } from './src/studies/volumeProfile.js'
 import {crossPairs} from './src/studies/findCrosses.js'
 import { candles } from './src/studies/candles.js'
-import ChartPatterns from './src/studies/chart.js'
 import {Big} from 'trading-signals';
 
 export default class OHLCV_INDICATORS {
-    constructor() {
-        this.ChartPatterns = ohlcv => new ChartPatterns(ohlcv).init()
-    }
-
-    init(ohlcv, precision = true) {
-
+    constructor({input, precision = true}) {
         this.precision = precision
         this.big = num => (this.precision) ? new Big(num) : num
         this.crossPairsArr = []
-        this.ohlcv = ohlcv.reduce((acc, { open, high, low, close, volume, ...rest }) => {
+        this.inputOhlcv = input
+
+        this.verticalOhlcv = input.reduce((acc, { open, high, low, close, volume, ...rest }) => {
             acc.open.push(this.big(open))
             acc.high.push(this.big(high))
             acc.low.push(this.big(low))
@@ -31,29 +27,36 @@ export default class OHLCV_INDICATORS {
             }
             return acc;
         }, { open: [], high: [], low: [], close: [], volume: [] })
-        
-        
-        return this
+
+        this.indicators = {}
+        this.isComputed = false       
+        return this 
     }
 
     getData() {
 
-        
-        const {ohlcv} = this
-        const keys = Object.keys(ohlcv)
+        this.computeIndicators()
+        const {verticalOhlcv, precision} = this
+        const keys = Object.keys(verticalOhlcv)
         const keysLength = keys.length
 
-        return ohlcv.open.map((_, i) => {
+        return verticalOhlcv.open.map((_, i) => {
 
             const row = {}
 
             for(let x = 0; x < keysLength; x++)
             {
                 const header = keys[x]
-                const value = ohlcv[header][i]
+                const value = verticalOhlcv[header][i]
 
-
-                row[header] = (value instanceof Big) ? value.toNumber() : value
+                if(precision)
+                {
+                    row[header] = (value instanceof Big) ? value.toNumber() : value
+                }
+                else
+                {
+                    row[header] = value
+                }
             }
 
             return row
@@ -61,29 +64,49 @@ export default class OHLCV_INDICATORS {
     }
     getLastValues(){
 
-
+        this.computeIndicators()
+        const {verticalOhlcv, precision} = this
         const output = {}
 
-        for (const [k, arr] of Object.entries(this.ohlcv)) {
+        for (const [k, arr] of Object.entries(verticalOhlcv)) {
             let value = arr[arr.length - 1]
-            output[k] = (value instanceof Big) ? value.toNumber(): value;
+
+            if(precision)
+            {
+                output[k] = (value instanceof Big) ? value.toNumber(): value
+            }
+            else
+            {
+                output[k] = value
+            }
+            
         }
 
         return output
     }
 
-    addObjectColumns(obj) {
+    computeIndicators() {
 
-        for(const [key, arr] of Object.entries(obj))
+        if(this.isComputed === true){
+            return false
+        }
+        else
+        {
+            this.isComputed === true
+        }
+
+        for(const [key, arr] of Object.entries(this.indicators))
         {
             this.addColumn(key, arr)
         }
+
+        return true
     }
 
     addColumn(key, arr) {
 
         key = key.toLowerCase()
-        const ohlcvLength = this.ohlcv.open.length;
+        const ohlcvLength = this.verticalOhlcv.open.length;
 
         if (arr.length > ohlcvLength) {
             throw new Error(`Invalid column data: The length of the new column exceeds the length of the OHLCV data`);
@@ -93,18 +116,16 @@ export default class OHLCV_INDICATORS {
         const nanArray = new Array(ohlcvLength - arr.length).fill(null)
         arr = [...nanArray, ...arr]
 
-        this.ohlcv[key] = arr
+        this.verticalOhlcv[key] = arr
     }
 
     crossPairs(arr)
     {
         
-        const result = crossPairs(this, arr)
+        this.computeIndicators()
 
-        if(result)
-        {
-            this.addObjectColumns(result)
-        }    
+        const result = crossPairs(this, arr)
+        this.indicators = {...this.indicators, ...result}
 
         return this
     }
@@ -113,33 +134,21 @@ export default class OHLCV_INDICATORS {
 
 
        const result = ema(this, size)
-
-        if(result)
-        {
-            this.addObjectColumns(result)
-        }      
+       this.indicators = {...this.indicators, ...result}
 
         return this
     }
     sma(size) {
 
         const result = sma(this, size)
-
-        if(result)
-        {
-            this.addObjectColumns(result)
-        }
+        this.indicators = {...this.indicators, ...result}
 
         return this 
     }
     macd(fastLine, slowLine, signalLine) {
 
         const result = macd(this, fastLine, slowLine, signalLine)
-
-        if(result)
-        {
-            this.addObjectColumns(result)
-        }   
+        this.indicators = {...this.indicators, ...result}
         
         return this
 
@@ -148,11 +157,7 @@ export default class OHLCV_INDICATORS {
     {
 
         const result = bollingerBands(this, size, times)
-
-        if(result)
-        {
-            this.addObjectColumns(result)
-        }
+        this.indicators = {...this.indicators, ...result}
 
         return this
     }
@@ -160,39 +165,24 @@ export default class OHLCV_INDICATORS {
     {
 
         const result = rsi(this, period, movingAverage, movingAveragePeriod)
-        
-        if(result)
-        {
-            this.addObjectColumns(result)
-        }
+        this.indicators = {...this.indicators, ...result}
 
         return this
     }
     candles()
     {
-
-        const {ohlcv} = this
-
-        const result = candles(ohlcv)
-                
-        if(result)
-        {
-            this.addObjectColumns(result)
-        }
+        const result = candles(this)
+        this.indicators = {...this.indicators, ...result}
 
         return this
     }
     volumeProfile(numBins, daysBack, targetDateKey)
     {
 
-        const {ohlcv} = this
+        const {verticalOhlcv} = this
 
-        const result = volumeProfile(ohlcv, numBins, daysBack, targetDateKey)
-
-        if(result)
-        {
-            this.addObjectColumns(result)
-        }
+        const result = volumeProfile(verticalOhlcv, numBins, daysBack, targetDateKey)
+        this.indicators = {...this.indicators, ...result}
 
         return this
     }

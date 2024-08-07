@@ -4,8 +4,8 @@ import {BollingerBands, FasterBollingerBands, Big} from 'trading-signals';
 
 export const bollingerBands = (main, size, times) => {
 
-  const {ohlcv, precision} = main
-  const {close} = ohlcv
+  const {verticalOhlcv, precision} = main
+  const {close} = verticalOhlcv
 
   const sliceData = close.slice(-(size*3))
   const col = getBollingerBands(sliceData, size, times, precision)

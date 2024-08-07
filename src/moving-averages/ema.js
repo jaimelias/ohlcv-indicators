@@ -3,8 +3,8 @@ import {EMA, FasterEMA} from 'trading-signals'
 
 export const ema = (main, size) => {
 
-  const {ohlcv, precision} = main
-  const {close} = ohlcv
+  const {verticalOhlcv, precision} = main
+  const {close} = verticalOhlcv
 
   const col = getEMA(close, size, precision)
 

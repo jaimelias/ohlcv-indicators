@@ -4,8 +4,8 @@ import {EMA, MACD, FasterEMA, FasterMACD} from 'trading-signals';
 
 export const macd = (main, fastLine, slowLine, signalLine) => {
 
-    const {ohlcv, precision} = main
-    const {close} = ohlcv
+    const {verticalOhlcv, precision} = main
+    const {close} = verticalOhlcv
     const maxSize = Math.max(fastLine, slowLine, signalLine)
     const sliceData = close.slice(-(maxSize*3))
     const col = getMACD(sliceData, fastLine, slowLine, signalLine, precision)

@@ -1,171 +1,268 @@
-export const candles = ohlcv => {
+export const candles = main => {
 
-    const cols = getCandlestickPattern(ohlcv);
+    const {inputOhlcv} = main
+    const cols = getCandlestickPattern(inputOhlcv);
     return cols;
 }
 
-export const getCandlestickPattern = ohlcv => {
-    const { open, high, low, close } = ohlcv;
-    const length = open.length;
+export const getCandlestickPattern = inputOhlcv => {
+    const size = 2; //remove slice for backtesting
+    inputOhlcv = inputOhlcv.slice(-size);
 
-    // Ensure input arrays are valid and of equal length
-    if (![open, high, low, close].every(o => Array.isArray(o) && o.length > 1 && o.length === length)) {
-        return { pattern: Array(length).fill('Neutral'), name: Array(length).fill('No Pattern'), score: Array(length).fill(0) };
-    }
+    const candle_pattern = [];
+    const candle_name = [];
+    const candle_score = [];
 
-    // Helper function to check if two numbers are close
-    const isCloseTo = (a, b, epsilon = 0.0001) => Math.abs(a - b) < epsilon;
-    const isUp = o => o.close > o.open
-    const isDown = o => o.close < o.open
-    const isDouble = (large, small) => large > (small * 2)
+    for (let x = 1; x < size; x++) {
+        const curr = inputOhlcv[x];
+        const prev = inputOhlcv[x - 1];
 
-    // Conditions for bullish and bearish patterns
-    const conditions = {
-        bullish: [
-            {
-                name: 'Marubozu',
-                condition: (prev2, prev, curr) => isDown(prev2) && isDown(prev) && isUp(curr) && isDouble(curr, prev),
-                score: 2
-            },
-            {
-                name: 'Engulfing',
-                condition: (prev, curr) => curr.open < prev.close && curr.close > prev.open && curr.low < prev.low && curr.high > prev.high,
-                score: 2
-            },
-            {
-                name: 'Kicker',
-                condition: (prev, curr) => curr.open < prev.open && curr.close > curr.open && prev.close < prev.open,
-                score: 2
-            },
-            {
-                name: 'Morning Star',
-                condition: (prev2, prev, curr) => prev2.close > prev2.open && prev.close < prev.open && curr.close > prev.open,
-                score: 3
-            },
-            {
-                name: 'Piercing Line',
-                condition: (prev, curr) => curr.close > prev.close && curr.open < prev.open && curr.close > ((prev.open + prev.close) / 2),
-                score: 1
-            },
-            {
-                name: 'Belt Hold',
-                condition: (prev, curr) => curr.open > prev.open && isCloseTo(curr.close, curr.high) && isCloseTo(prev.close, prev.low),
-                score: 1
-            },
-            {
-                name: 'Harami',
-                condition: (prev, curr) => curr.open > prev.close && curr.close < prev.open && curr.open < prev.open && curr.close > prev.close,
-                score: 1
-            },
-            {
-                name: 'Doji',
-                condition: (prev, curr) => isCloseTo(curr.close, curr.open) && (curr.high - curr.low) > Math.abs(curr.close - curr.open),
-                score: 0
-            }
-        ],
-        bearish: [
-            {
-                name: 'Marubozu',
-                condition: (prev, curr) => isCloseTo(curr.open, curr.high) && isCloseTo(curr.close, curr.low),
-                score: -2
-            },
-            {
-                name: 'Engulfing',
-                condition: (prev, curr) => curr.open > prev.close && curr.close < prev.open && curr.high > prev.high && curr.low < prev.low,
-                score: -2
-            },
-            {
-                name: 'Kicker',
-                condition: (prev, curr) => curr.open > prev.open && curr.close < curr.open && prev.close > prev.open,
-                score: -2
-            },
-            {
-                name: 'Evening Star',
-                condition: (prev2, prev, curr) => prev2.close < prev2.open && prev.close > prev.open && curr.close < prev.open,
-                score: -3
-            },
-            {
-                name: 'Dark Cloud Cover',
-                condition: (prev, curr) => curr.close < prev.close && curr.open > prev.open && curr.close < ((prev.open + prev.close) / 2),
-                score: -1
-            },
-            {
-                name: 'Belt Hold',
-                condition: (prev, curr) => curr.open < prev.open && isCloseTo(curr.close, curr.low) && isCloseTo(prev.close, prev.high),
-                score: -1
-            },
-            {
-                name: 'Harami',
-                condition: (prev, curr) => curr.open < prev.close && curr.close > prev.open && curr.open > prev.open && curr.close < prev.close,
-                score: -1
-            },
-            {
-                name: 'Doji',
-                condition: (prev, curr) => isCloseTo(curr.close, curr.open) && (curr.high - curr.low) > Math.abs(curr.close - curr.open),
-                score: 0
-            }
-        ]
-    };
+        let pattern = 'Neutral';
+        let name = 'None';
+        let score = 0;
 
-    // Helper function to check priority of patterns
-    const priorityCheck = (prev, curr, patterns, prev2 = null) => {
-        for (const { name, condition, score } of patterns) {
-            if (prev2) {
-                if (condition(prev2, prev, curr)) {
-                    return { name, score };
+        for (const patternObj of candlePatterns) {
+            const { isSingleCandle, candle_name: patternName, candle_score: patternScore } = patternObj;
+            const isMatch = isSingleCandle 
+                ? candleFunctions[patternName](curr) 
+                : candleFunctions[patternName](prev, curr);
+
+            if (isMatch) {
+                if (score === 0) {
+                    pattern = patternScore === 1 ? 'Bullish' : 'Bearish';
+                    name = patternName;
+                    score = patternScore;
+                } else if (score !== patternScore) {
+                    pattern = 'Neutral';
+                    name = 'None';
+                    score = 0;
+                    break;
+                } else {
+                    name += `,${patternName}`;
                 }
-            } else if (condition(prev, curr)) {
-                return { name, score };
             }
         }
-        return null;
-    };
 
-    // Arrays to store pattern results
-    const patternArray = ['Neutral'];
-    const nameArray = ['No Pattern'];
-    const scoreArray = [0];
-
-    // Loop through each data point starting from the second one
-    for (let i = 2; i < length; i++) {
-        const prev = {
-            open: open[i - 1],
-            high: high[i - 1],
-            low: low[i - 1],
-            close: close[i - 1]
-        };
-
-        const curr = {
-            open: open[i],
-            high: high[i],
-            low: low[i],
-            close: close[i]
-        };
-
-        const prev2 = {
-            open: open[i - 2],
-            high: high[i - 2],
-            low: low[i - 2],
-            close: close[i - 2]
-        }
-
-        const result = prev2 ? priorityCheck(prev, curr, conditions.bullish, prev2) || priorityCheck(prev, curr, conditions.bearish, prev2) :
-            priorityCheck(prev, curr, conditions.bullish) || priorityCheck(prev, curr, conditions.bearish);
-
-        if (result) {
-            patternArray.push(result.score > 0 ? 'Bullish' : 'Bearish');
-            nameArray.push(result.name);
-            scoreArray.push(result.score);
-        } else {
-            patternArray.push('Neutral');
-            nameArray.push('No Pattern');
-            scoreArray.push(0);
-        }
+        candle_pattern.push(pattern);
+        candle_name.push(name);
+        candle_score.push(score);
     }
 
     return {
-        candle_pattern: patternArray,
-        candle_name: nameArray,
-        candle_score: scoreArray
+        candle_pattern,
+        candle_name,
+        candle_score
     }
+}
+
+
+
+
+const candlePatterns = [
+    {
+        candle_name: "isHammer",
+        candle_score: 1,
+        isSingleCandle: true
+    },
+    {
+        candle_name: "isInvertedHammer",
+        candle_score: 1,
+        isSingleCandle: true
+    },
+    {
+        candle_name: "isBullishHammer",
+        candle_score: 1,
+        isSingleCandle: true
+    },
+    {
+        candle_name: "isBearishHammer",
+        candle_score: -1,
+        isSingleCandle: true
+    },
+    {
+        candle_name: "isBullishInvertedHammer",
+        candle_score: 1,
+        isSingleCandle: true
+    },
+    {
+        candle_name: "isBearishInvertedHammer",
+        candle_score: -1,
+        isSingleCandle: true
+    },
+    {
+        candle_name: "isHangingMan",
+        candle_score: -1,
+        isSingleCandle: false
+    },
+    {
+        candle_name: "isShootingStar",
+        candle_score: -1,
+        isSingleCandle: false
+    },
+    {
+        candle_name: "isBullishEngulfing",
+        candle_score: 1,
+        isSingleCandle: false
+    },
+    {
+        candle_name: "isBearishEngulfing",
+        candle_score: -1,
+        isSingleCandle: false
+    },
+    {
+        candle_name: "isBullishHarami",
+        candle_score: 1,
+        isSingleCandle: false
+    },
+    {
+        candle_name: "isBearishHarami",
+        candle_score: -1
+    },
+    {
+        candle_name: "isBullishKicker",
+        candle_score: 1,
+        isSingleCandle: false
+    },
+    {
+        candle_name: "isBearishKicker",
+        candle_score: -1,
+        isSingleCandle: false
+    }
+]
+
+
+const bodyLen = candlestick => Math.abs(candlestick.open - candlestick.close);
+
+const wickLen = candlestick => candlestick.high - Math.max(candlestick.open, candlestick.close);
+
+const tailLen = candlestick => Math.min(candlestick.open, candlestick.close) - candlestick.low;
+
+const bodyEnds = candlestick => candlestick.open <= candlestick.close ?
+  { bottom: candlestick.open, top: candlestick.close } :
+  { bottom: candlestick.close, top: candlestick.open };
+
+const isBullish = candlestick => candlestick.open < candlestick.close;
+
+const isBearish = candlestick => candlestick.open > candlestick.close;
+
+const isEngulfed = (previous, current) => 
+  bodyEnds(previous).top <= bodyEnds(current).top &&
+  bodyEnds(previous).bottom >= bodyEnds(current).bottom;
+
+const hasGapUp = (previous, current) => 
+  bodyEnds(previous).top < bodyEnds(current).bottom;
+
+const hasGapDown = (previous, current) => 
+  bodyEnds(previous).bottom > bodyEnds(current).top;
+
+const isHammer = candlestick => 
+  tailLen(candlestick) > (bodyLen(candlestick) * 2) &&
+  wickLen(candlestick) < bodyLen(candlestick);
+
+const isInvertedHammer = candlestick => 
+  wickLen(candlestick) > (bodyLen(candlestick) * 2) &&
+  tailLen(candlestick) < bodyLen(candlestick);
+
+const isBullishHammer = candlestick => 
+  isBullish(candlestick) && isHammer(candlestick);
+
+const isBearishHammer = candlestick => 
+  isBearish(candlestick) && isHammer(candlestick);
+
+const isBullishInvertedHammer = candlestick => 
+  isBullish(candlestick) && isInvertedHammer(candlestick);
+
+const isBearishInvertedHammer = candlestick => 
+  isBearish(candlestick) && isInvertedHammer(candlestick);
+
+const isHangingMan = (previous, current) => 
+  isBullish(previous) && isBearishHammer(current) && hasGapUp(previous, current);
+
+const isShootingStar = (previous, current) => 
+  isBullish(previous) && isBearishInvertedHammer(current) && hasGapUp(previous, current);
+
+const isBullishEngulfing = (previous, current) => 
+  isBearish(previous) && isBullish(current) && isEngulfed(previous, current);
+
+const isBearishEngulfing = (previous, current) => 
+  isBullish(previous) && isBearish(current) && isEngulfed(previous, current);
+
+const isBullishHarami = (previous, current) => 
+  isBearish(previous) && isBullish(current) && isEngulfed(current, previous);
+
+const isBearishHarami = (previous, current) => 
+  isBullish(previous) && isBearish(current) && isEngulfed(current, previous);
+
+const isBullishKicker = (previous, current) => 
+  isBearish(previous) && isBullish(current) && hasGapUp(previous, current) && 
+  !(isHammer(current) || isInvertedHammer(current));
+
+const isBearishKicker = (previous, current) => 
+  isBullish(previous) && isBearish(current) && hasGapDown(previous, current) && 
+  !(isHammer(current) || isInvertedHammer(current));
+
+const findPattern = (dataArray, callback) => {
+  const paramCount = callback.length;
+  const upperBound = dataArray.length - paramCount;
+  const results = [];
+
+  for (let i = 0; i <= upperBound; i++) {
+    const values = [];
+
+    for (let j = 0; j < paramCount; j++) {
+      values.push(dataArray[i + j]);
+    }
+
+    if (callback(...values)) {
+      results.push(i);
+    }
+  }
+
+  return results;
+}
+
+const hammer = dataArray => findPattern(dataArray, isHammer);
+
+const invertedHammer = dataArray => findPattern(dataArray, isInvertedHammer);
+
+const bullishHammer = dataArray => findPattern(dataArray, isBullishHammer);
+
+const bearishHammer = dataArray => findPattern(dataArray, isBearishHammer);
+
+const bullishInvertedHammer = dataArray => findPattern(dataArray, isBullishInvertedHammer);
+
+const bearishInvertedHammer = dataArray => findPattern(dataArray, isBearishInvertedHammer);
+
+const hangingMan = dataArray => findPattern(dataArray, isHangingMan);
+
+const shootingStar = dataArray => findPattern(dataArray, isShootingStar);
+
+const bullishEngulfing = dataArray => findPattern(dataArray, isBullishEngulfing);
+
+const bearishEngulfing = dataArray => findPattern(dataArray, isBearishEngulfing);
+
+const bullishHarami = dataArray => findPattern(dataArray, isBullishHarami);
+
+const bearishHarami = dataArray => findPattern(dataArray, isBearishHarami);
+
+const bullishKicker = dataArray => findPattern(dataArray, isBullishKicker);
+
+const bearishKicker = dataArray => findPattern(dataArray, isBearishKicker)
+
+
+const candleFunctions = {
+    isHammer, 
+    isInvertedHammer, 
+    isBullishHammer, 
+    isBearishHammer, 
+    isBullishInvertedHammer, 
+    isBearishInvertedHammer,
+    isHangingMan,
+    isShootingStar,
+    isBullishEngulfing,
+    isBearishEngulfing,
+    isBullishHarami,
+    isBearishHarami,
+    isBullishKicker,
+    isBearishKicker
 }

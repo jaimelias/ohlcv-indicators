@@ -87,7 +87,7 @@ const groupConsecutiveValues = arr => {
 
 export const crossPairs = (main, arr) => {
 
-    const {ohlcv, precision} = main
+    const {verticalOhlcv, precision} = main
     const slowNumArrCache = {};
     const output = {}
 
@@ -98,21 +98,21 @@ export const crossPairs = (main, arr) => {
         // Prepare slowNumArr if 'slow' is a number
         if (typeof slow === 'number' && !slowNumArrCache[slow]) {
 
-            slowNumArrCache[slow] = Array(ohlcv.close.length).fill(new Big(slow))
+            slowNumArrCache[slow] = Array(verticalOhlcv.close.length).fill(new Big(slow))
         }
     
         const keyName = `${fast}_x_${slow}`
 
         // Find and add crosses
-        if (ohlcv[fast] && ohlcv[slow]) {
+        if (verticalOhlcv[fast] && verticalOhlcv[slow]) {
 
-            const cross = findCrosses(ohlcv[fast], ohlcv[slow], precision);
+            const cross = findCrosses(verticalOhlcv[fast], verticalOhlcv[slow], precision);
 
             output[keyName] = cross
             
 
-        } else if (ohlcv[fast] && slowNumArrCache[slow]) {
-            const cross = findCrosses(ohlcv[fast], slowNumArrCache[slow], precision)
+        } else if (verticalOhlcv[fast] && slowNumArrCache[slow]) {
+            const cross = findCrosses(verticalOhlcv[fast], slowNumArrCache[slow], precision)
             
             output[keyName] = cross
 

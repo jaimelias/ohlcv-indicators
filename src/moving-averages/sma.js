@@ -3,8 +3,8 @@ import {SMA, FasterSMA} from 'trading-signals';
 
 export const sma = (main, size) => {
 
-  const {ohlcv, precision} = main
-  const {close} = ohlcv
+  const {verticalOhlcv, precision} = main
+  const {close} = verticalOhlcv
 
   const col = getSMA(close, size, precision)
  

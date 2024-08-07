@@ -1,6 +1,6 @@
-export const volumeProfile = (ohlcv, numBins, daysBack = 1, targetDateKey) => {
+export const volumeProfile = (verticalOhlcv, numBins, daysBack = 1, targetDateKey) => {
 
-  const filteredOhlcv = filterLastDays(ohlcv, daysBack, targetDateKey)
+  const filteredOhlcv = filterLastDays(verticalOhlcv, daysBack, targetDateKey)
   const vP = calculateBins(filteredOhlcv, numBins)
   const vp_high = vP.nodes.high.price
   const vp_low = vP.nodes.low.price
@@ -12,8 +12,8 @@ export const volumeProfile = (ohlcv, numBins, daysBack = 1, targetDateKey) => {
 }
 
 
-export const calculateBins = (ohlcv, numBins = 5) => {
-  const { open, high, low, close, volume } = ohlcv;
+export const calculateBins = (verticalOhlcv, numBins = 5) => {
+  const { open, high, low, close, volume } = verticalOhlcv;
 
   // Determine the range of prices
   const lowPrice = Math.min(...low);
