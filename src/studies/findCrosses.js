@@ -32,6 +32,8 @@ export const findCrosses = (fast, slow, precision) => {
     const groups = groupConsecutiveValues(state)
     const groupLengths = groups.map(g => g.length)
 
+    //console.log(groups)
+
     return groups.map((group, gIndex) => {
         let initialValue = groupLengths[gIndex]
 

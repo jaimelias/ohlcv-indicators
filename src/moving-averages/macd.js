@@ -6,14 +6,15 @@ export const macd = (main, fastLine, slowLine, signalLine) => {
 
     const {verticalOhlcv, precision} = main
     const {close} = verticalOhlcv
-    const maxSize = Math.max(fastLine, slowLine, signalLine)
-    const sliceData = close.slice(-(maxSize*3))
-    const col = getMACD(sliceData, fastLine, slowLine, signalLine, precision)
+    const col = getMACD(close, fastLine, slowLine, signalLine, precision)
 
     return col
 }
 
 export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9, precision) => {
+
+    const maxSize = Math.max(fastLine, slowLine, signalLine)
+    data = data.slice(-(maxSize*4))
 
     const diff = []
     const dea = []

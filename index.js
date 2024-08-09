@@ -8,8 +8,14 @@ import {crossPairs} from './src/studies/findCrosses.js'
 import { candles } from './src/studies/candles.js'
 import {Big} from 'trading-signals';
 
+
 export default class OHLCV_INDICATORS {
-    constructor({input, precision = true}) {
+    constructor({input, precision = false, ticker = 'undefined'}) {
+
+        if(!Array.isArray(input)) throw Error('input ohlcv must be an array: ' + ticker)
+        if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
+        if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
+
         this.precision = precision
         this.big = num => (this.precision) ? new Big(num) : num
         this.crossPairsArr = []

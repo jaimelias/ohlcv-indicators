@@ -10,20 +10,19 @@ export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
     const {verticalOhlcv, precision} = main
     const {close} = verticalOhlcv
 
-    const sliceData = close.slice(-(period*3))
-
     if(typeof period === 'number' && typeof movingAveragePeriod === 'undefined')
     {
         movingAveragePeriod = period
     }
 
-    const col = getRSI(sliceData, period, movingAverage, movingAveragePeriod, precision)
+    const col = getRSI(close, period, movingAverage, movingAveragePeriod, precision)
 
     return col   
 }
 
 export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14, precision) => {
 
+    data = data.slice(-(period*4))
 
     if (data.length < period) {
         return [];

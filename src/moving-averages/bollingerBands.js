@@ -14,11 +14,12 @@ export const bollingerBands = (main, size, times) => {
 
 export const getBollingerBands = (data, size = 20, times = 2, precision) => {
 
-  const dataLength = data.length
+  data = data.slice(-(size*4))
+  
   const output = {bollinger_bands_upper: [], bollinger_bands_middle: [], bollinger_bands_lower: []}
   const instance = (precision) ? new BollingerBands(size, times) : new FasterBollingerBands(size, times)
 
-  for(let x = 0; x < dataLength; x++) {
+  for(let x = 0; x < data.length; x++) {
     let obj = {}
     instance.update(data[x])
 
