@@ -1,7 +1,6 @@
 
 import {BollingerBands, FasterBollingerBands, Big} from 'trading-signals';
 
-
 export const bollingerBands = (main, size, times) => {
 
   const {verticalOhlcv, precision} = main
@@ -44,31 +43,36 @@ export const getBollingerBands = (data, size = 20, times = 2, precision) => {
 
 
 const bollingerBandsRange = (data, bollingerBands, precision) => {
-  const { bollinger_bands_upper, bollinger_bands_lower } = bollingerBands;
+  let { bollinger_bands_upper, bollinger_bands_lower } = bollingerBands
+  
+  let getRange
 
-  const output = new Array(data.length);
+  if(precision)
+  {
+    data = data.filter(o => o instanceof Big)
+    bollinger_bands_upper = bollinger_bands_upper.filter(o => o instanceof Big)
+    bollinger_bands_lower = bollinger_bands_lower.filter(o => o instanceof Big)
+    getRange = (value, upper, lower) => ((value.minus(lower)).div((upper.minus(lower)))).times(100)
+  }
+  else
+  {
+    data = data.filter(o => typeof o === 'number')
+    bollinger_bands_upper = bollinger_bands_upper.filter(o => typeof o === 'number')
+    bollinger_bands_lower = bollinger_bands_lower.filter(o => typeof o === 'number')
+    getRange = (value, upper, lower) => ((value - lower) / (upper - lower)) * 100
+  }
+
+  const min = Math.min(data.length, bollinger_bands_upper.length, bollinger_bands_lower.length)
+
+  data = data.slice(-min)
+  bollinger_bands_upper = bollinger_bands_upper.slice(-min)
+  bollinger_bands_lower = bollinger_bands_lower.slice(-min)
+
+  const output = new Array(data.length)
 
   for (let i = 0; i < data.length; i++) {
-    if (bollinger_bands_upper[i] != null && bollinger_bands_lower[i] != null && data[i] != null) {
-
-      if(precision)
-      {
-        const upperBig = new Big(bollinger_bands_upper[i])
-        const lowerBig = new Big(bollinger_bands_lower[i])
-        const dataBig = new Big(data[i])
-        const range = upperBig.minus(lowerBig);
-        output[i] = dataBig.minus(lowerBig).div(range).times(100)
-      }
-      else
-      {
-        const range = bollinger_bands_upper[i] - bollinger_bands_lower[i]
-        output[i] = ((data[i] - bollinger_bands_lower[i]) / range) * 100
-      }
-
-    } else {
-      output[i] = null;
-    }
+    output[i] = getRange(data[i], bollinger_bands_upper[i], bollinger_bands_lower[i])
   }
   
-  return output;
+  return output
 }
