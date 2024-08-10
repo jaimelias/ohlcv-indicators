@@ -7,7 +7,7 @@ import { volumeProfile } from './src/studies/volumeProfile.js'
 import {crossPairs} from './src/studies/findCrosses.js'
 import { candles } from './src/studies/candles.js'
 import {Big} from 'trading-signals';
-
+import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, precision = false, ticker = 'undefined'}) {
@@ -16,24 +16,13 @@ export default class OHLCV_INDICATORS {
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
 
+        const big = num => (this.precision) ? new Big(num) : num
+
         this.precision = precision
-        this.big = num => (this.precision) ? new Big(num) : num
+        this.big = big
         this.crossPairsArr = []
         this.inputOhlcv = input
-
-        this.verticalOhlcv = input.reduce((acc, { open, high, low, close, volume, ...rest }) => {
-            acc.open.push(this.big(open))
-            acc.high.push(this.big(high))
-            acc.low.push(this.big(low))
-            acc.close.push(this.big(close))
-            acc.volume.push(this.big(volume))
-            for (const key of Object.keys(rest)) {
-                if (!acc[key]) acc[key] = [];
-                acc[key].push(rest[key]);
-            }
-            return acc;
-        }, { open: [], high: [], low: [], close: [], volume: [] })
-
+        this.verticalOhlcv = parseOhlcvToVertical(input, big)
         this.indicators = {}
         this.isComputed = false       
         return this 
@@ -96,34 +85,36 @@ export default class OHLCV_INDICATORS {
         if(this.isComputed === true){
             return false
         }
-        else
-        {
-            this.isComputed === true
-        }
 
-        for(const [key, arr] of Object.entries(this.indicators))
+        this.isComputed === true
+
+        const indicators = this.indicators
+        const addColumn = this.addColumn.bind(this)
+
+        for(const [key, arr] of Object.entries(indicators))
         {
-            this.addColumn(key, arr)
+            addColumn(key, arr)
         }
 
         return true
     }
 
     addColumn(key, arr) {
-
-        key = key.toLowerCase()
+        key = key.toLowerCase();
         const ohlcvLength = this.verticalOhlcv.open.length;
-
+    
         if (arr.length > ohlcvLength) {
             throw new Error(`Invalid column data: The length of the new column exceeds the length of the OHLCV data`);
         }
-        
-        // Use Array.prototype.unshift to add null elements efficiently
-        const nanArray = new Array(ohlcvLength - arr.length).fill(null)
-        arr = [...nanArray, ...arr]
-
+    
+        if (arr.length < ohlcvLength) {
+            const nanCount = ohlcvLength - arr.length
+            arr = new Array(nanCount).fill(null).concat(arr)
+        }
+    
         this.verticalOhlcv[key] = arr
     }
+    
 
     crossPairs(arr)
     {
@@ -131,7 +122,7 @@ export default class OHLCV_INDICATORS {
         this.computeIndicators()
 
         const result = crossPairs(this, arr)
-        this.indicators = {...this.indicators, ...result}
+        Object.assign(this.indicators, result)
 
         return this
     }
@@ -140,21 +131,21 @@ export default class OHLCV_INDICATORS {
 
 
        const result = ema(this, size)
-       this.indicators = {...this.indicators, ...result}
+       Object.assign(this.indicators, result)
 
         return this
     }
     sma(size) {
 
         const result = sma(this, size)
-        this.indicators = {...this.indicators, ...result}
+        Object.assign(this.indicators, result)
 
         return this 
     }
     macd(fastLine, slowLine, signalLine) {
 
         const result = macd(this, fastLine, slowLine, signalLine)
-        this.indicators = {...this.indicators, ...result}
+        Object.assign(this.indicators, result)
         
         return this
 
@@ -163,7 +154,7 @@ export default class OHLCV_INDICATORS {
     {
 
         const result = bollingerBands(this, size, times)
-        this.indicators = {...this.indicators, ...result}
+        Object.assign(this.indicators, result)
 
         return this
     }
@@ -171,14 +162,14 @@ export default class OHLCV_INDICATORS {
     {
 
         const result = rsi(this, period, movingAverage, movingAveragePeriod)
-        this.indicators = {...this.indicators, ...result}
+        Object.assign(this.indicators, result)
 
         return this
     }
     candles()
     {
         const result = candles(this)
-        this.indicators = {...this.indicators, ...result}
+        Object.assign(this.indicators, result)
 
         return this
     }
@@ -188,7 +179,7 @@ export default class OHLCV_INDICATORS {
         const {verticalOhlcv} = this
 
         const result = volumeProfile(verticalOhlcv, numBins, daysBack, targetDateKey)
-        this.indicators = {...this.indicators, ...result}
+        Object.assign(this.indicators, result)
 
         return this
     }
