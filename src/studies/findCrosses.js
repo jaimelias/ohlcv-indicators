@@ -4,8 +4,28 @@ import {Big} from 'trading-signals';
 export const findCrosses = (fast, slow, precision) => {
     // Map states based on comparison of fast and slow arrays
 
-    fast = fast.filter(o => (precision) ? o instanceof Big : typeof o === 'number')
-    slow = slow.filter(o => (precision) ? o instanceof Big : typeof o === 'number')
+    let eq
+    let gt
+    let lt
+
+    if(precision)
+    {
+        eq = (a, b) => a.eq(b)
+        gt = (a, b) => a.gt(b)
+        lt = (a, b) => a.lt(b)
+
+        fast = fast.filter(o => o instanceof Big)
+        slow = slow.filter(o => o instanceof Big)
+    }
+    else
+    {
+        eq = (a, b) => a === b
+        gt = (a, b) => a > b
+        lt = (a, b) => a < b
+        fast = fast.filter(o => typeof o === 'number')
+        slow = slow.filter(o => typeof o === 'number')        
+    }
+
     
     const min = Math.min(fast.length, slow.length)
 
@@ -13,18 +33,11 @@ export const findCrosses = (fast, slow, precision) => {
     slow = slow.slice(-min)
 
     let state = fast.map((f, i) => {
-        if(precision)
-        {
-            if(f.eq(slow[i])) return 'neutral'
-            else if(f.gt(slow[i])) return 'up'
-            else if(f.lt(slow[i])) return 'down'
-        }
-        else
-        {
-            if(f === slow[i]) return 'neutral'
-            else if(f > slow[i]) return 'up'
-            else if(f < slow[i]) return 'down'
-        }
+
+
+        if(eq(f, slow[i])) return 'neutral'
+        else if(gt(f, slow[i])) return 'up'
+        else if(lt(f, slow[i])) return 'down'
 
         throw Error('undefined error in findCrosses')
     })
