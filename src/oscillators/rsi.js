@@ -22,8 +22,6 @@ export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
 
 export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14, precision) => {
 
-    data = data.slice(-(period*4))
-
     if (data.length < period) {
         return [];
     }

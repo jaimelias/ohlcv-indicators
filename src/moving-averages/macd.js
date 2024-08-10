@@ -13,9 +13,6 @@ export const macd = (main, fastLine, slowLine, signalLine) => {
 
 export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9, precision) => {
 
-    const maxSize = Math.max(fastLine, slowLine, signalLine)
-    data = data.slice(-(maxSize*4))
-
     const diff = []
     const dea = []
     const histogram = []

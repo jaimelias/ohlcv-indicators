@@ -7,14 +7,11 @@ export const bollingerBands = (main, size, times) => {
   const {verticalOhlcv, precision} = main
   const {close} = verticalOhlcv
 
-  const sliceData = close.slice(-(size*3))
-  const col = getBollingerBands(sliceData, size, times, precision)
+  const col = getBollingerBands(close, size, times, precision)
   return col
 }
 
 export const getBollingerBands = (data, size = 20, times = 2, precision) => {
-
-  data = data.slice(-(size*4))
   
   const output = {bollinger_bands_upper: [], bollinger_bands_middle: [], bollinger_bands_lower: []}
   const instance = (precision) ? new BollingerBands(size, times) : new FasterBollingerBands(size, times)

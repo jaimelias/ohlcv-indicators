@@ -4,8 +4,8 @@ import {Big} from 'trading-signals';
 export const findCrosses = (fast, slow, precision) => {
     // Map states based on comparison of fast and slow arrays
 
-    fast = fast.filter(o => o instanceof Big || typeof o === 'number')
-    slow = slow.filter(o => o instanceof Big || typeof o === 'number')
+    fast = fast.filter(o => (precision) ? o instanceof Big : typeof o === 'number')
+    slow = slow.filter(o => (precision) ? o instanceof Big : typeof o === 'number')
     
     const min = Math.min(fast.length, slow.length)
 
@@ -89,7 +89,7 @@ const groupConsecutiveValues = arr => {
 
 export const crossPairs = (main, arr) => {
 
-    const {verticalOhlcv, precision} = main
+    const {verticalOhlcv, precision, big} = main
     const slowNumArrCache = {};
     const output = {}
 
@@ -100,7 +100,7 @@ export const crossPairs = (main, arr) => {
         // Prepare slowNumArr if 'slow' is a number
         if (typeof slow === 'number' && !slowNumArrCache[slow]) {
 
-            slowNumArrCache[slow] = Array(verticalOhlcv.close.length).fill(new Big(slow))
+            slowNumArrCache[slow] = Array(verticalOhlcv.close.length).fill(big(slow))
         }
     
         const keyName = `${fast}_x_${slow}`
