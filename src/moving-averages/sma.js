@@ -20,25 +20,30 @@ export const getSMA = (data, size, precision) => {
     throw Error('undefined param in getSMA')
   }
 
-  const output = []
-  const instance = (precision) ? new SMA(size) : new FasterSMA(size)
   const dataLength = data.length
+  const output = new Array(dataLength).fill(null)
+  const instance = (precision) ? new SMA(size) : new FasterSMA(size)
+  
 
   for(let x = 0; x < dataLength; x++)
   {
       let value = null
-      instance.update(data[x])
-    
-      try
+
+      if(data[x] !== null)
       {
-        value = instance.getResult()
-      }
-      catch(err)
-      {
-        value = null
+        instance.update(data[x])
+      
+        try
+        {
+          value = instance.getResult()
+        }
+        catch(err)
+        {
+          value = null
+        }
       }
 
-      output.push(value)
+      output[x] = value
   }
 
   return output

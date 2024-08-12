@@ -13,9 +13,10 @@ export const macd = (main, fastLine, slowLine, signalLine) => {
 
 export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9, precision) => {
 
-    const diff = []
-    const dea = []
-    const histogram = []
+    const dataLength = data.length
+    const diff = new Array(dataLength).fill(null)
+    const dea = new Array(dataLength).fill(null)
+    const histogram = new Array(dataLength).fill(null)
 
     const instance = (precision) ? new MACD({
         indicator: EMA,
@@ -23,8 +24,6 @@ export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9, prec
         longInterval: slowLine,
         signalInterval: signalLine
     }) : new FasterMACD(new FasterEMA(fastLine), new FasterEMA(slowLine), new FasterEMA(signalLine))
-
-    const dataLength = data.length
 
     for(let x = 0; x < dataLength; x++)
     {
@@ -40,9 +39,9 @@ export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9, prec
             obj = {macd: null, signal: null, histogram: null}
         }
     
-        diff.push(obj.macd)
-        dea.push(obj.signal)
-        histogram.push(obj.histogram)
+        diff[x] = obj.macd
+        dea[x] = obj.signal
+        histogram[x] = obj.histogram
     }
 
     const x = findCrosses(diff, dea, precision)

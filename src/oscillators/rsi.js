@@ -22,34 +22,35 @@ export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
 
 export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14, precision) => {
 
-    if (data.length < period) {
+    const dataLength = data.length
+
+    if (dataLength < period) {
         return [];
     }
 
-    let rsi = []
-    period = parseInt(period)
-    movingAveragePeriod = parseInt(movingAveragePeriod)
+    let rsi = new Array(dataLength).fill(null)
     const instance = (precision) ? new RSI(period) : new FasterRSI(period)
-    const dataLength = data.length
 
     for(let x = 0; x < dataLength; x++)
     {
         let value = null
-        instance.update(data[x])
-        
-        try
+
+        if(data[x] !== null)
         {
-            value = instance.getResult()
-        }
-        catch(err)
-        {
-            value = null
+            instance.update(data[x])
+            
+            try
+            {
+                value = instance.getResult()
+            }
+            catch(err)
+            {
+                value = null
+            }
         }
     
-        rsi.push(value)
+        rsi[x] = value
     }
-
-    rsi = rsi.filter(v => v)
 
     let output = {[`rsi_${period}`]: rsi}
 

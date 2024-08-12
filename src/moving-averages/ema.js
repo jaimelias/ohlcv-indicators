@@ -21,25 +21,30 @@ export const getEMA = (data, size, precision) => {
     throw Error('undefined param in getEMA')
   }
 
-  const output = []
-  const instance = (precision) ? new EMA(size) : new FasterEMA(size)
   const dataLength = data.length
+  const output = new Array(dataLength).fill(null)
+  const instance = (precision) ? new EMA(size) : new FasterEMA(size)
 
   for(let x = 0; x < dataLength; x++)
   {
+      
       let value = null
-      instance.update(data[x])
-    
-      try
-      {
-        value = instance.getResult()
-      }
-      catch(err)
-      {
-        value = null
-      }
 
-      output.push(value)
+      if(data[x] !== null)
+      {
+        instance.update(data[x])
+      
+        try
+        {
+          value = instance.getResult()
+        }
+        catch(err)
+        {
+          value = null
+        }
+      }
+      
+      output[x] = value
   }
 
 

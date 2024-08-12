@@ -4,6 +4,13 @@ import {Big} from 'trading-signals';
 export const findCrosses = (fast, slow, precision) => {
     // Map states based on comparison of fast and slow arrays
 
+    const dataLength = fast.length
+
+    if(dataLength ==! slow.length)
+    {
+        throw Error('fast and slow do not have the same length')
+    }
+
     let eq
     let gt
     let lt
@@ -13,62 +20,55 @@ export const findCrosses = (fast, slow, precision) => {
         eq = (a, b) => a.eq(b)
         gt = (a, b) => a.gt(b)
         lt = (a, b) => a.lt(b)
-
-        fast = fast.filter(o => o instanceof Big)
-        slow = slow.filter(o => o instanceof Big)
     }
     else
     {
         eq = (a, b) => a === b
         gt = (a, b) => a > b
-        lt = (a, b) => a < b
-        fast = fast.filter(o => typeof o === 'number')
-        slow = slow.filter(o => typeof o === 'number')        
+        lt = (a, b) => a < b     
     }
 
-    
-    const min = Math.min(fast.length, slow.length)
 
-    fast = fast.slice(-min)
-    slow = slow.slice(-min)
+    const state = new Array(dataLength).fill(null)
 
-    let state = fast.map((f, i) => {
+    for(let x = 0; x < dataLength; x++)
+    {
+        const f = fast[x]
+        const s = slow[x]
+        let value
 
+        if(f === null || s === null) value = 'neutral'
+        else if(eq(f, s)) value = 'neutral'
+        else if(gt(f, s)) value = 'up'
+        else if(lt(f, s)) value = 'down'
 
-        if(eq(f, slow[i])) return 'neutral'
-        else if(gt(f, slow[i])) return 'up'
-        else if(lt(f, slow[i])) return 'down'
-
-        throw Error('undefined error in findCrosses')
-    })
+        state[x] = value
+    }
 
     const groups = groupConsecutiveValues(state)
     const groupLengths = groups.map(g => g.length)
 
     //console.log(groups)
 
-    return groups.map((group, gIndex) => {
-        let initialValue = groupLengths[gIndex]
-
+    return groups.flatMap((group, gIndex) => {
+        const initialValue = groupLengths[gIndex];
+        
         return group.map((s, i) => {
-            let v = initialValue - i
-
-            if(s === 'neutral')
-            {
-                v = 0
+            const v = initialValue - i;
+            
+            switch (s) {
+                case 'neutral':
+                    return 0;
+                case 'up':
+                    return v;
+                case 'down':
+                    return -v;
+                default:
+                    return v;  // Assuming 'v' is returned if none of the cases match
             }
-            if(s === 'up')
-            {
-                v = v * 1
-            }
-            if(s === 'down')
-            {
-                v = v * -1
-            }
-
-            return v
-        }).reverse()
-    }).flat()
+        }).reverse();
+    });
+    
 
 }
 
