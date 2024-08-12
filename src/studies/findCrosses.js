@@ -50,25 +50,28 @@ export const findCrosses = (fast, slow, precision) => {
 
     //console.log(groups)
 
-    return groups.flatMap((group, gIndex) => {
-        const initialValue = groupLengths[gIndex];
-        
+    return groups.map((group, gIndex) => {
+        let initialValue = groupLengths[gIndex]
+
         return group.map((s, i) => {
-            const v = initialValue - i;
-            
-            switch (s) {
-                case 'neutral':
-                    return 0;
-                case 'up':
-                    return v;
-                case 'down':
-                    return -v;
-                default:
-                    return v;  // Assuming 'v' is returned if none of the cases match
+            let v = initialValue - i
+
+            if(s === 'neutral')
+            {
+                v = 0
             }
-        }).reverse();
-    });
-    
+            if(s === 'up')
+            {
+                v = v * 1
+            }
+            if(s === 'down')
+            {
+                v = v * -1
+            }
+
+            return v
+        }).reverse()
+    }).flat()
 
 }
 
