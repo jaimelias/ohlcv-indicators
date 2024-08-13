@@ -1,7 +1,6 @@
-import {Big} from 'trading-signals';
 
 // Function to find crosses between two arrays: fast and slow
-export const findCrosses = (fast, slow, precision) => {
+export const findCrosses = ({fast, slow, precision}) => {
     // Map states based on comparison of fast and slow arrays
 
     const dataLength = fast.length
@@ -107,9 +106,10 @@ export const crossPairs = (main, arr) => {
 
     const {verticalOhlcv, precision, big} = main
     const slowNumArrCache = {};
-    const output = {}
+    const x = {}
+    const c = {}
 
-    for (const { fast, slow } of arr) {
+    for (const { fast, slow, count } of arr) {
         // Validate parameters
         if (!fast || !slow) continue;
     
@@ -119,25 +119,35 @@ export const crossPairs = (main, arr) => {
             slowNumArrCache[slow] = Array(verticalOhlcv.close.length).fill(big(slow))
         }
     
-        const keyName = `${fast}_x_${slow}`
+        const crossName = `${fast}_x_${slow}`
+        const countName = `${fast}_c_${slow}`
+
+        const splitCount = arr => (typeof count !== 'undefined') ? (arr.slice(-count)).filter(o => o === 1 || o === -1).length : 0
 
         // Find and add crosses
-        if (verticalOhlcv[fast] && verticalOhlcv[slow]) {
+        if(verticalOhlcv[crossName])
+        {
+            const cross = verticalOhlcv[crossName]
+            c[countName] = splitCount(cross)
+            x[crossName] = cross            
+        }
+        else if (verticalOhlcv[fast] && verticalOhlcv[slow]) {
 
-            const cross = findCrosses(verticalOhlcv[fast], verticalOhlcv[slow], precision);
+            const cross = findCrosses({fast: verticalOhlcv[fast], slow: verticalOhlcv[slow], precision});
 
-            output[keyName] = cross
-            
+            c[countName] = splitCount(cross)
+            x[crossName] = cross
 
         } else if (verticalOhlcv[fast] && slowNumArrCache[slow]) {
-            const cross = findCrosses(verticalOhlcv[fast], slowNumArrCache[slow], precision)
+            const cross = findCrosses({fast: verticalOhlcv[fast], slow: slowNumArrCache[slow], precision})
             
-            output[keyName] = cross
+            c[countName] = splitCount(cross)
+            x[crossName] = cross
 
         } else {
             console.log(`Missing ohlcv properties for ${fast} or ${slow}`);
         }
     }
 
-    return output
+    return {x, c}
 }

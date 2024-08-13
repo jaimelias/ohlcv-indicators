@@ -44,7 +44,7 @@ export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9, prec
         histogram[x] = obj.histogram
     }
 
-    const x = findCrosses(diff, dea, precision)
+    const x = findCrosses({fast: diff, slow: dea, precision})
 
 	return {
 		macd_diff: diff, 

@@ -60,7 +60,7 @@ export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePe
         {
             const rsi_smoothed = ma[`get${movingAverage}`](rsi, movingAveragePeriod, precision)
             output[`rsi_${movingAverage}_${movingAveragePeriod}`] = rsi_smoothed
-            output[`rsi_${period}_x_rsi_${movingAverage}_${movingAveragePeriod}`] = findCrosses(rsi, rsi_smoothed, precision)
+            output[`rsi_${period}_x_rsi_${movingAverage}_${movingAveragePeriod}`] = findCrosses({fast: rsi, slow: rsi_smoothed, precision})
         }
     }
 

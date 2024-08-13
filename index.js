@@ -24,6 +24,7 @@ export default class OHLCV_INDICATORS {
         this.inputOhlcv = input
         this.verticalOhlcv = parseOhlcvToVertical(input, big)
         this.indicators = {}
+        this.studies = {}
         this.isComputed = false       
         return this 
     }
@@ -77,6 +78,8 @@ export default class OHLCV_INDICATORS {
             
         }
 
+        Object.assign(output, this.studies)
+
         return output
     }
 
@@ -121,8 +124,9 @@ export default class OHLCV_INDICATORS {
         
         this.computeIndicators()
 
-        const result = crossPairs(this, arr)
-        Object.assign(this.indicators, result)
+        const {x, c} = crossPairs(this, arr)
+        Object.assign(this.indicators, x)
+        Object.assign(this.studies, c)
 
         return this
     }
