@@ -96,7 +96,14 @@ export default class OHLCV_INDICATORS {
 
         for(const [key, arr] of Object.entries(indicators))
         {
-            addColumn(key, arr)
+            if(!this.verticalOhlcv.hasOwnProperty(key))
+            {
+                addColumn(key, arr)
+            }
+            else
+            {
+                delete this.indicators[key]
+            }
         }
 
         return true
@@ -127,6 +134,8 @@ export default class OHLCV_INDICATORS {
         const {x, c} = crossPairs(this, arr)
         Object.assign(this.indicators, x)
         Object.assign(this.studies, c)
+
+        this.computeIndicators()   
 
         return this
     }
