@@ -17,9 +17,9 @@ export const getBollingerBands = (data, size = 20, times = 2, precision) => {
   const bollinger_bands_middle =  Array(dataLength).fill(null)
   const bollinger_bands_lower =  Array(dataLength).fill(null)
   const bollinger_bands_range =  Array(dataLength).fill(null)
-  const bollinger_bands_diff =  Array(dataLength).fill(null)
+  const bollinger_bands_height =  Array(dataLength).fill(null)
   let range = null
-  let diff = null
+  let height = null
 
   let getRange
   let instance
@@ -28,13 +28,13 @@ export const getBollingerBands = (data, size = 20, times = 2, precision) => {
     instance = new BollingerBands(size, times)
     getRange = (value, upper, lower) => ({
       range: ((value.minus(lower)).div((upper.minus(lower)))).times(100),
-      diff: ((upper.minus(lower)).div(lower)).times(100)
+      height: ((upper.minus(lower)).div(lower)).times(100)
     })
   } else {
     instance = new FasterBollingerBands(size, times)
     getRange = (value, upper, lower) => ({
       range: ((value - lower) / (upper - lower)) * 100,
-      diff: ((upper-lower)/lower) * 100
+      height: ((upper-lower)/lower) * 100
     })
   }
   
@@ -57,18 +57,18 @@ export const getBollingerBands = (data, size = 20, times = 2, precision) => {
     if(hasNull)
     {
       bollinger_bands_range[x] = null
-      bollinger_bands_diff[x] = null
+      bollinger_bands_height[x] = null
     }
     else
     {
       const extraProps = getRange(data[x], obj.upper, obj.lower)
       range = extraProps.range
-      diff = extraProps.diff
+      height = extraProps.height
     }
 
     bollinger_bands_range[x] = range
-    bollinger_bands_diff[x] = diff
+    bollinger_bands_height[x] = height
   }
 
-  return { bollinger_bands_upper, bollinger_bands_middle, bollinger_bands_lower, bollinger_bands_range, bollinger_bands_diff };
+  return { bollinger_bands_upper, bollinger_bands_middle, bollinger_bands_lower, bollinger_bands_range, bollinger_bands_height }
 }
