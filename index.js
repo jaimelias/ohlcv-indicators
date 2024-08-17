@@ -6,6 +6,7 @@ import { rsi } from './src/oscillators/rsi.js'
 import { volumeProfile } from './src/studies/volumeProfile.js'
 import {crossPairs} from './src/studies/findCrosses.js'
 import { candles } from './src/studies/candles.js'
+import { orb } from './src/studies/orb.js'
 import {Big} from 'trading-signals';
 import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 
@@ -18,11 +19,12 @@ export default class OHLCV_INDICATORS {
 
         const big = num => (this.precision) ? new Big(num) : num
 
+        this.len = input.length
         this.precision = precision
         this.big = big
         this.crossPairsArr = []
         this.inputOhlcv = input
-        this.verticalOhlcv = parseOhlcvToVertical(input, big)
+        this.verticalOhlcv = parseOhlcvToVertical(input, this.len, big)
         this.indicators = {}
         this.studies = {}
         this.isComputed = false       
@@ -61,11 +63,11 @@ export default class OHLCV_INDICATORS {
     getLastValues(){
 
         this.computeIndicators()
-        const {verticalOhlcv, precision} = this
+        const {verticalOhlcv, precision, len} = this
         const output = {}
 
         for (const [k, arr] of Object.entries(verticalOhlcv)) {
-            let value = arr[arr.length - 1]
+            let value = arr[len - 1]
 
             if(precision)
             {
@@ -110,15 +112,15 @@ export default class OHLCV_INDICATORS {
     }
 
     addColumn(key, arr) {
+        const {len} = this
         key = key.toLowerCase();
-        const ohlcvLength = this.verticalOhlcv.open.length;
     
-        if (arr.length > ohlcvLength) {
+        if (arr.length > len) {
             throw new Error(`Invalid column data: The length of the new column exceeds the length of the OHLCV data`);
         }
     
-        if (arr.length < ohlcvLength) {
-            const nanCount = ohlcvLength - arr.length
+        if (arr.length < len) {
+            const nanCount = len - arr.length
             arr = new Array(nanCount).fill(null).concat(arr)
         }
     
@@ -195,5 +197,12 @@ export default class OHLCV_INDICATORS {
         Object.assign(this.indicators, result)
 
         return this
+    }
+    orb()
+    {
+        const result = orb(this)
+        Object.assign(this.indicators, result)
+
+        return this       
     }
 }

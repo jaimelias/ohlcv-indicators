@@ -1,15 +1,15 @@
-export const parseOhlcvToVertical = (input, big) => {
+export const parseOhlcvToVertical = (input, len, big) => {
 
     const keysToTrack = ['open', 'high', 'low', 'close', 'volume']
     const verticalOhlcv = {}
     
     for (const key of keysToTrack) {
-        verticalOhlcv[key] = new Array(input.length)
+        verticalOhlcv[key] = new Array(len)
     }
     
     for (const key of Object.keys(input[0])) {
         if (!keysToTrack.includes(key)) {
-            verticalOhlcv[key] = new Array(input.length)
+            verticalOhlcv[key] = new Array(len)
         }
     }
     
