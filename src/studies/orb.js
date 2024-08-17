@@ -38,8 +38,5 @@ const getOrbOfTheFirstCandle = (inputOhlcv, close, len, precision) => {
         startIndex++
     }
 
-    const close_x_orb_high = findCrosses({fast: close, slow: orb_high, precision})
-    const close_x_orb_low = findCrosses({fast: close, slow: orb_low, precision})
-
-    return { orb_high, orb_low, close_x_orb_high, close_x_orb_low};
+    return {orb_high, orb_low}
 }
