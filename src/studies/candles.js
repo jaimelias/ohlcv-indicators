@@ -1,19 +1,18 @@
 export const candles = main => {
 
-    const {inputOhlcv} = main
-    const cols = getCandlestickPattern(inputOhlcv);
+    const {inputOhlcv, len} = main
+    const cols = getCandlestickPattern(inputOhlcv, len);
     return cols;
 }
 
-export const getCandlestickPattern = inputOhlcv => {
-    const size = 2; //remove slice for backtesting
-    inputOhlcv = inputOhlcv.slice(-size);
+export const getCandlestickPattern = (inputOhlcv, len) => {
+
 
     const candle_pattern = [];
     const candle_name = [];
     const candle_score = [];
 
-    for (let x = 1; x < size; x++) {
+    for (let x = 1; x < len; x++) {
         const curr = inputOhlcv[x];
         const prev = inputOhlcv[x - 1];
 
