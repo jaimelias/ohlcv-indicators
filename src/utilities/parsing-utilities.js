@@ -12,18 +12,20 @@ export const parseOhlcvToVertical = (input, len, big) => {
             verticalOhlcv[key] = new Array(len)
         }
     }
+
+    for(let x = 0; x < len; x++)
+    {
+        const { open, high, low, close, volume, ...rest } = input[x]
+        verticalOhlcv.open[x] = big(open)
+        verticalOhlcv.high[x] = big(high)
+        verticalOhlcv.low[x] = big(low)
+        verticalOhlcv.close[x] = big(close)
+        verticalOhlcv.volume[x] = big(volume)
     
-    input.forEach(({ open, high, low, close, volume, ...rest }, index) => {
-        verticalOhlcv.open[index] = big(open)
-        verticalOhlcv.high[index] = big(high)
-        verticalOhlcv.low[index] = big(low)
-        verticalOhlcv.close[index] = big(close)
-        verticalOhlcv.volume[index] = big(volume)
-    
-        for (const key in rest) {
-            verticalOhlcv[key][index] = rest[key];
-        }
-    })
+        for (const [key, value] of Object.entries(rest)) {
+            verticalOhlcv[key][x] = value
+        }      
+    }
     
     return verticalOhlcv
 }  

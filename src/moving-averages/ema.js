@@ -48,6 +48,7 @@ export const getEMA = (data, size, precision) => {
   }
 
 
+
   return output
 
 }

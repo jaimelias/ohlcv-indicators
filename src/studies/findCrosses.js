@@ -27,7 +27,6 @@ export const findCrosses = ({fast, slow, precision}) => {
         lt = (a, b) => a < b     
     }
 
-
     const state = new Array(dataLength).fill(null)
 
     for(let x = 0; x < dataLength; x++)
@@ -37,17 +36,32 @@ export const findCrosses = ({fast, slow, precision}) => {
         let value
 
         if(f === null || s === null) value = 'neutral'
-        else if(eq(f, s)) value = 'neutral'
+        else if(eq(f, s)){
+            if(gt(fast[x-1], slow[x-1]))
+            {
+                value = 'up'
+            }
+            else if(lt(fast[x-1], slow[x-1]))
+            {
+                value = 'down'
+            }
+            else
+            {
+                value = 'neutral'
+            }
+        }
         else if(gt(f, s)) value = 'up'
         else if(lt(f, s)) value = 'down'
 
         state[x] = value
     }
 
+
+
     const groups = groupConsecutiveValues(state)
     const groupLengths = groups.map(g => g.length)
 
-    //console.log(groups)
+    //console.log(JSON.stringify(groups))
 
     return groups.map((group, gIndex) => {
         let initialValue = groupLengths[gIndex]
