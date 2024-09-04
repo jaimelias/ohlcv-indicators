@@ -9,6 +9,7 @@ import { candles } from './src/studies/candles.js'
 import { orb } from './src/studies/orb.js'
 import {Big} from 'trading-signals';
 import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
+import { candlesStudies } from './src/studies/candleStudies.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, precision = false, ticker = 'undefined'}) {
@@ -205,4 +206,11 @@ export default class OHLCV_INDICATORS {
 
         return this       
     }
+    candlesStudies(period)
+    {
+        const result = candlesStudies(this, period)
+        Object.assign(this.indicators, result)
+
+        return this       
+    }   
 }

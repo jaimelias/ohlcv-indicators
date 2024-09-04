@@ -138,25 +138,38 @@ export const crossPairs = (main, arr) => {
 
         const splitCount = arr => (typeof count !== 'undefined') ? (arr.slice(-count)).filter(o => o === 1 || o === -1).length : 0
 
-        // Find and add crosses
+        //cross already exists
         if(verticalOhlcv[crossName])
         {
             const cross = verticalOhlcv[crossName]
-            c[countName] = splitCount(cross)
-            x[crossName] = cross            
+            x[crossName] = cross    
+            
+            if(typeof count !== 'undefined')
+            {
+                c[countName] = splitCount(cross)
+            }
+            
         }
+        //cross created from 2 columns
         else if (verticalOhlcv[fast] && verticalOhlcv[slow]) {
 
             const cross = findCrosses({fast: verticalOhlcv[fast], slow: verticalOhlcv[slow], precision});
-
-            c[countName] = splitCount(cross)
             x[crossName] = cross
 
-        } else if (verticalOhlcv[fast] && slowNumArrCache[slow]) {
+            if(typeof count !== 'undefined')
+            {
+                c[countName] = splitCount(cross)
+            }
+
+        }
+        //cross created from 1 column and an number
+        else if (verticalOhlcv[fast] && slowNumArrCache[slow]) {
             const cross = findCrosses({fast: verticalOhlcv[fast], slow: slowNumArrCache[slow], precision})
-            
-            c[countName] = splitCount(cross)
             x[crossName] = cross
+
+            if(typeof count !== 'undefined'){
+                c[countName] = splitCount(cross)
+            }
 
         } else {
             console.log(`Missing ohlcv properties for ${fast} or ${slow}`);
