@@ -7,6 +7,7 @@ import { volumeProfile } from './src/studies/volumeProfile.js'
 import {crossPairs} from './src/studies/findCrosses.js'
 import { candles } from './src/studies/candles.js'
 import { orb } from './src/studies/orb.js'
+import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import {Big} from 'trading-signals';
 import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
@@ -202,6 +203,13 @@ export default class OHLCV_INDICATORS {
     orb()
     {
         const result = orb(this)
+        Object.assign(this.indicators, result)
+
+        return this       
+    }
+    donchianChannels(period, offset)
+    {
+        const result = donchianChannels(this, period, offset)
         Object.assign(this.indicators, result)
 
         return this       

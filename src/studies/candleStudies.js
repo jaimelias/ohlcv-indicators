@@ -4,7 +4,7 @@ export const candlesStudies = (main, period) => {
 
     const {inputOhlcv, len} = main
 
-    const cols = getCandlesStudies(inputOhlcv, period, len);
+    const cols = getCandlesStudies(inputOhlcv, period, len)
     return cols
 }
 
@@ -80,7 +80,6 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         candle_body_size_mean[x] = bodySizeMean
         candle_body_size_label[x] = labelSize(bodySize, bodySizeMean)
         
-
         //top
         candle_top_size[x] = topSize
         candle_top_size_mean[x] = topSizeMean
@@ -106,7 +105,6 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         candle_bottom_size,
         candle_bottom_size_label
     }
-
 }
 
 const labelSize = (value, mean) => {
