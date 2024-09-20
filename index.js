@@ -3,7 +3,6 @@ import {sma} from './src/moving-averages/sma.js'
 import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
-import { volumeProfile } from './src/studies/volumeProfile.js'
 import {crossPairs} from './src/studies/findCrosses.js'
 import { candles } from './src/studies/candles.js'
 import { orb } from './src/studies/orb.js'
@@ -186,16 +185,6 @@ export default class OHLCV_INDICATORS {
     candles()
     {
         const result = candles(this)
-        Object.assign(this.indicators, result)
-
-        return this
-    }
-    volumeProfile(numBins, daysBack, targetDateKey)
-    {
-
-        const {verticalOhlcv} = this
-
-        const result = volumeProfile(verticalOhlcv, numBins, daysBack, targetDateKey)
         Object.assign(this.indicators, result)
 
         return this
