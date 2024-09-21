@@ -1,5 +1,5 @@
 //true if first row date starts with yyyy-mm-dd date
-const validateFirstDate = arr => arr[0].hasOwnProperty('date') && /^\d{4}-\d{2}-\d{2}/.test(isValidDate)
+const validateFirstDate = arr => arr[0].hasOwnProperty('date') && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
 
 export const parseOhlcvToVertical = (input, len, big) => {
     const numberColsKeys = ['open', 'high', 'low', 'close', 'volume']
