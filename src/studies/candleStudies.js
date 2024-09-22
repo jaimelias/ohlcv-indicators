@@ -1,4 +1,4 @@
-import {SMA, FasterSMA} from 'trading-signals';
+import {FasterSMA} from 'trading-signals';
 
 export const candlesStudies = (main, period) => {
 
@@ -45,9 +45,9 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         const bodySize = getSize(open, close)
         let topSize
         let bottomSize
-        let candleDirection = (close > open) ? 'up' : 'down'
+        let candleDirection = (close > open) ? 'bullish' : 'bearish'
 
-        if(candleDirection === 'up')
+        if(candleDirection === 'bullish')
         {
             topSize = getSize(high, close)
             bottomSize = getSize(open, low)
