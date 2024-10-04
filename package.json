@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "node test/test.js",
+    "study": "node test/study.js",
     "build": "npx webpack"
   },
   "author": "https://jaimelias.com/",

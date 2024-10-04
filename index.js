@@ -4,7 +4,6 @@ import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
 import {crossPairs} from './src/studies/findCrosses.js'
-import { candles } from './src/studies/candles.js'
 import { orb } from './src/studies/orb.js'
 import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import {Big} from 'trading-signals';
@@ -178,13 +177,6 @@ export default class OHLCV_INDICATORS {
     {
 
         const result = rsi(this, period, movingAverage, movingAveragePeriod)
-        Object.assign(this.indicators, result)
-
-        return this
-    }
-    candles()
-    {
-        const result = candles(this)
         Object.assign(this.indicators, result)
 
         return this

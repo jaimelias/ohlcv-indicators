@@ -16,38 +16,31 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
     //body
     let candle_body_size = new Array(len).fill(null)
-    let candle_body_size_mean = new Array(len).fill(null)
-    let candle_body_size_label = new Array(len).fill(null)
 
     //top
-    let candle_top_size_mean = new Array(len).fill(null)
     let candle_top_size = new Array(len).fill(null)
-    let candle_top_size_label = new Array(len).fill(null)
 
     //bottom
-    let candle_bottom_size_mean = new Array(len).fill(null)
     let candle_bottom_size = new Array(len).fill(null)
-    let candle_bottom_size_label = new Array(len).fill(null)
 
+    //gap between the current open and previous close
+    let candle_gap_size = new Array(len).fill(null)
 
     //instances
     let bodyInstance = new FasterSMA(period)
-    let topInstance = new FasterSMA(period)
-    let bottomInstance = new FasterSMA(period)
-
 
     for(let x = 0; x < len; x++)
     {
+        const prev = inputOhlcv[x-1]
         const {open, high, low, close} = inputOhlcv[x]
+        const gapSize = (typeof prev !== 'undefined') ? Math.abs(prev.close - open) : null
         let bodySizeMean = null
-        let topSizeMean = null
-        let bottomSizeMean = null
         const bodySize = getSize(open, close)
         let topSize
         let bottomSize
-        let candleDirection = (close > open) ? 'bullish' : 'bearish'
+        let candleDirection = (close > open) ? 1 : 0 // 1 for bullish and 0 for bearish
 
-        if(candleDirection === 'bullish')
+        if(candleDirection === 1)
         {
             topSize = getSize(high, close)
             bottomSize = getSize(open, low)
@@ -59,14 +52,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         }
 
         bodyInstance.update(bodySize)
-        topInstance.update(topSize)
-        bottomInstance.update(bottomSize)
 
         try
         {
             bodySizeMean = bodyInstance.getResult()
-            topSizeMean = topInstance.getResult()
-            bottomSizeMean = bottomInstance.getResult()
         }
         catch(err)
         {
@@ -76,41 +65,33 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         candle_direction[x] = candleDirection
 
         //body
-        candle_body_size[x] = bodySize
-        candle_body_size_mean[x] = bodySizeMean
-        candle_body_size_label[x] = labelSize(bodySize, bodySizeMean)
+        candle_body_size[x] = classifySize(bodySize, bodySizeMean)
         
         //top
-        candle_top_size[x] = topSize
-        candle_top_size_mean[x] = topSizeMean
-        candle_top_size_label[x] = labelSize(topSize, topSizeMean)
+        candle_top_size[x] = classifySize(topSize, bodySizeMean)
         
-
         //bottom
-        candle_bottom_size[x] = bottomSize
-        candle_bottom_size_mean[x] = bottomSizeMean
-        candle_bottom_size_label[x] = labelSize(bottomSize, bottomSizeMean)
-        
+        candle_bottom_size[x] = classifySize(bottomSize, bodySizeMean)
+
+        //gap
+        candle_gap_size[x] = classifySize(gapSize, bodySizeMean)
     }
 
     return {
         candle_direction,
-        candle_body_size_mean,
+        candle_gap_size,
         candle_body_size,
-        candle_body_size_label,
-        candle_top_size_mean,
         candle_top_size,
-        candle_top_size_label,
-        candle_bottom_size_mean,
-        candle_bottom_size,
-        candle_bottom_size_label
+        candle_bottom_size
     }
 }
 
-const labelSize = (value, mean) => {
+
+// 1 for large, 0.5 for medium and 0 for small
+const classifySize = (value, mean) => {
 
     if(value === null || mean === null) return null
-    if(value > mean * 1.25) return 'large'
-    else if(value < mean * 0.75) return 'small'
-    else return 'medium'
+    if(value > mean * 1.25) return 1
+    else if(value < mean * 0.75) return 0
+    else return 0.5
 }
