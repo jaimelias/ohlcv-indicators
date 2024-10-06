@@ -9,6 +9,7 @@ import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import {Big} from 'trading-signals';
 import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
+import { correlation } from './src/studies/correlation.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, precision = false, ticker = 'undefined'}) {
@@ -16,6 +17,7 @@ export default class OHLCV_INDICATORS {
         if(!Array.isArray(input)) throw Error('input ohlcv must be an array: ' + ticker)
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
+
 
         const big = num => (this.precision) ? new Big(num) : num
 
@@ -27,7 +29,10 @@ export default class OHLCV_INDICATORS {
         this.verticalOhlcv = parseOhlcvToVertical(input, this.len, big)
         this.indicators = {}
         this.studies = {}
-        this.isComputed = false       
+        this.isComputed = false     
+        this.studies = {
+            correlation
+        }  
         return this 
     }
 
