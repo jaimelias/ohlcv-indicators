@@ -30,15 +30,15 @@ export default class OHLCV_INDICATORS {
         this.indicators = {}
         this.studies = {}
         this.isComputed = false     
-        this.studies = {
+        this.utilities = {
             correlation
-        }  
+        }
         return this 
     }
 
     getData() {
 
-        this.computeIndicators()
+        this.compute()
         const {verticalOhlcv, precision} = this
         const keys = Object.keys(verticalOhlcv)
         const keysLength = keys.length
@@ -67,7 +67,7 @@ export default class OHLCV_INDICATORS {
     }
     getLastValues(){
 
-        this.computeIndicators()
+        this.compute()
         const {verticalOhlcv, precision, len} = this
         const output = {}
 
@@ -90,7 +90,7 @@ export default class OHLCV_INDICATORS {
         return output
     }
 
-    computeIndicators() {
+    compute() {
 
         if(this.isComputed === true){
             return false
@@ -113,7 +113,7 @@ export default class OHLCV_INDICATORS {
             }
         }
 
-        return true
+        return this
     }
 
     addColumn(key, arr) {
@@ -136,13 +136,13 @@ export default class OHLCV_INDICATORS {
     crossPairs(arr)
     {
         
-        this.computeIndicators()
+        this.compute()
 
         const {x, c} = crossPairs(this, arr)
         Object.assign(this.indicators, x)
         Object.assign(this.studies, c)
 
-        this.computeIndicators()   
+        this.compute()   
 
         return this
     }
