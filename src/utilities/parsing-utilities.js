@@ -1,7 +1,7 @@
 //true if first row date starts with yyyy-mm-dd date
 const validateFirstDate = arr => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
 
-export const parseOhlcvToVertical = (input, len, big) => {
+export const parseOhlcvToVertical = (input, len) => {
     const numberColsKeys = ['open', 'high', 'low', 'close', 'volume']
     const numberColsKeysSet = new Set(numberColsKeys)
     const verticalOhlcv = {}
@@ -38,12 +38,11 @@ export const parseOhlcvToVertical = (input, len, big) => {
     for (let x = 0; x < len; x++) {
         const current = input[x]
 
-        // Process numerical columns with 'big' function
-        verticalOhlcv.open[x] = big(current.open)
-        verticalOhlcv.high[x] = big(current.high)
-        verticalOhlcv.low[x] = big(current.low)
-        verticalOhlcv.close[x] = big(current.close)
-        verticalOhlcv.volume[x] = big(current.volume)
+        verticalOhlcv.open[x] = current.open
+        verticalOhlcv.high[x] = current.high
+        verticalOhlcv.low[x] = current.low
+        verticalOhlcv.close[x] = current.close
+        verticalOhlcv.volume[x] = current.volume
 
         // Process other keys
         for (const key of otherKeys) {
@@ -70,5 +69,30 @@ export const parseOhlcvToVertical = (input, len, big) => {
 }
 
 
+// Memory-efficient and fast normalize function with zero-division handling
+export const normalize = values => {
+    let min = Infinity;
+    let max = -Infinity;
+    
+    // Single pass to find min and max
+    for (let value of values) {
+        if (value < min) min = value;
+        if (value > max) max = value;
+    }
 
+    const range = max - min;
+    
+    // If range is 0, return an array of 0s (all values are the same)
+    return {
+        normalizedDataset: range === 0 ? values.map(() => 0) : values.map(value => (value - min) / range),
+        min,
+        max
+    };
+};
 
+// Memory-efficient and fast denormalize function
+export const denormalize = (normalizedDataset, min, max) => {
+    const range = max - min;
+    // If range is 0, return the original min value (all values were the same)
+    return range === 0 ? normalizedDataset.map(() => min) : normalizedDataset.map(value => value * range + min);
+};

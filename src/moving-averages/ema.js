@@ -3,27 +3,27 @@ import {EMA, FasterEMA} from 'trading-signals'
 
 export const ema = (main, size) => {
 
-  const {verticalOhlcv, precision} = main
+  const {verticalOhlcv} = main
   const {close} = verticalOhlcv
 
-  const col = getEMA(close, size, precision)
+  const col = getEMA(close, size)
 
   return {
     [`ema_${size}`]: col
   }
 }
 
-export const getEMA = (data, size, precision) => {
+export const getEMA = (data, size) => {
   
 
-  if(typeof precision === 'undefined' || typeof data === 'undefined' || typeof size === 'undefined')
+  if(typeof data === 'undefined' || typeof size === 'undefined')
   {
     throw Error('undefined param in getEMA')
   }
 
   const dataLength = data.length
   const output = new Array(dataLength).fill(null)
-  const instance = (precision) ? new EMA(size) : new FasterEMA(size)
+  const instance = new FasterEMA(size)
 
   for(let x = 0; x < dataLength; x++)
   {

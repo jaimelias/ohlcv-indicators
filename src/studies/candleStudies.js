@@ -28,13 +28,16 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
     //instances
     let bodyInstance = new FasterSMA(period)
+    let gapInstance = new FasterSMA(parseInt(period/2))
 
     for(let x = 0; x < len; x++)
     {
-        const prev = inputOhlcv[x-1]
         const {open, high, low, close} = inputOhlcv[x]
-        const gapSize = (typeof prev !== 'undefined') ? Math.abs(prev.close - open) : null
+        const gapSize = (typeof inputOhlcv[x-1] !== 'undefined') 
+            ? calculateHighLowEmptyGaps(inputOhlcv[x], inputOhlcv[x-1]) 
+            : null
         let bodySizeMean = null
+        let gapSizeMean = null
         const bodySize = getSize(open, close)
         let topSize
         let bottomSize
@@ -53,28 +56,36 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
         bodyInstance.update(bodySize)
 
+        if(gapSize)
+        {
+            gapInstance.update(gapSize)
+        }
+        
+
         try
         {
             bodySizeMean = bodyInstance.getResult()
+            gapSizeMean = gapInstance.getResult()
         }
         catch(err)
         {
             bodySizeMean = null
+            gapSizeMean = null
         }
 
         candle_direction[x] = candleDirection
 
         //body
-        candle_body_size[x] = classifySize(bodySize, bodySizeMean)
+        candle_body_size[x] = classifySize(bodySize, bodySizeMean, 0.25)
         
         //top
-        candle_top_size[x] = classifySize(topSize, bodySizeMean)
+        candle_top_size[x] = classifySize(topSize, bodySizeMean, 0.25)
         
         //bottom
-        candle_bottom_size[x] = classifySize(bottomSize, bodySizeMean)
+        candle_bottom_size[x] = classifySize(bottomSize, bodySizeMean, 0.25)
 
         //gap
-        candle_gap_size[x] = classifySize(gapSize, bodySizeMean)
+        candle_gap_size[x] = classifySize(gapSize, gapSizeMean, 0.25)
     }
 
     return {
@@ -88,10 +99,46 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
 
 // 1 for large, 0.5 for medium and 0 for small
-const classifySize = (value, mean) => {
+const classifySize = (value, mean, number = 0.25) => {
 
     if(value === null || mean === null) return null
-    if(value > mean * 1.25) return 1
-    else if(value < mean * 0.75) return 0
-    else return 0.5
+    if(value > mean * (number*5)) return 1
+    else if(value < mean * (number*3)) return 0
+    else return number * 2
+}
+
+const calculateHighLowEmptyGaps = (current, prev) => {
+    // This function calculates the empty gaps between the current high/low and the previous high/low.
+    // Gaps are zones where the highest highs and lowest lows of the previous and current candles do not touch.
+    // If any of the values overlap, the gapSize is 0.
+
+    if (!prev) return null; // No previous candle, so no gap
+
+    const {open, high, low, close } = current;
+    const { high: prevHigh, low: prevLow } = prev;
+
+    const highs = [high, prevHigh]
+    const lows = [low, prevLow]
+
+
+    if(close > open)
+    {
+        highs.push(close)
+        lows.push(open)
+    }
+    else
+    {
+        highs.push(open)
+        lows.push(close)        
+    }
+
+
+    const maxHigh = Math.max(high, prevHigh)
+    const minLow = Math.min(low, prevLow)
+    const fullSize = maxHigh - minLow
+    const prevSize = Math.abs(prevHigh - prevLow)
+    const currentSize = Math.abs(high-low)
+    const gapSize = fullSize - (prevSize+currentSize)
+
+    return (gapSize > 0) ? gapSize : 0.01
 }

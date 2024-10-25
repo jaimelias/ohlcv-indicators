@@ -3,85 +3,120 @@ import {sma} from './src/moving-averages/sma.js'
 import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
-import {crossPairs} from './src/studies/findCrosses.js'
-import { orb } from './src/studies/orb.js'
+import {crossPairs, findDirectionCross} from './src/studies/findCrosses.js'
+import { orb } from './src/oscillators/orb.js'
 import { donchianChannels } from './src/moving-averages/donchianChannel.js'
-import {Big} from 'trading-signals';
-import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
+import { normalize, parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
 import { correlation } from './src/studies/correlation.js'
 
 export default class OHLCV_INDICATORS {
-    constructor({input, precision = false, ticker = 'undefined'}) {
+    constructor({input, ticker = 'undefined'}) {
 
         if(!Array.isArray(input)) throw Error('input ohlcv must be an array: ' + ticker)
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
 
-
-        const big = num => (this.precision) ? new Big(num) : num
-
         this.len = input.length
-        this.precision = precision
-        this.big = big
         this.crossPairsArr = []
         this.inputOhlcv = input
-        this.verticalOhlcv = parseOhlcvToVertical(input, this.len, big)
+        this.verticalOhlcv = parseOhlcvToVertical(input, this.len)
         this.indicators = {}
         this.studies = {}
-        this.isComputed = false     
         this.utilities = {
             correlation
         }
         return this 
     }
 
-    getData() {
+    getNormalizedData(colKeys = ['open']) {
+        this.compute();
+        const { verticalOhlcv } = this;
+        const min = {};
+        const max = {};
+        let minLen = Infinity
+        const normalizedDataset = {};
+        const entries = Object.entries(verticalOhlcv)
+            .filter(o => colKeys.includes(o[0]))
+    
+        for (const [key, values] of entries) {
 
-        this.compute()
-        const {verticalOhlcv, precision} = this
-        const keys = Object.keys(verticalOhlcv)
-        const keysLength = keys.length
+            const filteredValues = values.filter(o => o !== null)
 
-        return verticalOhlcv.open.map((_, i) => {
-
-            const row = {}
-
-            for(let x = 0; x < keysLength; x++)
+            if(filteredValues.length < minLen)
             {
-                const header = keys[x]
-                const value = verticalOhlcv[header][i]
-
-                if(precision)
-                {
-                    row[header] = (value instanceof Big) ? value.toNumber() : value
-                }
-                else
-                {
-                    row[header] = value
-                }
+                minLen = filteredValues.length
             }
 
-            return row
-        })
+            const normalized = normalize(filteredValues)
+            min[key] = normalized.min
+            max[key] = normalized.max
+            normalizedDataset[key] = normalized.normalizedDataset
+        }
+
+        for (const [key, _] of entries)
+        {
+            normalizedDataset[key] = normalizedDataset[key].slice(-minLen)
+        }
+
+        return { 
+            normalizedMin: min, 
+            normalizedMax: max, 
+            normalizedCols: [...new Set([...Object.keys(min), ...Object.keys(max)])],
+            normalizedDataset: (this.getData(normalizedDataset)).map(o => Object.values(o))
+        }
     }
+    
+
+    getData(verticalOhlcvArg) {
+        this.compute();
+        const {len} = this
+        const verticalOhlcv = (verticalOhlcvArg) ? verticalOhlcvArg : this.verticalOhlcv
+        const keys = Object.keys(verticalOhlcv);
+        const keysLength = keys.length;
+    
+        // Pre-allocate array to improve memory efficiency
+        const result = [];
+    
+        // Iterate over the rows
+        for (let i = 0; i < len; i++) {
+            const row = {};
+            let hasNull = false;  // Flag to track if any null value is found
+    
+            // Loop over keys to fill row data
+            for (let x = 0; x < keysLength; x++) {
+                const header = keys[x];
+                const value = verticalOhlcv[header][i];
+    
+                // If value is null, mark the row to be skipped and break
+                if (value === null) {
+                    hasNull = true;
+                    break;
+                }
+    
+                row[header] = value
+            }
+    
+            // If no null values were found, add row to result
+            if (!hasNull) {
+                result.push(row);
+            }
+        }
+    
+        return result;
+    }
+    
+    
     getLastValues(){
 
         this.compute()
-        const {verticalOhlcv, precision, len} = this
+        const {verticalOhlcv, len} = this
         const output = {}
 
         for (const [k, arr] of Object.entries(verticalOhlcv)) {
             let value = arr[len - 1]
 
-            if(precision)
-            {
-                output[k] = (value instanceof Big) ? value.toNumber(): value
-            }
-            else
-            {
-                output[k] = value
-            }
+            output[k] = value
             
         }
 
@@ -91,12 +126,6 @@ export default class OHLCV_INDICATORS {
     }
 
     compute() {
-
-        if(this.isComputed === true){
-            return false
-        }
-
-        this.isComputed === true
 
         const indicators = this.indicators
         const addColumn = this.addColumn.bind(this)
@@ -146,6 +175,25 @@ export default class OHLCV_INDICATORS {
 
         return this
     }
+
+    lag(colKeys = ['close'], lags = 1) {
+        this.compute();
+        const {verticalOhlcv} = this;
+    
+        for (let x = 0; x < colKeys.length; x++) {
+            for (let lag = 1; lag <= lags; lag++) {
+                // Create lagged column name and slice the array with the correct lag
+                const key = `${colKeys[x]}_lag_${lag}`;
+                const values = verticalOhlcv[colKeys[x]].slice(0, -(lag));
+    
+                Object.assign(this.indicators, {[key]: values})
+            }
+        }
+    
+        this.compute();
+        return this;
+    }
+    
 
     ema(size) {
 
@@ -206,5 +254,20 @@ export default class OHLCV_INDICATORS {
         Object.assign(this.indicators, result)
 
         return this       
-    }   
+    }
+
+    findDirectionCross(keyNames = ['close', 'low'])
+    {
+        this.compute()
+
+        for(let x = 0; x < keyNames.length; x++)
+        {
+            const keyName = keyNames[x]
+            const result = findDirectionCross(this, keyName)
+            Object.assign(this.indicators, {[`${keyName}_linear_direction`]: result})
+        }
+
+        this.compute()
+        return this
+    }
 }

@@ -3,14 +3,14 @@ import {BollingerBands, FasterBollingerBands, Big} from 'trading-signals';
 
 export const bollingerBands = (main, size, times) => {
 
-  const {verticalOhlcv, precision} = main
+  const {verticalOhlcv} = main
   const {close} = verticalOhlcv
 
-  const col = getBollingerBands(close, size, times, precision)
+  const col = getBollingerBands(close, size, times)
   return col
 }
 
-export const getBollingerBands = (data, size = 20, times = 2, precision) => {
+export const getBollingerBands = (data, size = 20, times = 2) => {
   
   const dataLength = data.length
   const bollinger_bands_upper =  Array(dataLength).fill(null)
@@ -21,22 +21,12 @@ export const getBollingerBands = (data, size = 20, times = 2, precision) => {
   let range = null
   let height = null
 
-  let getRange
-  let instance
+  let getRange = (value, upper, lower) => ({
+    range: ((value - lower) / (upper - lower)) * 100,
+    height: ((upper-lower)/lower) * 100
+  })
+  let instance = new FasterBollingerBands(size, times)
 
-  if (precision) {
-    instance = new BollingerBands(size, times)
-    getRange = (value, upper, lower) => ({
-      range: ((value.minus(lower)).div((upper.minus(lower)))).times(100),
-      height: ((upper.minus(lower)).div(lower)).times(100)
-    })
-  } else {
-    instance = new FasterBollingerBands(size, times)
-    getRange = (value, upper, lower) => ({
-      range: ((value - lower) / (upper - lower)) * 100,
-      height: ((upper-lower)/lower) * 100
-    })
-  }
   
   for (let x = 0; x < dataLength; x++) {
     let obj = {};

@@ -1,12 +1,12 @@
 export const donchianChannels = (main, period, offset) => {
 
-    const {verticalOhlcv, precision, len} = main
+    const {verticalOhlcv, len} = main
     const {high, low} = verticalOhlcv
 
-    return getDonchianChannels(high, low, period, offset, precision, len)
+    return getDonchianChannels(high, low, period, offset, len)
 }
 
-export const getDonchianChannels = (high, low, period, offset, precision, len) => {
+export const getDonchianChannels = (high, low, period, offset, len) => {
     const donchian_channel_upper = new Array(len).fill(null)
     const donchian_channel_lower = new Array(len).fill(null)
     const donchian_channel_basis = new Array(len).fill(null)
@@ -14,10 +14,8 @@ export const getDonchianChannels = (high, low, period, offset, precision, len) =
     const maxQueue = []
     const minQueue = []
 
-    const avg = (precision) 
-        ? ((h, l) => (h.plus(l)).div(2))
-        : ((h, l) => (h + l) / 2)
-
+    const avg = ((h, l) => (h + l) / 2)
+    
     for (let i = 0; i < len; i++) {
 
         while (maxQueue.length && maxQueue[0] <= i - period) {

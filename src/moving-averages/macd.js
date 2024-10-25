@@ -4,26 +4,21 @@ import {EMA, MACD, FasterEMA, FasterMACD} from 'trading-signals';
 
 export const macd = (main, fastLine, slowLine, signalLine) => {
 
-    const {verticalOhlcv, precision} = main
+    const {verticalOhlcv} = main
     const {close} = verticalOhlcv
-    const col = getMACD(close, fastLine, slowLine, signalLine, precision)
+    const col = getMACD(close, fastLine, slowLine, signalLine)
 
     return col
 }
 
-export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9, precision) => {
+export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9) => {
 
     const dataLength = data.length
     const diff = new Array(dataLength).fill(null)
     const dea = new Array(dataLength).fill(null)
     const histogram = new Array(dataLength).fill(null)
 
-    const instance = (precision) ? new MACD({
-        indicator: EMA,
-        shortInterval: fastLine,
-        longInterval: slowLine,
-        signalInterval: signalLine
-    }) : new FasterMACD(new FasterEMA(fastLine), new FasterEMA(slowLine), new FasterEMA(signalLine))
+    const instance = new FasterMACD(new FasterEMA(fastLine), new FasterEMA(slowLine), new FasterEMA(signalLine))
 
     for(let x = 0; x < dataLength; x++)
     {
@@ -44,7 +39,7 @@ export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9, prec
         histogram[x] = obj.histogram
     }
 
-    const x = findCrosses({fast: diff, slow: dea, precision})
+    const x = findCrosses({fast: diff, slow: dea})
 
 	return {
 		macd_diff: diff, 

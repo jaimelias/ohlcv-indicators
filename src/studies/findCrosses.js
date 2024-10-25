@@ -1,6 +1,10 @@
+const eq = (a, b) => a === b
+const gt = (a, b) => a > b
+const lt = (a, b) => a < b
+
 
 // Function to find crosses between two arrays: fast and slow
-export const findCrosses = ({fast, slow, precision}) => {
+export const findCrosses = ({fast, slow}) => {
     // Map states based on comparison of fast and slow arrays
 
     const dataLength = fast.length
@@ -8,23 +12,6 @@ export const findCrosses = ({fast, slow, precision}) => {
     if(dataLength ==! slow.length)
     {
         throw Error('fast and slow do not have the same length')
-    }
-
-    let eq
-    let gt
-    let lt
-
-    if(precision)
-    {
-        eq = (a, b) => a.eq(b)
-        gt = (a, b) => a.gt(b)
-        lt = (a, b) => a.lt(b)
-    }
-    else
-    {
-        eq = (a, b) => a === b
-        gt = (a, b) => a > b
-        lt = (a, b) => a < b     
     }
 
     const state = new Array(dataLength).fill(null)
@@ -39,19 +26,19 @@ export const findCrosses = ({fast, slow, precision}) => {
         else if(eq(f, s)){
             if(gt(fast[x-1], slow[x-1]))
             {
-                value = 'up'
+                value = 1 //up
             }
             else if(lt(fast[x-1], slow[x-1]))
             {
-                value = 'down'
+                value = 0 //down
             }
             else
             {
-                value = 'neutral'
+                value = 0.5 //neutral
             }
         }
-        else if(gt(f, s)) value = 'up'
-        else if(lt(f, s)) value = 'down'
+        else if(gt(f, s)) value = 1
+        else if(lt(f, s)) value = 0
 
         state[x] = value
     }
@@ -59,9 +46,14 @@ export const findCrosses = ({fast, slow, precision}) => {
 
 
     const groups = groupConsecutiveValues(state)
-    const groupLengths = groups.map(g => g.length)
 
-    //console.log(JSON.stringify(groups))
+    return flatGroupsToNumArr(groups)
+}
+
+
+const flatGroupsToNumArr = groups => {
+
+    const groupLengths = groups.map(g => g.length)
 
     return groups.map((group, gIndex) => {
         let initialValue = groupLengths[gIndex]
@@ -69,15 +61,15 @@ export const findCrosses = ({fast, slow, precision}) => {
         return group.map((s, i) => {
             let v = initialValue - i
 
-            if(s === 'neutral')
+            if(s === 0.5)
             {
                 v = 0
             }
-            if(s === 'up')
+            if(s === 1)
             {
                 v = v * 1
             }
-            if(s === 'down')
+            if(s === 0)
             {
                 v = v * -1
             }
@@ -85,11 +77,11 @@ export const findCrosses = ({fast, slow, precision}) => {
             return v
         }).reverse()
     }).flat()
-
 }
 
+
 // Helper function to group consecutive values
-const groupConsecutiveValues = arr => {
+export const groupConsecutiveValues = arr => {
     if (arr.length === 0) return []
 
     return arr.reduce((acc, currentValue, index, array) => {
@@ -118,7 +110,7 @@ const groupConsecutiveValues = arr => {
 
 export const crossPairs = (main, arr) => {
 
-    const {verticalOhlcv, precision, big, len} = main
+    const {verticalOhlcv, len} = main
     const slowNumArrCache = {};
     const x = {}
     const c = {}
@@ -130,7 +122,7 @@ export const crossPairs = (main, arr) => {
         // Prepare slowNumArr if 'slow' is a number
         if (typeof slow === 'number' && !slowNumArrCache[slow]) {
 
-            slowNumArrCache[slow] = Array(len).fill(big(slow))
+            slowNumArrCache[slow] = Array(len).fill(slow)
         }
     
         const crossName = `${fast}_x_${slow}`
@@ -153,7 +145,7 @@ export const crossPairs = (main, arr) => {
         //cross created from 2 columns
         else if (verticalOhlcv[fast] && verticalOhlcv[slow]) {
 
-            const cross = findCrosses({fast: verticalOhlcv[fast], slow: verticalOhlcv[slow], precision});
+            const cross = findCrosses({fast: verticalOhlcv[fast], slow: verticalOhlcv[slow]});
             x[crossName] = cross
 
             if(typeof count !== 'undefined')
@@ -164,7 +156,7 @@ export const crossPairs = (main, arr) => {
         }
         //cross created from 1 column and an number
         else if (verticalOhlcv[fast] && slowNumArrCache[slow]) {
-            const cross = findCrosses({fast: verticalOhlcv[fast], slow: slowNumArrCache[slow], precision})
+            const cross = findCrosses({fast: verticalOhlcv[fast], slow: slowNumArrCache[slow]})
             x[crossName] = cross
 
             if(typeof count !== 'undefined'){
@@ -177,4 +169,54 @@ export const crossPairs = (main, arr) => {
     }
 
     return {x, c}
+}
+
+
+export const findLinearDirection = (main, keyName) => {
+ 
+    const {verticalOhlcv} = main
+
+    if(!verticalOhlcv.hasOwnProperty(keyName)) throw Error(`property ${keyName} not found in verticalOhlcv. Invoked by findDirectionCross.`)
+
+    const arr = verticalOhlcv[keyName]
+    const len = arr.length
+    const state = new Array(len).fill(null)
+
+   
+    for(let x = 0; x < len; x++)
+    {
+        if(x > 0 && arr[x] !== null)
+        {
+            let curr = arr[x]
+            let prev = arr[x-1]
+
+            if(gt(curr, prev))
+            {
+                state[x] = 1 //up
+            }
+            else if(lt(curr, prev))
+            {
+                state[x] = 0 //down
+            }
+            else
+            {
+                state[x] = 0.5 //neutral
+            }
+        }
+    }
+
+    return state
+}
+
+export const findDirectionCross = (main, keyName) => {
+
+
+    const {verticalOhlcv} = main
+
+    if(!verticalOhlcv.hasOwnProperty(keyName)) throw Error(`property ${keyName} not found in verticalOhlcv. Invoked by findDirectionCross.`)
+
+    const state = findLinearDirection(main, keyName)
+    const groups = groupConsecutiveValues(state)
+
+    return flatGroupsToNumArr(groups)
 }

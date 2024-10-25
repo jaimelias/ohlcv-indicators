@@ -1,13 +1,12 @@
-import { findCrosses } from "./findCrosses.js"
+import { findCrosses } from "../studies/findCrosses.js"
 
 export const orb = main => {
-    const {inputOhlcv, len, precision, verticalOhlcv} = main
-    const {close} = verticalOhlcv
-    const cols = getOrbOfTheFirstCandle(inputOhlcv, close, len, precision)
+    const {inputOhlcv, len} = main
+    const cols = getOrbOfTheFirstCandle(inputOhlcv, len)
     return cols
 }
 
-const getOrbOfTheFirstCandle = (inputOhlcv, close, len, precision) => {
+const getOrbOfTheFirstCandle = (inputOhlcv, len) => {
     const orb_high = new Array(len).fill(0)
     const orb_low = new Array(len).fill(0)
     let startIndex = 0

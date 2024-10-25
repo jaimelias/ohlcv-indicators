@@ -1,17 +1,19 @@
 {
   "name": "ohlcv-indicators",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "description": "A JavaScript library featuring optimized trading indicators for OHLCV arrays [{open, high, low, close, value}]. This library is optimized for backtesting and trading bot development.",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "node test/test.js",
     "study": "node test/study.js",
+    "knn": "node test/knn.js",
     "build": "npx webpack"
   },
   "author": "https://jaimelias.com/",
   "license": "ISC",
   "dependencies": {
+    "ml-knn": "^3.0.0",
     "trading-signals": "^5.0.4"
   },
   "devDependencies": {
