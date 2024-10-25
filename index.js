@@ -3,7 +3,7 @@ import {sma} from './src/moving-averages/sma.js'
 import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
-import {crossPairs, findDirectionCross} from './src/studies/findCrosses.js'
+import {crossPairs, findDirectionCross, findLinearDirection} from './src/studies/findCrosses.js'
 import { orb } from './src/oscillators/orb.js'
 import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import { normalize, parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
@@ -70,9 +70,9 @@ export default class OHLCV_INDICATORS {
 
     getData(verticalOhlcvArg) {
         this.compute();
-        const {len} = this
-        const verticalOhlcv = (verticalOhlcvArg) ? verticalOhlcvArg : this.verticalOhlcv
+        const verticalOhlcv = verticalOhlcvArg || this.verticalOhlcv;
         const keys = Object.keys(verticalOhlcv);
+        const len = verticalOhlcv[keys[0]].length;
         const keysLength = keys.length;
     
         // Pre-allocate array to improve memory efficiency
@@ -264,10 +264,42 @@ export default class OHLCV_INDICATORS {
         {
             const keyName = keyNames[x]
             const result = findDirectionCross(this, keyName)
+            Object.assign(this.indicators, {[`${keyName}_direction_cross`]: result})
+        }
+
+        this.compute()
+        return this
+    }
+
+    findLinearDirection(keyNames = ['close', 'low'])
+    {
+        this.compute()
+
+        for(let x = 0; x < keyNames.length; x++)
+        {
+            const keyName = keyNames[x]
+            const result = findLinearDirection(this, keyName)
             Object.assign(this.indicators, {[`${keyName}_linear_direction`]: result})
         }
 
         this.compute()
+        return this
+    }
+    gt(arr = [{a: 'high', b: 'low'}])
+    {
+        this.compute()
+
+        const {verticalOhlcv} = this
+
+        for(let x = 0; x < arr.length; x++)
+        {
+            const {a, b} = arr[x]
+            const result = verticalOhlcv[a].map((v, i) => (v > verticalOhlcv[b][i]) ? 1 : 0)
+            Object.assign(this.indicators, {[`${a}_gt_${b}`]: result})
+        }
+
+        this.compute()
+
         return this
     }
 }
