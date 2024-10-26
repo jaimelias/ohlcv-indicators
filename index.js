@@ -34,38 +34,40 @@ export default class OHLCV_INDICATORS {
         const { verticalOhlcv } = this;
         const min = {};
         const max = {};
-        let minLen = Infinity
+        let minLen = Infinity;
         const normalizedDataset = {};
-        const entries = Object.entries(verticalOhlcv)
-            .filter(o => colKeys.includes(o[0]))
     
-        for (const [key, values] of entries) {
-
-            const filteredValues = values.filter(o => o !== null)
-
-            if(filteredValues.length < minLen)
-            {
-                minLen = filteredValues.length
+        for (const key of colKeys) {
+            const values = verticalOhlcv[key];
+    
+            if (!values) continue; // Skip if the key is not present in verticalOhlcv
+    
+            const filteredValues = values.filter(o => o !== null);
+    
+            if (filteredValues.length < minLen) {
+                minLen = filteredValues.length;
             }
-
-            const normalized = normalize(filteredValues)
-            min[key] = normalized.min
-            max[key] = normalized.max
-            normalizedDataset[key] = normalized.normalizedDataset
+    
+            const normalized = normalize(filteredValues);
+            min[key] = normalized.min;
+            max[key] = normalized.max;
+            normalizedDataset[key] = normalized.normalizedDataset;
         }
-
-        for (const [key, _] of entries)
-        {
-            normalizedDataset[key] = normalizedDataset[key].slice(-minLen)
+    
+        for (const key of colKeys) {
+            if (normalizedDataset[key]) {
+                normalizedDataset[key] = normalizedDataset[key].slice(-minLen);
+            }
         }
-
+    
         return { 
             normalizedMin: min, 
             normalizedMax: max, 
-            normalizedCols: [...new Set([...Object.keys(min), ...Object.keys(max)])],
-            normalizedDataset: (this.getData(normalizedDataset)).map(o => Object.values(o))
-        }
+            normalizedCols: Object.keys(min),
+            normalizedDataset: this.getData(normalizedDataset).map(o => Object.values(o))
+        };
     }
+    
     
 
     getData(verticalOhlcvArg) {
@@ -81,7 +83,7 @@ export default class OHLCV_INDICATORS {
         // Iterate over the rows
         for (let i = 0; i < len; i++) {
             const row = {};
-            let hasNull = false;  // Flag to track if any null value is found
+            let isInvalidValue = false;  // Flag to track if any null value is found
     
             // Loop over keys to fill row data
             for (let x = 0; x < keysLength; x++) {
@@ -89,8 +91,8 @@ export default class OHLCV_INDICATORS {
                 const value = verticalOhlcv[header][i];
     
                 // If value is null, mark the row to be skipped and break
-                if (value === null) {
-                    hasNull = true;
+                if (value === null || typeof value === 'undefined') {
+                    isInvalidValue = true;
                     break;
                 }
     
@@ -98,7 +100,7 @@ export default class OHLCV_INDICATORS {
             }
     
             // If no null values were found, add row to result
-            if (!hasNull) {
+            if (!isInvalidValue) {
                 result.push(row);
             }
         }
