@@ -6,7 +6,7 @@ import { rsi } from './src/oscillators/rsi.js'
 import {crossPairs, findDirectionCross, findLinearDirection} from './src/studies/findCrosses.js'
 import { orb } from './src/oscillators/orb.js'
 import { donchianChannels } from './src/moving-averages/donchianChannel.js'
-import { normalize, parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
+import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
 import { correlation } from './src/studies/correlation.js'
 
@@ -28,51 +28,10 @@ export default class OHLCV_INDICATORS {
         }
         return this 
     }
-
-    getNormalizedData(colKeys = ['open']) {
+    
+    getData() {
         this.compute();
-        const { verticalOhlcv } = this;
-        const min = {};
-        const max = {};
-        let minLen = Infinity;
-        const normalizedDataset = {};
-    
-        for (const key of colKeys) {
-            const values = verticalOhlcv[key];
-    
-            if (!values) continue; // Skip if the key is not present in verticalOhlcv
-    
-            const filteredValues = values.filter(o => o !== null);
-    
-            if (filteredValues.length < minLen) {
-                minLen = filteredValues.length;
-            }
-    
-            const normalized = normalize(filteredValues);
-            min[key] = normalized.min;
-            max[key] = normalized.max;
-            normalizedDataset[key] = normalized.normalizedDataset;
-        }
-    
-        for (const key of colKeys) {
-            if (normalizedDataset[key]) {
-                normalizedDataset[key] = normalizedDataset[key].slice(-minLen);
-            }
-        }
-    
-        return { 
-            normalizedMin: min, 
-            normalizedMax: max, 
-            normalizedCols: Object.keys(min),
-            normalizedDataset: this.getData(normalizedDataset).map(o => Object.values(o))
-        };
-    }
-    
-    
-
-    getData(verticalOhlcvArg) {
-        this.compute();
-        const verticalOhlcv = verticalOhlcvArg || this.verticalOhlcv;
+        const {verticalOhlcv} = this
         const keys = Object.keys(verticalOhlcv);
         const len = verticalOhlcv[keys[0]].length;
         const keysLength = keys.length;

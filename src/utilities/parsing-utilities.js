@@ -67,32 +67,3 @@ export const parseOhlcvToVertical = (input, len) => {
 
     return verticalOhlcv
 }
-
-
-// Memory-efficient and fast normalize function with zero-division handling
-export const normalize = values => {
-    let min = Infinity;
-    let max = -Infinity;
-    
-    // Single pass to find min and max
-    for (let value of values) {
-        if (value < min) min = value;
-        if (value > max) max = value;
-    }
-
-    const range = max - min;
-    
-    // If range is 0, return an array of 0s (all values are the same)
-    return {
-        normalizedDataset: range === 0 ? values.map(() => 0) : values.map(value => (value - min) / range),
-        min,
-        max
-    };
-};
-
-// Memory-efficient and fast denormalize function
-export const denormalize = (normalizedDataset, min, max) => {
-    const range = max - min;
-    // If range is 0, return the original min value (all values were the same)
-    return range === 0 ? normalizedDataset.map(() => min) : normalizedDataset.map(value => value * range + min);
-};
