@@ -255,7 +255,18 @@ export default class OHLCV_INDICATORS {
         for(let x = 0; x < arr.length; x++)
         {
             const {a, b} = arr[x]
-            const result = verticalOhlcv[a].map((v, i) => (v > verticalOhlcv[b][i]) ? 1 : 0)
+            let bArr
+            
+            if(typeof b === 'string')
+            {
+                bArr = verticalOhlcv[b]
+            }
+            else if(typeof b === 'number')
+            {
+                bArr = new Array(verticalOhlcv[a].length).fill(b)
+            }
+
+            const result = verticalOhlcv[a].map((v, i) => (v > bArr[i]) ? 1 : 0)
             Object.assign(this.indicators, {[`${a}_gt_${b}`]: result})
         }
 
