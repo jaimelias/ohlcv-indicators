@@ -1,18 +1,45 @@
-import { getSMA } from './sma.js'
+import {FasterSMA} from 'trading-signals'
 
-export const RelativeVolume = (main, size) => {
+export const relativeVolume = (main, size) => {
     const {verticalOhlcv} = main
-    const data = verticalOhlcv['volume']
-    const relVolume = getRelativeVolume(main.BigNumber, data, size)
-    main.addColumn(`relative_volume_${size}`, relVolume)
+    const {volume} = verticalOhlcv
+    const col = getRelativeVolume(volume, size)
+
+    return {
+        [`relative_volume_${size}`]: col
+    }
 }
 
-export const getRelativeVolume = (BigNumber, data, size = 10) => {
-    const sma = getSMA(BigNumber, data, size)
+export const getRelativeVolume = (volume, size = 10) => {
+    
+    const instance = new FasterSMA(size)
+    const sma = new Array(volume.length).fill(null)
+    const output = new Array(volume.length).fill(null)
 
-    return data.map((v, i) => {
-        const prevSma = sma[i - 1]
-        if (i === 0 || !prevSma || prevSma.isZero()) return null
-        return v.dividedBy(prevSma)
-    }).filter(v => !Number.isNaN(v))
+    for(let x = 0; x < volume.length; x++)
+    {
+        let value = null
+
+        instance.update(volume[x])
+
+        try
+        {
+          value = instance.getResult()
+        }
+        catch(err)
+        {
+          value = null
+        }
+
+        sma[x] = value
+
+        if(typeof sma[x-1] === 'number')
+        {
+            output[x] = volume[x] / sma[x-1]
+        }
+    }
+
+    console.log(output)
+
+    return output
 }

@@ -1,3 +1,4 @@
+import { relativeVolume } from './src/moving-averages/relativeVolume.js'
 import {ema} from './src/moving-averages/ema.js'
 import {sma} from './src/moving-averages/sma.js'
 import {macd} from './src/moving-averages/macd.js'
@@ -155,6 +156,14 @@ export default class OHLCV_INDICATORS {
         return this;
     }
     
+    relativeVolume(size) {
+
+
+        const result = relativeVolume(this, size)
+        Object.assign(this.indicators, result)
+ 
+        return this
+    }
 
     ema(size) {
 

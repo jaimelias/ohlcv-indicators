@@ -1,5 +1,5 @@
 
-import {SMA, FasterSMA} from 'trading-signals';
+import {FasterSMA} from 'trading-signals';
 
 export const sma = (main, size) => {
 
