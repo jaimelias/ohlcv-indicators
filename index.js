@@ -10,6 +10,7 @@ import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
 import { correlation } from './src/studies/correlation.js'
+import { arrayChange, arrayGt } from './src/utilities/math-array.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = 'undefined'}) {
@@ -255,29 +256,58 @@ export default class OHLCV_INDICATORS {
         this.compute()
         return this
     }
-    gt(arr = [{a: 'high', b: 'low'}])
+
+    change(key)
+    {
+        this.compute()
+        const {verticalOhlcv} = this
+
+        if(!verticalOhlcv.hasOwnProperty(key))
+        {
+            const err = `key "${key}" not found in verticalOhlcv. change method`
+            throw Error(err)
+        }
+
+        Object.assign(this.indicators, {
+            [`${key}_change`]: arrayChange(verticalOhlcv[key])
+        })
+        
+        this.compute()
+
+        return this
+
+    }
+
+    gt(a = 'close', b = 'open')
     {
         this.compute()
 
         const {verticalOhlcv} = this
 
-        for(let x = 0; x < arr.length; x++)
+        if(!verticalOhlcv.hasOwnProperty(a))
         {
-            const {a, b} = arr[x]
-            let bArr
+            const errA = `key "${a}" not found in verticalOhlcv. gt method`
+            throw Error(errA)
+        }
+
+        let bArr
             
-            if(typeof b === 'string')
+        if(typeof b === 'string')
+        {
+            if(!verticalOhlcv.hasOwnProperty(b))
             {
-                bArr = verticalOhlcv[b]
-            }
-            else if(typeof b === 'number')
-            {
-                bArr = new Array(verticalOhlcv[a].length).fill(b)
+                const errB = `key "${b}" not found in verticalOhlcv. gt method`
+                throw Error(errB)
             }
 
-            const result = verticalOhlcv[a].map((v, i) => (v > bArr[i]) ? 1 : 0)
-            Object.assign(this.indicators, {[`${a}_gt_${b}`]: result})
+            bArr = verticalOhlcv[b]
         }
+        else if(typeof b === 'number')
+        {
+            bArr = new Array(verticalOhlcv[a].length).fill(b)
+        }
+
+        Object.assign(this.indicators, {[`${a}_gt_${b}`]: arrayGt(verticalOhlcv[a], bArr)})
 
         this.compute()
 
