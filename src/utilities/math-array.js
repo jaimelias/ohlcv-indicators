@@ -18,7 +18,7 @@ export const arrayChange = data => {
         {
             const curr = data[x]
             const prev = data[x - 1]
-            output[x] = (curr - prev) / prev
+            output[x] = ((curr - prev) / prev) * 100
         }
     }
 
