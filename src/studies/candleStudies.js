@@ -12,6 +12,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
     let getSize = (a, b) => Math.abs(a - b)
 
+    //candle_label
+    let candle_label = new Array(len).fill(null)
+
+    //close > open
     let candle_direction = new Array(len).fill(null)
 
     //body
@@ -86,9 +90,35 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
         //gap
         candle_gap_size[x] = classifySize(gapSize, gapSizeMean, 0.25)
+
+
+        //label
+
+        const labelArr = [candle_direction[x], candle_body_size[x], candle_top_size[x], candle_bottom_size[x]]
+
+        if(labelArr.every(v => typeof v === 'number'))
+        {
+            candle_label[x] = labelArr.join('_')
+        }
     }
 
+
+    // Create a Map for unique labels with indices
+    const labelMap = new Map();
+    let labelIndex = 0;
+
+    // Populate the label map and assign indices only once
+    for (const label of candle_label) {
+        if (label !== null && !labelMap.has(label)) {
+            labelMap.set(label, labelIndex++);
+        }
+    }
+
+    // Transform candle_label in place using the labelMap for quick lookup
+    candle_label = candle_label.map(v => (v !== null && labelMap.has(v)) ? labelMap.get(v) : null);
+
     return {
+        candle_label,
         candle_direction,
         candle_gap_size,
         candle_body_size,
