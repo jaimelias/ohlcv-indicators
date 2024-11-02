@@ -32,6 +32,8 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
     //instances
     let bodyInstance = new FasterSMA(period)
+    let topInstance = new FasterSMA(period)
+    let bottomInstance = new FasterSMA(period)
     let gapInstance = new FasterSMA(parseInt(period/2))
 
     for(let x = 0; x < len; x++)
@@ -42,6 +44,8 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
             : null
         let bodySizeMean = null
         let gapSizeMean = null
+        let bottomSizeMean = null
+        let topSizeMean = null
         const bodySize = getSize(open, close)
         let topSize
         let bottomSize
@@ -59,6 +63,8 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         }
 
         bodyInstance.update(bodySize)
+        topInstance.update(topSize)
+        bottomInstance.update(bottomSize)
 
         if(gapSize)
         {
@@ -69,6 +75,8 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         try
         {
             bodySizeMean = bodyInstance.getResult()
+            topSizeMean = topInstance.getResult()
+            bottomSizeMean = bottomInstance.getResult()
             gapSizeMean = gapInstance.getResult()
         }
         catch(err)
@@ -83,10 +91,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         candle_body_size[x] = classifySize(bodySize, bodySizeMean, 0.25)
         
         //top
-        candle_top_size[x] = classifySize(topSize, bodySizeMean, 0.25)
+        candle_top_size[x] = classifySize(topSize, topSizeMean, 0.1)
         
         //bottom
-        candle_bottom_size[x] = classifySize(bottomSize, bodySizeMean, 0.25)
+        candle_bottom_size[x] = classifySize(bottomSize, bottomSizeMean, 0.1)
 
         //gap
         candle_gap_size[x] = classifySize(gapSize, gapSizeMean, 0.25)
@@ -128,14 +136,27 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 }
 
 
-// 1 for large, 0.5 for medium and 0 for small
-const classifySize = (value, mean, number = 0.25) => {
+const classifySize = (value, mean, threshold = 0.25) => {
+    if (value === null || mean === null) return null;
 
-    if(value === null || mean === null) return null
-    if(value > mean * (number*5)) return 1
-    else if(value < mean * (number*3)) return 0
-    else return number * 2
-}
+    const largeThreshold = mean * (1 + threshold * 4); // Sensitively tuned for large
+    const mediumThreshold = mean * (1 + threshold * 2); // Sensitively tuned for medium
+    const smallThreshold = mean * (1 - threshold * 2); // Sensitively tuned for small
+
+    if (value > largeThreshold) {
+        return 1; // Large
+    } else if (value > mediumThreshold) {
+        return 0.75; // Medium-Large
+    } else if (value > mean) {
+        return 0.5; // Medium
+    } else if (value > smallThreshold) {
+        return 0.25; // Small-Medium
+    } else {
+        return 0; // Small
+    }
+};
+
+
 
 const calculateHighLowEmptyGaps = (current, prev) => {
     // This function calculates the empty gaps between the current high/low and the previous high/low.
