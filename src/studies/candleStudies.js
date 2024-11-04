@@ -139,18 +139,13 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 const classifySize = (value, mean, threshold = 0.25) => {
     if (value === null || mean === null) return null;
 
-    const largeThreshold = mean * (1 + threshold * 4); // Sensitively tuned for large
-    const mediumThreshold = mean * (1 + threshold * 2); // Sensitively tuned for medium
-    const smallThreshold = mean * (1 - threshold * 2); // Sensitively tuned for small
+    const largeThreshold = mean * (1 + threshold * 4); // Adjusted threshold for 'large'
+    const smallThreshold = mean * (1 - threshold * 2); // Adjusted threshold for 'small'
 
     if (value > largeThreshold) {
         return 1; // Large
-    } else if (value > mediumThreshold) {
-        return 0.75; // Medium-Large
-    } else if (value > mean) {
-        return 0.5; // Medium
     } else if (value > smallThreshold) {
-        return 0.25; // Small-Medium
+        return 0.5; // Medium
     } else {
         return 0; // Small
     }
