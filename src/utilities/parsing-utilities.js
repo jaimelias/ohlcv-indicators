@@ -1,8 +1,40 @@
 //true if first row date starts with yyyy-mm-dd date
 const validateFirstDate = arr => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
 
-export const parseOhlcvToVertical = (input, len) => {
+export const defaultStudyOptions = {
+    midPriceOpenClose: false,
+    midPriceHighLow: false,
+    sessionIndex: false,
+    sessionIntradayIndex: false,
+    dayOfTheWeek: false,
+    dayOfTheMonth: false,
+    weekOfTheMonth: false
+}
+
+export const parseOhlcvToVertical = (input, len, studyOptions) => {
+
+    const {
+        midPriceOpenClose,
+        midPriceHighLow,
+        sessionIndex,
+        sessionIntradayIndex,
+        dayOfTheWeek,
+        dayOfTheMonth,
+        weekOfTheMonth
+    } = studyOptions
+
     const numberColsKeys = ['open', 'high', 'low', 'close', 'volume']
+
+    if(midPriceOpenClose)
+    {
+        numberColsKeys.push('mid_price_open_close')
+    }
+
+    if(midPriceHighLow)
+    {
+        numberColsKeys.push('mid_price_high_low')
+    }
+
     const numberColsKeysSet = new Set(numberColsKeys)
     const verticalOhlcv = {}
 
@@ -24,17 +56,37 @@ export const parseOhlcvToVertical = (input, len) => {
 
 
     let prevDateStr
-    let sessionIndex = 0
-    let sessionIntradayIndex = 0
+    let sessionIndexCount = 0
+    let sessionIntradayIndexCount = 0
     const isValidDate = validateFirstDate(input)
 
     if(isValidDate)
     {
-        verticalOhlcv['session_index'] = new Array(len)
-        verticalOhlcv['session_intraday_index'] = new Array(len)
-        verticalOhlcv['day_of_the_week'] = new Array(len)
-        verticalOhlcv['day_of_the_month'] = new Array(len)
-        verticalOhlcv['week_of_the_month'] = new Array(len)
+        if(sessionIndex)
+        {
+            verticalOhlcv['session_index'] = new Array(len)
+        }
+        
+        if(sessionIntradayIndex)
+        {
+            verticalOhlcv['session_intraday_index'] = new Array(len)
+        }
+        
+        if(dayOfTheWeek)
+        {
+            verticalOhlcv['day_of_the_week'] = new Array(len)
+        }
+        
+        if(dayOfTheMonth)
+        {
+            verticalOhlcv['day_of_the_month'] = new Array(len)
+        }
+        
+        if(weekOfTheMonth)
+        {
+            verticalOhlcv['week_of_the_month'] = new Array(len)
+        }
+        
         prevDateStr = input[0].date.slice(0, 10)
     }
     
@@ -47,6 +99,16 @@ export const parseOhlcvToVertical = (input, len) => {
         verticalOhlcv.close[x] = current.close
         verticalOhlcv.volume[x] = current.volume
 
+        if(midPriceOpenClose)
+        {
+            verticalOhlcv.mid_price_open_close[x] = (current.open + current.close) / 2
+        }
+
+        if(midPriceHighLow)
+        {
+            verticalOhlcv.mid_price_high_low[x] = (current.high + current.low) / 2
+        }
+       
         // Process other keys
         for (const key of otherKeys) {
             verticalOhlcv[key][x] = current[key]
@@ -58,8 +120,8 @@ export const parseOhlcvToVertical = (input, len) => {
 
             if (thisDateStr !== prevDateStr) {
                 prevDateStr = thisDateStr
-                sessionIndex++
-                sessionIntradayIndex = 0
+                sessionIndexCount++
+                sessionIntradayIndexCount = 0
             }
 
             const {
@@ -68,13 +130,32 @@ export const parseOhlcvToVertical = (input, len) => {
                 week_of_the_month
             } = getDateInfo(thisDateStr)
 
-            verticalOhlcv.day_of_the_week[x] = day_of_the_week
-            verticalOhlcv.day_of_the_month[x] = day_of_the_month
-            verticalOhlcv.week_of_the_month[x] = week_of_the_month
-            verticalOhlcv.session_index[x] = sessionIndex
-            verticalOhlcv.session_intraday_index[x] = sessionIntradayIndex
+            if(dayOfTheWeek)
+            {
+                verticalOhlcv.day_of_the_week[x] = day_of_the_week
+            }
+            
+            if(dayOfTheMonth)
+            {
+                verticalOhlcv.day_of_the_month[x] = day_of_the_month
+            }
+            
+            if(weekOfTheMonth)
+            {
+                verticalOhlcv.week_of_the_month[x] = week_of_the_month
+            }
 
-            sessionIntradayIndex++
+            if(sessionIndex)
+            {
+                verticalOhlcv.session_index[x] = sessionIndexCount
+            }
+            
+            if(sessionIntradayIndex)
+            {
+                verticalOhlcv.session_intraday_index[x] = sessionIntradayIndexCount
+            }
+
+            sessionIntradayIndexCount++
         }
     }
 

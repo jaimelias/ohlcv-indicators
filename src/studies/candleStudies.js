@@ -10,25 +10,15 @@ export const candlesStudies = (main, period) => {
 
 const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
-    let getSize = (a, b) => Math.abs(a - b)
-
-    //candle_label
-    let candle_label = new Array(len).fill(null)
+    const getSize = (a, b) => Math.abs(a - b)
+    
 
     //close > open
-    let candle_direction = new Array(len).fill(null)
-
-    //body
-    let candle_body_size = new Array(len).fill(null)
-
-    //top
-    let candle_top_size = new Array(len).fill(null)
-
-    //bottom
-    let candle_bottom_size = new Array(len).fill(null)
-
-    //gap between the current open and previous close
-    let candle_gap_size = new Array(len).fill(null)
+    let candle_direction = new Array(len).fill(null) //scaled candle direction close > open = 1, else 0
+    let candle_body_size = new Array(len).fill(null) //scaled body size (0, 0.5 and 1)
+    let candle_top_size = new Array(len).fill(null) //scaled top size (0, 0.5 and 1)
+    let candle_bottom_size = new Array(len).fill(null) //scaled bottom size(0, 0.5 and 1)
+    let candle_gap_size = new Array(len).fill(null) //scaled gap between the current open and previous close (0, 0.5 and 1)
 
     //instances
     let bodyInstance = new FasterSMA(period)
@@ -38,10 +28,16 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
     for(let x = 0; x < len; x++)
     {
-        const {open, high, low, close} = inputOhlcv[x]
-        const gapSize = (typeof inputOhlcv[x-1] !== 'undefined') 
-            ? calculateHighLowEmptyGaps(inputOhlcv[x], inputOhlcv[x-1]) 
-            : null
+        const curr = inputOhlcv[x]
+        const prev = inputOhlcv[x-1]
+
+        if(typeof prev === 'undefined')
+        {
+            continue
+        }
+
+        const {open, high, low, close} = curr
+        const gapSize = calculateHighLowEmptyGaps(curr, prev) 
         let bodySizeMean = null
         let gapSizeMean = null
         let bottomSizeMean = null
@@ -71,7 +67,6 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
             gapInstance.update(gapSize)
         }
         
-
         try
         {
             bodySizeMean = bodyInstance.getResult()
@@ -99,34 +94,9 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         //gap
         candle_gap_size[x] = classifySize(gapSize, gapSizeMean, 0.25)
 
-
-        //label
-
-        const labelArr = [candle_direction[x], candle_body_size[x], candle_top_size[x], candle_bottom_size[x]]
-
-        if(labelArr.every(v => typeof v === 'number'))
-        {
-            candle_label[x] = labelArr.join('_')
-        }
     }
-
-
-    // Create a Map for unique labels with indices
-    const labelMap = new Map();
-    let labelIndex = 0;
-
-    // Populate the label map and assign indices only once
-    for (const label of candle_label) {
-        if (label !== null && !labelMap.has(label)) {
-            labelMap.set(label, labelIndex++);
-        }
-    }
-
-    // Transform candle_label in place using the labelMap for quick lookup
-    candle_label = candle_label.map(v => (v !== null && labelMap.has(v)) ? labelMap.get(v) : null);
 
     return {
-        candle_label,
         candle_direction,
         candle_gap_size,
         candle_body_size,

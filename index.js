@@ -7,13 +7,13 @@ import { rsi } from './src/oscillators/rsi.js'
 import {crossPairs, findDirectionCross, findLinearDirection} from './src/studies/findCrosses.js'
 import { orb } from './src/oscillators/orb.js'
 import { donchianChannels } from './src/moving-averages/donchianChannel.js'
-import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
+import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
 import { correlation } from './src/studies/correlation.js'
 import { arrayChange, arrayGt } from './src/utilities/math-array.js'
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = 'undefined'}) {
+    constructor({input, ticker = null, studyOptions = null}) {
 
         if(!Array.isArray(input)) throw Error('input ohlcv must be an array: ' + ticker)
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
@@ -22,7 +22,8 @@ export default class OHLCV_INDICATORS {
         this.len = input.length
         this.crossPairsArr = []
         this.inputOhlcv = input
-        this.verticalOhlcv = parseOhlcvToVertical(input, this.len)
+        this.studyOptions = (studyOptions === null) ? defaultStudyOptions : studyOptions
+        this.verticalOhlcv = parseOhlcvToVertical(input, this.len, this.studyOptions)
         this.indicators = {}
         this.studies = {}
         this.utilities = {
