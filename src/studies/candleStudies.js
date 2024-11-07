@@ -10,21 +10,17 @@ export const candlesStudies = (main, period) => {
 
 const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
-    const getSize = (a, b) => Math.abs(a - b)
-    
-
     //close > open
-    let candle_direction = new Array(len).fill(null) //scaled candle direction close > open = 1, else 0
-    let candle_body_size = new Array(len).fill(null) //scaled body size (0, 0.5 and 1)
+    let candle_body_size = new Array(len).fill(null) //scaled candle direction close > open = 1, else 0
     let candle_top_size = new Array(len).fill(null) //scaled top size (0, 0.5 and 1)
     let candle_bottom_size = new Array(len).fill(null) //scaled bottom size(0, 0.5 and 1)
     let candle_gap_size = new Array(len).fill(null) //scaled gap between the current open and previous close (0, 0.5 and 1)
 
     //instances
-    let bodyInstance = new FasterSMA(period)
     let topInstance = new FasterSMA(period)
     let bottomInstance = new FasterSMA(period)
-    let gapInstance = new FasterSMA(parseInt(period/2))
+    let gapInstance = new FasterSMA(period)
+    let candleBodySizeInstance = new FasterSMA(period)
 
     for(let x = 0; x < len; x++)
     {
@@ -37,67 +33,56 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         }
 
         const {open, high, low, close} = curr
-        const gapSize = calculateHighLowEmptyGaps(curr, prev) 
-        let bodySizeMean = null
-        let gapSizeMean = null
+
+
+        //initial means
+        let gapMean = null
         let bottomSizeMean = null
         let topSizeMean = null
-        const bodySize = getSize(open, close)
-        let topSize
-        let bottomSize
-        let candleDirection = (close > open) ? 1 : 0 // 1 for bullish and 0 for bearish
+        let bodySizeMean = null
 
-        if(candleDirection === 1)
-        {
-            topSize = getSize(high, close)
-            bottomSize = getSize(open, low)
-        }
-        else
-        {
-            topSize = getSize(high, open)
-            bottomSize = getSize(close, low)
-        }
+        //directions
+        const candleBodySize = close - open // 1 for bullish and 0 for bearish
 
-        bodyInstance.update(bodySize)
+        //sizes
+        const topSize = (candleBodySize > 0) ? high -  close : high - open
+        const bottomSize = (candleBodySize > 0) ? open - low : close - low
+        const gapSize = curr.open -  prev.close
+
+
+
+        //instances
         topInstance.update(topSize)
         bottomInstance.update(bottomSize)
-
-        if(gapSize)
-        {
-            gapInstance.update(gapSize)
-        }
+        gapInstance.update(gapSize)
+        candleBodySizeInstance.update(candleBodySize)
         
         try
         {
-            bodySizeMean = bodyInstance.getResult()
             topSizeMean = topInstance.getResult()
             bottomSizeMean = bottomInstance.getResult()
-            gapSizeMean = gapInstance.getResult()
+            gapMean = gapInstance.getResult()
+            bodySizeMean = candleBodySizeInstance.getResult()
         }
         catch(err)
         {
             bodySizeMean = null
-            gapSizeMean = null
+            gapMean = null
+            topSizeMean = null
+            bottomSizeMean = null
         }
 
-        candle_direction[x] = candleDirection
+        //negatives and positives
+        candle_body_size[x] = classifyChange(candleBodySize, bodySizeMean, 1.5)
+        candle_gap_size[x] = classifyChange(gapSize, gapMean, 0.5)
 
-        //body
-        candle_body_size[x] = classifySize(bodySize, bodySizeMean, 0.25)
+        //positives only
+        candle_top_size[x] = classifySize(topSize, topSizeMean, 0.5)
+        candle_bottom_size[x] = classifySize(bottomSize, bottomSizeMean, 0.5)
         
-        //top
-        candle_top_size[x] = classifySize(topSize, topSizeMean, 0.1)
-        
-        //bottom
-        candle_bottom_size[x] = classifySize(bottomSize, bottomSizeMean, 0.1)
-
-        //gap
-        candle_gap_size[x] = classifySize(gapSize, gapSizeMean, 0.25)
-
     }
 
     return {
-        candle_direction,
         candle_gap_size,
         candle_body_size,
         candle_top_size,
@@ -105,12 +90,33 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
     }
 }
 
+const classifyChange = (value, mean, standardDeviation = 1.5) => {
+    if (value === null || mean === null || standardDeviation === null) return null;
 
-const classifySize = (value, mean, threshold = 0.25) => {
-    if (value === null || mean === null) return null;
+    const positiveLargeThreshold = mean + (1 * standardDeviation * 2); // Large positive (2σ above mean)
+    const positiveSmallThreshold = mean + (1 * standardDeviation);     // Small positive (1σ above mean)
+    const negativeSmallThreshold = mean - (1 * standardDeviation);     // Small negative (1σ below mean)
+    const negativeLargeThreshold = mean - (1 * standardDeviation * 2); // Large negative (2σ below mean)
 
-    const largeThreshold = mean * (1 + threshold * 4); // Adjusted threshold for 'large'
-    const smallThreshold = mean * (1 - threshold * 2); // Adjusted threshold for 'small'
+    if (value >= positiveLargeThreshold) {
+        return 1; // Large positive
+    } else if (value >= positiveSmallThreshold) {
+        return 0.5; // Small positive
+    } else if (value <= negativeLargeThreshold) {
+        return -1; // Large negative
+    } else if (value <= negativeSmallThreshold) {
+        return -0.5; // Small negative
+    } else {
+        return 0; // No significant change
+    }
+}
+
+
+const classifySize = (value, mean, standardDeviation = 1.5) => {
+    if (value === null || mean === null || standardDeviation === null) return null;
+
+    const largeThreshold = mean + (1 * standardDeviation * 2); // Large (2σ above mean)
+    const smallThreshold = mean - (1 * standardDeviation);     // Small (1σ below mean)
 
     if (value > largeThreshold) {
         return 1; // Large
@@ -119,42 +125,4 @@ const classifySize = (value, mean, threshold = 0.25) => {
     } else {
         return 0; // Small
     }
-};
-
-
-
-const calculateHighLowEmptyGaps = (current, prev) => {
-    // This function calculates the empty gaps between the current high/low and the previous high/low.
-    // Gaps are zones where the highest highs and lowest lows of the previous and current candles do not touch.
-    // If any of the values overlap, the gapSize is 0.
-
-    if (!prev) return null; // No previous candle, so no gap
-
-    const {open, high, low, close } = current;
-    const { high: prevHigh, low: prevLow } = prev;
-
-    const highs = [high, prevHigh]
-    const lows = [low, prevLow]
-
-
-    if(close > open)
-    {
-        highs.push(close)
-        lows.push(open)
-    }
-    else
-    {
-        highs.push(open)
-        lows.push(close)        
-    }
-
-
-    const maxHigh = Math.max(high, prevHigh)
-    const minLow = Math.min(low, prevLow)
-    const fullSize = maxHigh - minLow
-    const prevSize = Math.abs(prevHigh - prevLow)
-    const currentSize = Math.abs(high-low)
-    const gapSize = fullSize - (prevSize+currentSize)
-
-    return (gapSize > 0) ? gapSize : 0.01
 }

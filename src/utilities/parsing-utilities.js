@@ -13,6 +13,18 @@ export const defaultStudyOptions = {
 
 export const parseOhlcvToVertical = (input, len, studyOptions) => {
 
+
+    if(Boolean(studyOptions))
+    {
+        for(let k in studyOptions)
+        {
+            if(!defaultStudyOptions.hasOwnProperty(k))
+            {
+                throw new Error(`Key ${k} not found in defaultStudyOptions. Available options: ${Object.keys(defaultStudyOptions).join(', ')}`)
+            }
+        }
+    }
+
     const {
         midPriceOpenClose,
         midPriceHighLow,
