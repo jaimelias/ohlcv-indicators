@@ -122,17 +122,17 @@ const classifyChange = (value, mean, standardDeviation = 0.5) => {
     if (value >= largePositiveThreshold) {
         return 1;    // Large positive
     } else if (value >= mediumPositiveThreshold) {
-        return 0.75; // Medium positive
+        return 0.875; // Medium positive
     } else if (value >= smallPositiveThreshold) {
-        return 0.25; // Small positive
+        return 0.625; // Small positive
     } else if (value <= largeNegativeThreshold) {
-        return -1;   // Large negative
+        return 0;   // Large negative
     } else if (value <= mediumNegativeThreshold) {
-        return -0.75; // Medium negative
+        return 0.125; // Medium negative
     } else if (value <= smallNegativeThreshold) {
-        return -0.25; // Small negative
+        return 0.375; // Small negative
     } else {
-        return 0; // No significant change
+        return 0.5; // No significant change
     }
 };
 
@@ -147,14 +147,14 @@ const classifySize = (value, mean, standardDeviation = 1.5) => {
     const verySmallThreshold = mean - (1.5 * standardDeviation); // Very small (1.5σ below mean)
 
     if (value > largeThreshold) {
-        return 1; // Large
+        return 1;        // Large
     } else if (value > mediumThreshold) {
-        return 0.75; // Medium
+        return 0.875;    // Medium
     } else if (value > smallThreshold) {
-        return 0.5; // Small
+        return 0.625;    // Small
     } else if (value > verySmallThreshold) {
-        return 0.25; // Very small
+        return 0.375;    // Very small
     } else {
-        return 0; // Insignificant
+        return 0.125;    // Insignificant
     }
 };
