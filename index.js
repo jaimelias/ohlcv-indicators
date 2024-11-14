@@ -220,9 +220,9 @@ export default class OHLCV_INDICATORS {
 
         return this       
     }
-    candlesStudies(period)
+    candlesStudies(period, classify)
     {
-        const result = candlesStudies(this, period)
+        const result = candlesStudies(this, period, classify)
         Object.assign(this.indicators, result)
 
         return this       

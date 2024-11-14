@@ -1,14 +1,14 @@
 import {FasterSMA} from 'trading-signals';
 
-export const candlesStudies = (main, period) => {
+export const candlesStudies = (main, period, classify) => {
 
     const {inputOhlcv, len} = main
 
-    const cols = getCandlesStudies(inputOhlcv, period, len)
+    const cols = getCandlesStudies(inputOhlcv, period, len, classify)
     return cols
 }
 
-const getCandlesStudies = (inputOhlcv, period = 20, len) => {
+const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true) => {
 
     //close > open
     let candle_body_size = new Array(len).fill(null) //scaled candle direction close - open
@@ -20,12 +20,22 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
 
 
     //instances
-    let topInstance = new FasterSMA(period)
-    let bottomInstance = new FasterSMA(period)
-    let gapInstance = new FasterSMA(period)
-    let bodySizeInstance = new FasterSMA(period)
-    let shadowSizeInstance = new FasterSMA(period)
-    let positionInstance = new FasterSMA(period)
+    let topInstance 
+    let bottomInstance
+    let gapInstance
+    let bodySizeInstance
+    let shadowSizeInstance
+    let positionInstance
+
+    if(classify)
+    {
+        topInstance = new FasterSMA(period)
+        bottomInstance = new FasterSMA(period)
+        gapInstance = new FasterSMA(period)
+        bodySizeInstance = new FasterSMA(period)
+        shadowSizeInstance = new FasterSMA(period)
+        positionInstance = new FasterSMA(period)
+    }
 
     for(let x = 0; x < len; x++)
     {
@@ -58,45 +68,59 @@ const getCandlesStudies = (inputOhlcv, period = 20, len) => {
         const gapSize = curr.open -  prev.close
         const position = curr.close - prev.close
 
-
-        //instances
-        topInstance.update(Math.abs(topSize))
-        bottomInstance.update(Math.abs(bottomSize))
-        shadowSizeInstance.update(Math.abs(shadowSize))
-
-        gapInstance.update(gapSize)
-        bodySizeInstance.update(candleBodySize)
-        positionInstance.update(position)
-        
-        
-        try
+        if(classify)
         {
-            topSizeMean = topInstance.getResult()
-            bottomSizeMean = bottomInstance.getResult()
-            gapMean = gapInstance.getResult()
-            bodySizeMean = bodySizeInstance.getResult()
-            shadowSizeMean = shadowSizeInstance.getResult()
-            positionMean = positionInstance.getResult()
+            //instances
+            topInstance.update(Math.abs(topSize))
+            bottomInstance.update(Math.abs(bottomSize))
+            shadowSizeInstance.update(Math.abs(shadowSize))
+
+            gapInstance.update(gapSize)
+            bodySizeInstance.update(candleBodySize)
+            positionInstance.update(position)
+            
+            
+            try
+            {
+                topSizeMean = topInstance.getResult()
+                bottomSizeMean = bottomInstance.getResult()
+                gapMean = gapInstance.getResult()
+                bodySizeMean = bodySizeInstance.getResult()
+                shadowSizeMean = shadowSizeInstance.getResult()
+                positionMean = positionInstance.getResult()
+            }
+            catch(err)
+            {
+                bodySizeMean = null
+                gapMean = null
+                topSizeMean = null
+                bottomSizeMean = null
+                shadowSizeMean = null
+                positionMean = null
+            }
+
+            //negatives and positives
+            candle_body_size[x] = classifyChange(candleBodySize, bodySizeMean, 0.5)
+            candle_gap_size[x] = classifyChange(gapSize, gapMean, 0.5)
+            candle_position[x] = classifyChange(position, positionMean, 0.5)
+
+            //positives only
+            candle_top_size[x] = classifySize(topSize, topSizeMean, 0.5)
+            candle_bottom_size[x] = classifySize(bottomSize, bottomSizeMean, 0.5)
+            candle_shadow_size[x] = classifySize(shadowSize, shadowSizeMean, 0.5)
         }
-        catch(err)
-        {
-            bodySizeMean = null
-            gapMean = null
-            topSizeMean = null
-            bottomSizeMean = null
-            shadowSizeMean = null
-            positionMean = null
+        else{
+             //negatives and positives
+             candle_body_size[x] = candleBodySize
+             candle_gap_size[x] = gapSize
+             candle_position[x] = position
+ 
+             //positives only
+             candle_top_size[x] = topSize
+             candle_bottom_size[x] = bottomSize
+             candle_shadow_size[x] = shadowSize           
         }
 
-        //negatives and positives
-        candle_body_size[x] = classifyChange(candleBodySize, bodySizeMean, 0.5)
-        candle_gap_size[x] = classifyChange(gapSize, gapMean, 0.5)
-        candle_position[x] = classifyChange(position, positionMean, 0.5)
-
-        //positives only
-        candle_top_size[x] = classifySize(topSize, topSizeMean, 0.5)
-        candle_bottom_size[x] = classifySize(bottomSize, bottomSizeMean, 0.5)
-        candle_shadow_size[x] = classifySize(shadowSize, shadowSizeMean, 0.5)
     }
 
     return {
