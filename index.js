@@ -19,7 +19,7 @@ export default class OHLCV_INDICATORS {
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
 
-        this.continuous = new Set(['open', 'high', 'low', 'close', 'mid_price_open_close', 'mid_price_high_low'])
+        this.priceBased = ['open', 'high', 'low', 'close', 'mid_price_open_close', 'mid_price_high_low']
         this.len = input.length
         this.crossPairsArr = []
         this.inputOhlcv = input
@@ -130,7 +130,7 @@ export default class OHLCV_INDICATORS {
 
     lag(colKeys = ['close'], lags = 1) {
         this.compute();
-        const {verticalOhlcv, continuous} = this;
+        const {verticalOhlcv, priceBased} = this;
     
         for (let x = 0; x < colKeys.length; x++) {
             for (let lag = 1; lag <= lags; lag++) {
@@ -140,9 +140,9 @@ export default class OHLCV_INDICATORS {
     
                 Object.assign(this.indicators, {[key]: values})
 
-                if([...continuous].find(v => key.startsWith(v)))
+                if(priceBased.find(v => key.startsWith(v)))
                 {
-                    this.continuous.add(key)
+                    this.priceBased.push(key)
                 }
             }
         }
@@ -167,7 +167,7 @@ export default class OHLCV_INDICATORS {
        const result = ema(this, size)
        Object.assign(this.indicators, result)
 
-       this.continuous.add(`ema_${size}`)
+       this.priceBased.push(`ema_${size}`)
 
         return this
     }
@@ -176,7 +176,7 @@ export default class OHLCV_INDICATORS {
         const result = sma(this, size)
         Object.assign(this.indicators, result)
 
-        this.continuous.add(`sma_${size}`)
+        this.priceBased.push(`sma_${size}`)
 
         return this 
     }
@@ -194,9 +194,7 @@ export default class OHLCV_INDICATORS {
         const result = bollingerBands(this, size, times)
         Object.assign(this.indicators, result)
 
-        this.continuous.add('bollinger_bands_middle')
-        this.continuous.add('bollinger_bands_upper')
-        this.continuous.add('bollinger_bands_lower')
+        this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower')
 
         return this
     }
@@ -213,8 +211,7 @@ export default class OHLCV_INDICATORS {
         const result = orb(this)
         Object.assign(this.indicators, result)
 
-        this.continuous.add('orb_high')
-        this.continuous.add('orb_low')
+        this.priceBased.push('orb_high', 'orb_low')
 
         return this       
     }
@@ -223,10 +220,7 @@ export default class OHLCV_INDICATORS {
         const result = donchianChannels(this, period, offset)
         Object.assign(this.indicators, result)
 
-
-        this.continuous.add('donchian_channel_upper')
-        this.continuous.add('donchian_channel_lower')
-        this.continuous.add('donchian_channel_basis')
+        this.priceBased.push('donchian_channel_upper', 'donchian_channel_lower', 'donchian_channel_basis')
 
         return this       
     }
