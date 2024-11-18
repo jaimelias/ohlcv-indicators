@@ -1,6 +1,6 @@
 import {FasterSMA} from 'trading-signals'
 
-export const relativeVolume = (main, size) => {
+export const relativeVolume = (main, size = 10) => {
     const {verticalOhlcv} = main
     const {volume} = verticalOhlcv
     const col = getRelativeVolume(volume, size)
@@ -10,7 +10,7 @@ export const relativeVolume = (main, size) => {
     }
 }
 
-export const getRelativeVolume = (volume, size = 10) => {
+export const getRelativeVolume = (volume, size) => {
     
     const instance = new FasterSMA(size)
     const sma = new Array(volume.length).fill(null)
@@ -38,8 +38,6 @@ export const getRelativeVolume = (volume, size = 10) => {
             output[x] = volume[x] / sma[x-1]
         }
     }
-
-    console.log(output)
-
+    
     return output
 }

@@ -1,14 +1,11 @@
-const eq = ({f, fb, fc, s}) => (fb && fc) ? f === s || fb === s || fc === s: f === s
-const gt = ({f, fb, fc, s}) => (fb && fc) ? f > s || fb > s || fc > s: f > s
-const lt = ({f, fb, fc, s}) => (fb && fc) ? f < s || fb < s || fc < s: f < s
+const eq = (f, s) => f === s
+const gt = (f, s) => f > s
+const lt = (f, s) => f < s
 
 
 // Function to find crosses between two arrays: fast and slow
-export const findCrosses = ({fast, fastB, fastC, slow}) => {
+export const findCrosses = ({fast, high, low, slow}) => {
     // Map states based on comparison of fast and slow arrays
-
-
-    console.log({fastB, fastC})
 
     const dataLength = fast.length
 
@@ -17,42 +14,60 @@ export const findCrosses = ({fast, fastB, fastC, slow}) => {
         throw Error('fast and slow do not have the same length')
     }
 
-    const state = new Array(dataLength).fill(null)
+    const state = new Array(dataLength).fill(0.5)
 
     for(let x = 0; x < dataLength; x++)
     {
+        const prevState = state?.[x-1] || 0.5
         const f = fast[x]
         const s = slow[x]
+        const hi = high?.[x]
+        const lo = low?.[x]
 
-        const prevF = fast[x-1]
-        const prevS = slow[x-1]
+        if(high || low)
+        {
+            if(typeof hi === 'undefined' || typeof lo === 'undefined') continue
+        }
 
-        const fb = fastB?.[x] || false;
-        const fc = fastC?.[x] || false;
-        
-        const prevFb = fastB?.[x - 1] || false;
-        const prevFc = fastC?.[x - 1] || false;
+        const prevS = slow[x - 1]
+        const prevHi = high?.[x-1]
+        const prevLo = low?.[x-1]
+
+        if(high || low)
+        {
+            if(typeof prevHi === 'undefined' || typeof prevLo === 'undefined' || typeof prevS === 'undefined') continue
+        }
         
         let value
 
-        if(f === null || s === null) value = 'neutral'
-        else if(eq({f, fb, fc, s})){
-            if(gt({f: prevF, fb: prevFb, fc: prevFc, s: prevS}))
+        if(f === null || s === null) value = 0.5
+
+        else if(eq(f, s)) {
+            value = prevState
+        }
+        else if(gt(f, s)) {
+
+            if(lt(lo, s) && gt(prevLo, prevS))
             {
-                value = 1 //up
-            }
-            else if(lt({f: prevF, fb: prevFb, fc: prevFc, s: prevS}))
-            {
-                value = 0 //down
+                value = 0
             }
             else
             {
-                value = 0.5 //neutral
+                value = 1
             }
         }
-        else if(gt({f, fb, fc, s})) value = 1
-        else if(lt({f, fb, fc, s})) value = 0
+        else if(lt(f, s)) {
 
+            if(gt(hi, s) && lt(prevHi, prevS))
+            {
+                value = 1
+            }
+            else
+            {
+                value = 0
+            }
+        }
+        
         state[x] = value
     }
 
@@ -163,8 +178,8 @@ export const crossPairs = (main, arr) => {
             const cross = (fast === 'price') 
             ? findCrosses({
                 fast: verticalOhlcv.close, 
-                fastB: verticalOhlcv.low, 
-                fastC: verticalOhlcv.high, 
+                high: verticalOhlcv.high, 
+                low: verticalOhlcv.low, 
                 slow: verticalOhlcv[slow]}
             ) 
             : findCrosses({fast: verticalOhlcv[fast], slow: verticalOhlcv[slow]})
@@ -213,11 +228,11 @@ export const findLinearDirection = (main, keyName) => {
             let curr = arr[x]
             let prev = arr[x-1]
 
-            if(gt({f: curr, s: prev}))
+            if(gt(curr, prev))
             {
                 state[x] = 1 //up
             }
-            else if(lt({f: curr, s: prev}))
+            else if(lt(curr, prev))
             {
                 state[x] = 0 //down
             }

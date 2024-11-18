@@ -19,6 +19,7 @@ export default class OHLCV_INDICATORS {
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
 
+        this.continuous = new Set(['open', 'high', 'low', 'close', 'mid_price_open_close', 'mid_price_high_low'])
         this.len = input.length
         this.crossPairsArr = []
         this.inputOhlcv = input
@@ -50,6 +51,7 @@ export default class OHLCV_INDICATORS {
             // Loop over keys to fill row data
             for (let x = 0; x < keysLength; x++) {
                 const header = keys[x];
+
                 const value = verticalOhlcv[header][i];
     
                 // If value is null, mark the row to be skipped and break
@@ -58,7 +60,7 @@ export default class OHLCV_INDICATORS {
                     break;
                 }
     
-                row[header] = value
+                row[header] =  value
             }
     
             // If no null values were found, add row to result
@@ -72,21 +74,7 @@ export default class OHLCV_INDICATORS {
     
     
     getLastValues(){
-
-        this.compute()
-        const {verticalOhlcv, len} = this
-        const output = {}
-
-        for (const [k, arr] of Object.entries(verticalOhlcv)) {
-            let value = arr[len - 1]
-
-            output[k] = value
-            
-        }
-
-        Object.assign(output, this.studies)
-
-        return output
+        return this.getData()[this.getData().length -1]
     }
 
     compute() {
@@ -142,7 +130,7 @@ export default class OHLCV_INDICATORS {
 
     lag(colKeys = ['close'], lags = 1) {
         this.compute();
-        const {verticalOhlcv} = this;
+        const {verticalOhlcv, continuous} = this;
     
         for (let x = 0; x < colKeys.length; x++) {
             for (let lag = 1; lag <= lags; lag++) {
@@ -151,8 +139,14 @@ export default class OHLCV_INDICATORS {
                 const values = verticalOhlcv[colKeys[x]].slice(0, -(lag));
     
                 Object.assign(this.indicators, {[key]: values})
+
+                if([...continuous].find(v => key.startsWith(v)))
+                {
+                    this.continuous.add(key)
+                }
             }
         }
+
     
         this.compute();
         return this;
@@ -160,9 +154,9 @@ export default class OHLCV_INDICATORS {
     
     relativeVolume(size) {
 
-
         const result = relativeVolume(this, size)
         Object.assign(this.indicators, result)
+
  
         return this
     }
@@ -173,12 +167,16 @@ export default class OHLCV_INDICATORS {
        const result = ema(this, size)
        Object.assign(this.indicators, result)
 
+       this.continuous.add(`ema_${size}`)
+
         return this
     }
     sma(size) {
 
         const result = sma(this, size)
         Object.assign(this.indicators, result)
+
+        this.continuous.add(`sma_${size}`)
 
         return this 
     }
@@ -196,6 +194,10 @@ export default class OHLCV_INDICATORS {
         const result = bollingerBands(this, size, times)
         Object.assign(this.indicators, result)
 
+        this.continuous.add('bollinger_bands_middle')
+        this.continuous.add('bollinger_bands_upper')
+        this.continuous.add('bollinger_bands_lower')
+
         return this
     }
     rsi(period, movingAverage, movingAveragePeriod)
@@ -211,12 +213,20 @@ export default class OHLCV_INDICATORS {
         const result = orb(this)
         Object.assign(this.indicators, result)
 
+        this.continuous.add('orb_high')
+        this.continuous.add('orb_low')
+
         return this       
     }
     donchianChannels(period, offset)
     {
         const result = donchianChannels(this, period, offset)
         Object.assign(this.indicators, result)
+
+
+        this.continuous.add('donchian_channel_upper')
+        this.continuous.add('donchian_channel_lower')
+        this.continuous.add('donchian_channel_basis')
 
         return this       
     }

@@ -1,5 +1,6 @@
 
-import {BollingerBands, FasterBollingerBands, Big} from 'trading-signals';
+import {FasterBollingerBands, FasterSMA} from 'trading-signals';
+import { classifySize } from '../utilities/classification.js';
 
 export const bollingerBands = (main, size, times) => {
 
@@ -18,13 +19,18 @@ export const getBollingerBands = (data, size = 20, times = 2) => {
   const bollinger_bands_lower =  Array(dataLength).fill(null)
   const bollinger_bands_range =  Array(dataLength).fill(null)
   const bollinger_bands_height =  Array(dataLength).fill(null)
+
+
+  const heightInstance = new FasterSMA(size)
+
   let range = null
   let height = null
 
   let getRange = (value, upper, lower) => ({
-    range: ((value - lower) / (upper - lower)) * 100,
-    height: ((upper-lower)/lower) * 100
+    range: ((value - lower) / (upper - lower)),
+    height: upper-lower
   })
+
   let instance = new FasterBollingerBands(size, times)
 
   
@@ -32,6 +38,8 @@ export const getBollingerBands = (data, size = 20, times = 2) => {
     let obj = {};
     instance.update(data[x])
     let hasNull = false
+    let heightMean
+
 
     try {
       obj = instance.getResult()
@@ -54,11 +62,23 @@ export const getBollingerBands = (data, size = 20, times = 2) => {
       const extraProps = getRange(data[x], obj.upper, obj.lower)
       range = extraProps.range
       height = extraProps.height
+
+      heightInstance.update(height)
+
+      try{
+        heightMean = heightInstance.getResult()
+      }
+      catch(err)
+      {
+        heightMean = null
+      }
+
     }
 
     bollinger_bands_range[x] = range
-    bollinger_bands_height[x] = height
+    bollinger_bands_height[x] = classifySize(height, heightMean, 1.5)
   }
 
   return { bollinger_bands_upper, bollinger_bands_middle, bollinger_bands_lower, bollinger_bands_range, bollinger_bands_height }
 }
+

@@ -1,5 +1,11 @@
+
+
+
 //true if first row date starts with yyyy-mm-dd date
 const validateFirstDate = arr => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
+
+
+
 
 export const defaultStudyOptions = {
     midPriceOpenClose: false,
@@ -34,6 +40,12 @@ export const parseOhlcvToVertical = (input, len, studyOptions) => {
         dayOfTheMonth,
         weekOfTheMonth
     } = studyOptions
+
+    let highMax
+    let lowMin
+    let volMax
+    let volMin
+
 
     const numberColsKeys = ['open', 'high', 'low', 'close', 'volume']
 
@@ -104,6 +116,7 @@ export const parseOhlcvToVertical = (input, len, studyOptions) => {
     
     for (let x = 0; x < len; x++) {
         const current = input[x]
+
 
         verticalOhlcv.open[x] = current.open
         verticalOhlcv.high[x] = current.high
@@ -194,4 +207,13 @@ const getDateInfo = dateString => {
         day_of_the_month,
         week_of_the_month
     };
+  }
+
+
+  const normalizeArray = (array, min, max, range = [0, 1]) => {
+    const [rangeMin, rangeMax] = range;
+    const normalized = array.map(value => 
+      ((value - min) / (max - min)) * (rangeMax - rangeMin) + rangeMin
+    );
+    return normalized;
   }
