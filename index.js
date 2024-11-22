@@ -4,13 +4,12 @@ import {sma} from './src/moving-averages/sma.js'
 import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
-import {crossPairs, findDirectionCross, findLinearDirection} from './src/studies/findCrosses.js'
+import {crossPairs} from './src/studies/findCrosses.js'
 import { orb } from './src/oscillators/orb.js'
 import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
 import { correlation } from './src/studies/correlation.js'
-import { arrayChange, arrayGt } from './src/utilities/math-array.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, studyOptions = null}) {
@@ -232,90 +231,4 @@ export default class OHLCV_INDICATORS {
         return this       
     }
 
-    findDirectionCross(keyNames = ['close', 'low'])
-    {
-        this.compute()
-
-        for(let x = 0; x < keyNames.length; x++)
-        {
-            const keyName = keyNames[x]
-            const result = findDirectionCross(this, keyName)
-            Object.assign(this.indicators, {[`${keyName}_direction_cross`]: result})
-        }
-
-        this.compute()
-        return this
-    }
-
-    findLinearDirection(keyNames = ['close', 'low'])
-    {
-        this.compute()
-
-        for(let x = 0; x < keyNames.length; x++)
-        {
-            const keyName = keyNames[x]
-            const result = findLinearDirection(this, keyName)
-            Object.assign(this.indicators, {[`${keyName}_linear_direction`]: result})
-        }
-
-        this.compute()
-        return this
-    }
-
-    change(key)
-    {
-        this.compute()
-        const {verticalOhlcv} = this
-
-        if(!verticalOhlcv.hasOwnProperty(key))
-        {
-            const err = `key "${key}" not found in verticalOhlcv. change method`
-            throw Error(err)
-        }
-
-        Object.assign(this.indicators, {
-            [`${key}_change`]: arrayChange(verticalOhlcv[key])
-        })
-        
-        this.compute()
-
-        return this
-
-    }
-
-    gt(a = 'close', b = 'open')
-    {
-        this.compute()
-
-        const {verticalOhlcv} = this
-
-        if(!verticalOhlcv.hasOwnProperty(a))
-        {
-            const errA = `key "${a}" not found in verticalOhlcv. gt method`
-            throw Error(errA)
-        }
-
-        let bArr
-            
-        if(typeof b === 'string')
-        {
-            if(!verticalOhlcv.hasOwnProperty(b))
-            {
-                const errB = `key "${b}" not found in verticalOhlcv. gt method`
-                throw Error(errB)
-            }
-
-            bArr = verticalOhlcv[b]
-        }
-        else if(typeof b === 'number')
-        {
-            bArr = new Array(verticalOhlcv[a].length).fill(b)
-        }
-
-        Object.assign(this.indicators, {[`${a}_gt_${b}`]: arrayGt(verticalOhlcv[a], bArr)})
-
-        this.compute()
-
-        return this
-    }
 }
