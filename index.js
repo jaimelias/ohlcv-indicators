@@ -192,10 +192,10 @@ export default class OHLCV_INDICATORS {
         return this
 
     }
-    bollingerBands(size, times)
+    bollingerBands(size, times, bollingerBandsStudies)
     {
 
-        const result = bollingerBands(this, size, times)
+        const result = bollingerBands(this, size, times, bollingerBandsStudies)
         Object.assign(this.indicators, result)
 
         this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower')

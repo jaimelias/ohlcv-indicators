@@ -202,7 +202,7 @@ export const crossPairs = (main, arr) => {
             }
 
         } else {
-            console.log(`Missing ohlcv properties for ${fast} or ${slow}`);
+            throw Error(`Missing ohlcv properties for ${fast} or ${slow}`);
         }
     }
 
