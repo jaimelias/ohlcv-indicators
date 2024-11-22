@@ -74,20 +74,19 @@ export default class OHLCV_INDICATORS {
     
     getLastValues(){
 
-        if(Object.keys(this.indicators).length > 0)
-        {
-            this.compute()
-        }
-
         return this.getData()[this.getData().length -1]
+    
     }
 
     compute() {
 
-        const indicators = this.indicators
+
+        if(Object.keys(this.indicators).length === 0) return this
+
+
         const addColumn = this.addColumn.bind(this)
 
-        for(const [key, arr] of Object.entries(indicators))
+        for(const [key, arr] of Object.entries( this.indicators))
         {
             if(!this.verticalOhlcv.hasOwnProperty(key))
             {
