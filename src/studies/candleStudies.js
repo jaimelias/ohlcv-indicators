@@ -1,16 +1,18 @@
 import {FasterSMA} from 'trading-signals'
 import { classifyChange, classifySize } from '../utilities/classification.js'
 
-export const candlesStudies = (main, period, classify) => {
+export const candlesStudies = (main, period, classify, classificationLevels) => {
 
     const {inputOhlcv, len} = main
 
-    const cols = getCandlesStudies(inputOhlcv, period, len, classify)
+    const cols = getCandlesStudies(inputOhlcv, period, len, classify, classificationLevels)
     return cols
 }
 
-const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true) => {
+const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classificationLevels = {}) => {
 
+    const {changeLevel = 7, sizeLevel = 5} = classificationLevels
+ 
     //close > open
     let candle_body_size = new Array(len).fill(null) //scaled candle direction close - open
     let candle_top_size = new Array(len).fill(null) //scaled top size (0, 0.5 and 1)
@@ -64,8 +66,8 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true) => {
         const shadowSize = curr.high - curr.low
 
         //sizes
-        const topSize = (candleBodySize > 0) ? high -  close : high - open
-        const bottomSize = (candleBodySize > 0) ? open - low : close - low
+        const topSize = high - Math.max(open, close)
+        const bottomSize = Math.min(open, close) - low
         const gapSize = prev.close - curr.open
         const position = curr.close - prev.close
 
@@ -101,14 +103,14 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true) => {
             }
 
             //negatives and positives
-            candle_body_size[x] = classifyChange(candleBodySize, bodySizeMean, 0.5)
-            candle_gap_size[x] = classifyChange(gapSize, gapMean, 0.5)
-            candle_position[x] = classifyChange(position, positionMean, 0.5)
+            candle_body_size[x] = classifyChange(candleBodySize, bodySizeMean, 0.5, changeLevel)
+            candle_gap_size[x] = classifyChange(gapSize, gapMean, 0.5, changeLevel)
+            candle_position[x] = classifyChange(position, positionMean, 0.5, changeLevel)
 
             //positives only
-            candle_top_size[x] = classifySize(topSize, topSizeMean, 0.5)
-            candle_bottom_size[x] = classifySize(bottomSize, bottomSizeMean, 0.5)
-            candle_shadow_size[x] = classifySize(shadowSize, shadowSizeMean, 0.5)
+            candle_top_size[x] = classifySize(topSize, topSizeMean, 0.5, sizeLevel)
+            candle_bottom_size[x] = classifySize(bottomSize, bottomSizeMean, 0.5, sizeLevel)
+            candle_shadow_size[x] = classifySize(shadowSize, shadowSizeMean, 0.5, sizeLevel)
         }
         else{
              //negatives and positives
