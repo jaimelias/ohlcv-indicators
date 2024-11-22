@@ -73,6 +73,12 @@ export default class OHLCV_INDICATORS {
     
     
     getLastValues(){
+
+        if(Object.keys(this.indicators).length > 0)
+        {
+            this.compute()
+        }
+
         return this.getData()[this.getData().length -1]
     }
 
