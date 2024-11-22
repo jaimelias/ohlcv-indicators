@@ -25,6 +25,11 @@ export const classifyChange = (value, mean, standardDeviation = 0.5, numLevels =
     if (value === null || mean === null || standardDeviation === null) return null;
     if (numLevels < 2) throw new Error("numLevels must be at least 2");
   
+    // Handle numLevels == 2 explicitly
+    if (numLevels === 2) {
+        return value >= mean ? 1 : -1;
+    }
+  
     // Calculate the range for each level
     const step = (4 * standardDeviation) / (numLevels - 1);
     const thresholds = [];
