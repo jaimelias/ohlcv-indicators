@@ -62,14 +62,15 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
         let positionMean = null
 
         //directions
-        const candleBodySize = close - open // 1 for bullish and 0 for bearish
-        const shadowSize = curr.high - curr.low
+        const isUp = close > open
+        const candleBodySize = Math.abs(close - open)
+        const shadowSize = Math.abs(curr.high - curr.low)
 
         //sizes
         const topSize = high - Math.max(open, close)
         const bottomSize = Math.min(open, close) - low
-        const gapSize = prev.close - curr.open
-        const position = curr.close - prev.close
+        const gapSize = Math.abs(prev.close - curr.open)
+        const position = Math.abs(curr.close - prev.close)
 
         if(classify)
         {
@@ -103,10 +104,18 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
             }
 
             //negatives and positives
-            candle_body_size[x] = classifyChange(candleBodySize, bodySizeMean, 0.5, changeLevel)
-            candle_gap_size[x] = classifyChange(gapSize, gapMean, 0.5, changeLevel)
-            candle_position[x] = classifyChange(position, positionMean, 0.5, changeLevel)
+            candle_body_size[x] = (isUp) 
+            ? classifySize(candleBodySize, bodySizeMean, 2, changeLevel) 
+            : -Math.abs(classifySize(candleBodySize, bodySizeMean, 2, changeLevel)) || 0;
 
+            candle_gap_size[x] = (isUp) 
+            ? classifySize(gapSize, gapMean, 2, changeLevel) 
+            : -Math.abs(classifySize(gapSize, gapMean, 2, changeLevel)) || 0;
+
+            candle_position[x] = (isUp) 
+            ? classifySize(position, positionMean, 2, changeLevel) 
+            : -Math.abs(classifySize(position, positionMean, 2, changeLevel)) || 0;
+            
             //positives only
             candle_top_size[x] = classifySize(topSize, topSizeMean, 0.5, sizeLevel)
             candle_bottom_size[x] = classifySize(bottomSize, bottomSizeMean, 0.5, sizeLevel)
