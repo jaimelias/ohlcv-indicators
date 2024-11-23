@@ -1,5 +1,5 @@
 import {FasterSMA} from 'trading-signals'
-import { classifyChange, classifySize } from '../utilities/classification.js'
+import { classifySize } from '../utilities/classification.js'
 
 export const candlesStudies = (main, period, classify, classificationLevels) => {
 
