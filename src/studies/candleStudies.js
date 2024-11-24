@@ -19,10 +19,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
     let candle_bottom_size = new Array(len).fill(null) //scaled bottom size(0, 0.5 and 1)
     let candle_gap_size = new Array(len).fill(null) //scaled gap between the current open and previous close (-1 to 1)
     let candle_shadow_size = new Array(len).fill(null) //scaled shadow size high - slow
-    let candle_close_position =  new Array(len).fill(null) //scaled shadow size curr.close - prev.close
-    let candle_high_position = new Array(len).fill(null) //scaled shadow size curr.high - prev.high
-    let candle_low_position = new Array(len).fill(null) //scaled shadow size curr.low - prev.low
-
+    let candle_close_direction =  new Array(len).fill(null) //scaled shadow size curr.close - prev.close
+    let candle_high_direction = new Array(len).fill(null) //scaled shadow size curr.high - prev.high
+    let candle_low_direction = new Array(len).fill(null) //scaled shadow size curr.low - prev.low
+    let candle_open_direction = new Array(len).fill(null) //scaled shadow size curr.open - prev.open
 
     //instances
     let topInstance 
@@ -30,9 +30,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
     let gapInstance
     let bodySizeInstance
     let shadowSizeInstance
-    let closePositionInstance
-    let highPositionInstance
-    let lowPositionInstance
+    let closeDirectionInstance
+    let highDirectionInstance
+    let lowDirectionInstance
+    let openDirectionInstance
 
     if(classify)
     {
@@ -41,9 +42,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
         gapInstance = new FasterSMA(period)
         bodySizeInstance = new FasterSMA(period)
         shadowSizeInstance = new FasterSMA(period)
-        closePositionInstance = new FasterSMA(period)
-        highPositionInstance = new FasterSMA(period)
-        lowPositionInstance = new FasterSMA(period)
+        closeDirectionInstance = new FasterSMA(period)
+        highDirectionInstance = new FasterSMA(period)
+        lowDirectionInstance = new FasterSMA(period)
+        openDirectionInstance = new FasterSMA(period)
     }
 
     for(let x = 0; x < len; x++)
@@ -62,9 +64,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
         let topSizeMean = null
         let bodySizeMean = null
         let shadowSizeMean = null
-        let closePositionMean = null
-        let highPositionMean = null
-        let lowPositionMean = null
+        let closeDirectionMean = null
+        let highDirectionMean = null
+        let lowDirectionMean = null
+        let openDirectionMean = null
 
         //directions
         const isUp = close > open
@@ -75,9 +78,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
         const topSize = high - Math.max(open, close)
         const bottomSize = Math.min(open, close) - low
         const gapSize = Math.abs(prev.close - curr.open)
-        const closePosition = Math.abs(curr.close - prev.close)
-        const highPosition = Math.abs(curr.high - prev.high)
-        const lowPosition = Math.abs(curr.low - prev.low)
+        const closeDirection = Math.abs(curr.close - prev.close)
+        const highDirection = Math.abs(curr.high - prev.high)
+        const lowDirection = Math.abs(curr.low - prev.low)
+        const openDirection = Math.abs(curr.open - prev.open)
 
         if(classify)
         {
@@ -88,9 +92,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
 
             gapInstance.update(gapSize)
             bodySizeInstance.update(candleBodySize)
-            closePositionInstance.update(closePosition)
-            highPositionInstance.update(highPosition)
-            lowPositionInstance.update(lowPosition)
+            closeDirectionInstance.update(closeDirection)
+            highDirectionInstance.update(highDirection)
+            lowDirectionInstance.update(lowDirection)
+            openDirectionInstance.update(openDirection)
             
             try
             {
@@ -99,9 +104,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
                 gapMean = gapInstance.getResult()
                 bodySizeMean = bodySizeInstance.getResult()
                 shadowSizeMean = shadowSizeInstance.getResult()
-                closePositionMean = closePositionInstance.getResult()
-                highPositionMean = highPositionInstance.getResult()
-                lowPositionMean = lowPositionInstance.getResult()
+                closeDirectionMean = closeDirectionInstance.getResult()
+                highDirectionMean = highDirectionInstance.getResult()
+                lowDirectionMean = lowDirectionInstance.getResult()
+                openDirectionMean = openDirectionInstance.getResult()
             }
             catch(err)
             {
@@ -110,9 +116,10 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
                 topSizeMean = null
                 bottomSizeMean = null
                 shadowSizeMean = null
-                closePositionMean = null
-                highPositionMean = null
-                lowPositionMean = null
+                closeDirectionMean = null
+                highDirectionMean = null
+                lowDirectionMean = null
+                openDirectionMean = null
             }
 
             //negatives and positives
@@ -124,19 +131,23 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
             ? classifySize(gapSize, gapMean, 2, changeLevel) 
             : -Math.abs(classifySize(gapSize, gapMean, 2, changeLevel)) || 0;
 
-            candle_close_position[x] = (isUp) 
-            ? classifySize(closePosition, closePositionMean, 2, changeLevel) 
-            : -Math.abs(classifySize(closePosition, closePositionMean, 2, changeLevel)) || 0;
+            candle_close_direction[x] = (isUp) 
+            ? classifySize(closeDirection, closeDirectionMean, 2, changeLevel) 
+            : -Math.abs(classifySize(closeDirection, closeDirectionMean, 2, changeLevel)) || 0;
 
-
-            candle_high_position[x] = (isUp) 
-            ? classifySize(highPosition, highPositionMean, 2, changeLevel) 
-            : -Math.abs(classifySize(highPosition, highPositionMean, 2, changeLevel)) || 0;  
+            candle_high_direction[x] = (isUp) 
+            ? classifySize(highDirection, highDirectionMean, 2, changeLevel) 
+            : -Math.abs(classifySize(highDirection, highDirectionMean, 2, changeLevel)) || 0;  
             
             
-            candle_low_position[x] = (isUp) 
-            ? classifySize(lowPosition, lowPositionMean, 2, changeLevel) 
-            : -Math.abs(classifySize(lowPosition, lowPositionMean, 2, changeLevel)) || 0;
+            candle_low_direction[x] = (isUp) 
+            ? classifySize(lowDirection, lowDirectionMean, 2, changeLevel) 
+            : -Math.abs(classifySize(lowDirection, lowDirectionMean, 2, changeLevel)) || 0;
+
+            candle_open_direction[x] = (isUp) 
+            ? classifySize(openDirection, openDirectionMean, 2, changeLevel) 
+            : -Math.abs(classifySize(openDirection, openDirectionMean, 2, changeLevel)) || 0;
+
             
             //positives only
             candle_top_size[x] = classifySize(topSize, topSizeMean, 0.5, sizeLevel)
@@ -147,9 +158,9 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
              //negatives and positives
              candle_body_size[x] = candleBodySize
              candle_gap_size[x] = gapSize
-             candle_close_position[x] = closePosition
-             candle_high_position[x] = highPosition
-             candle_low_position[x] = lowPosition
+             candle_close_direction[x] = closeDirection
+             candle_high_direction[x] = highDirection
+             candle_low_direction[x] = lowDirection
  
              //positives only
              candle_top_size[x] = topSize
@@ -165,8 +176,9 @@ const getCandlesStudies = (inputOhlcv, period = 20, len, classify = true, classi
         candle_top_size,
         candle_bottom_size,
         candle_shadow_size,
-        candle_close_position,
-        candle_high_position,
-        candle_low_position
+        candle_close_direction,
+        candle_high_direction,
+        candle_low_direction,
+        candle_open_direction
     }
 }
