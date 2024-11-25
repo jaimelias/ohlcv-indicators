@@ -236,4 +236,13 @@ export default class OHLCV_INDICATORS {
         return this       
     }
 
+    map(callback)
+    {
+        const result = callback(this.verticalOhlcv)
+
+        Object.assign(this.indicators, result)
+
+        return this
+    }
+
 }
