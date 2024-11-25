@@ -238,11 +238,34 @@ export default class OHLCV_INDICATORS {
 
     map(callback)
     {
-        const result = callback(this.verticalOhlcv)
+        this.compute()
+        
+        const keyNames = Object.keys(this.verticalOhlcv)
+        const result = {}
 
+
+        for(let x = 0; x < this.len; x++)
+        {
+            let row = {}
+            
+            for(let k = 0; k < keyNames.length; k++)
+            {   
+                Object.assign(row, {[keyNames[k]]: this.verticalOhlcv[keyNames[k]][x]})
+            }
+
+            for(const [k, value] of Object.entries(callback(row)))
+            {
+                if(x === 0)
+                {
+                    result[k] = new Array(this.len).fill(null)
+                }
+                
+                result[k][x] = value
+            }
+        }       
+        
         Object.assign(this.indicators, result)
 
         return this
     }
-
 }
