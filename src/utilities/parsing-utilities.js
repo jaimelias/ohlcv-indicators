@@ -208,12 +208,3 @@ const getDateInfo = dateString => {
         week_of_the_month
     };
   }
-
-
-  const normalizeArray = (array, min, max, range = [0, 1]) => {
-    const [rangeMin, rangeMax] = range;
-    const normalized = array.map(value => 
-      ((value - min) / (max - min)) * (rangeMax - rangeMin) + rangeMin
-    );
-    return normalized;
-  }
