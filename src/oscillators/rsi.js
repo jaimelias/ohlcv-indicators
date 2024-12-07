@@ -1,7 +1,7 @@
 import { getSMA } from "../moving-averages/sma.js";
 import { getEMA } from "../moving-averages/ema.js";
 import { findCrosses } from "../studies/findCrosses.js";
-import {RSI, FasterRSI} from 'trading-signals';
+import {FasterRSI} from 'trading-signals';
 
 const ma = {getSMA, getEMA}
 

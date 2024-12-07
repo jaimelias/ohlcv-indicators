@@ -10,6 +10,7 @@ import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
 import { correlation } from './src/studies/correlation.js'
+import { volumeOscillator } from './src/oscillators/volumeOscillator.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, studyOptions = null}) {
@@ -234,6 +235,14 @@ export default class OHLCV_INDICATORS {
         Object.assign(this.indicators, result)
 
         return this       
+    }
+
+    volumeOscillator(fastPeriod, slowPeriod)
+    {
+        const result = volumeOscillator(this, fastPeriod, slowPeriod)
+        Object.assign(this.indicators, result)
+
+        return this           
     }
 
     map(callback)

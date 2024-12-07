@@ -7,7 +7,7 @@
   "scripts": {
     "test": "node test/test.js",
     "study": "node test/study.js",
-    "knn": "node test/knn.js",
+    "count": "node test/countUps.js",
     "build": "npx webpack"
   },
   "author": "https://jaimelias.com/",
