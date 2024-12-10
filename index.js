@@ -11,6 +11,7 @@ import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsi
 import { candlesStudies } from './src/studies/candleStudies.js'
 import { correlation } from './src/studies/correlation.js'
 import { volumeOscillator } from './src/oscillators/volumeOscillator.js'
+import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, studyOptions = null}) {
@@ -44,6 +45,8 @@ export default class OHLCV_INDICATORS {
             candlesStudies: null,
             volumeOscillator: null,
         }
+
+        this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
     
         return this 
     }
