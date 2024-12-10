@@ -30,6 +30,21 @@ export default class OHLCV_INDICATORS {
         this.utilities = {
             correlation
         }
+        this.inputParams = {
+            crossPairs: null,
+            lag: null,
+            relativeVolume: null,
+            ema: null,
+            sma: null,
+            macd: null,
+            orb: null,
+            bollingerBands: null,
+            rsi: null,
+            donchianChannels: null,
+            candlesStudies: null,
+            volumeOscillator: null,
+        }
+    
         return this 
     }
     
@@ -121,6 +136,9 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr)
     {
+
+        this.inputParams.crossPairs ??= []
+        this.inputParams.crossPairs.push([arr])
         
         this.compute()
 
@@ -134,6 +152,11 @@ export default class OHLCV_INDICATORS {
     }
 
     lag(colKeys = ['close'], lags = 1) {
+
+
+        this.inputParams.lag ??= []
+        this.inputParams.lag.push([colKeys, lags])
+
         this.compute();
         const {verticalOhlcv, priceBased} = this;
     
@@ -159,6 +182,9 @@ export default class OHLCV_INDICATORS {
     
     relativeVolume(size) {
 
+        this.inputParams.relativeVolume ??= []
+        this.inputParams.relativeVolume.push([size])
+
         const result = relativeVolume(this, size)
         Object.assign(this.indicators, result)
 
@@ -168,15 +194,20 @@ export default class OHLCV_INDICATORS {
 
     ema(size) {
 
+        this.inputParams.ema ??= []
+        this.inputParams.ema.push([size])
 
-       const result = ema(this, size)
-       Object.assign(this.indicators, result)
+        const result = ema(this, size)
+        Object.assign(this.indicators, result)
 
-       this.priceBased.push(`ema_${size}`)
+        this.priceBased.push(`ema_${size}`)
 
         return this
     }
     sma(size) {
+
+        this.inputParams.sma ??= []
+        this.inputParams.sma.push([size])
 
         const result = sma(this, size)
         Object.assign(this.indicators, result)
@@ -187,6 +218,9 @@ export default class OHLCV_INDICATORS {
     }
     macd(fastLine, slowLine, signalLine) {
 
+        this.inputParams.macd ??= []
+        this.inputParams.macd.push([fastLine, slowLine, signalLine])
+
         const result = macd(this, fastLine, slowLine, signalLine)
         Object.assign(this.indicators, result)
         
@@ -195,6 +229,9 @@ export default class OHLCV_INDICATORS {
     }
     bollingerBands(size, times, bollingerBandsStudies)
     {
+
+        this.inputParams.bollingerBands ??= []
+        this.inputParams.bollingerBands.push([size, times, bollingerBandsStudies])
 
         const result = bollingerBands(this, size, times, bollingerBandsStudies)
         Object.assign(this.indicators, result)
@@ -206,6 +243,9 @@ export default class OHLCV_INDICATORS {
     rsi(period, movingAverage, movingAveragePeriod)
     {
 
+        this.inputParams.rsi ??= []
+        this.inputParams.rsi.push([period, movingAverage, movingAveragePeriod])
+
         const result = rsi(this, period, movingAverage, movingAveragePeriod)
         Object.assign(this.indicators, result)
 
@@ -213,6 +253,10 @@ export default class OHLCV_INDICATORS {
     }
     orb()
     {
+
+        this.inputParams.orb ??= []
+        this.inputParams.orb.push([])
+
         const result = orb(this)
         Object.assign(this.indicators, result)
 
@@ -222,6 +266,10 @@ export default class OHLCV_INDICATORS {
     }
     donchianChannels(period, offset)
     {
+
+        this.inputParams.donchianChannels ??= []
+        this.inputParams.donchianChannels.push([period, offset])
+
         const result = donchianChannels(this, period, offset)
         Object.assign(this.indicators, result)
 
@@ -231,6 +279,10 @@ export default class OHLCV_INDICATORS {
     }
     candlesStudies(period, classify, classificationLevels)
     {
+
+        this.inputParams.candlesStudies ??= []
+        this.inputParams.candlesStudies.push([period, classify, classificationLevels])
+
         const result = candlesStudies(this, period, classify, classificationLevels)
         Object.assign(this.indicators, result)
 
@@ -239,42 +291,14 @@ export default class OHLCV_INDICATORS {
 
     volumeOscillator(fastPeriod, slowPeriod)
     {
+
+
+        this.inputParams.volumeOscillator ??= []
+        this.inputParams.volumeOscillator.push([fastPeriod, slowPeriod])
+
         const result = volumeOscillator(this, fastPeriod, slowPeriod)
         Object.assign(this.indicators, result)
 
         return this           
-    }
-
-    map(callback)
-    {
-        this.compute()
-        
-        const keyNames = Object.keys(this.verticalOhlcv)
-        const result = {}
-
-
-        for(let x = 0; x < this.len; x++)
-        {
-            let row = {}
-            
-            for(let k = 0; k < keyNames.length; k++)
-            {   
-                Object.assign(row, {[keyNames[k]]: this.verticalOhlcv[keyNames[k]][x]})
-            }
-
-            for(const [k, value] of Object.entries(callback(row)))
-            {
-                if(x === 0)
-                {
-                    result[k] = new Array(this.len).fill(null)
-                }
-                
-                result[k][x] = value
-            }
-        }       
-        
-        Object.assign(this.indicators, result)
-
-        return this
     }
 }
