@@ -14,8 +14,9 @@ export const defaultStudyOptions = {
     weekOfTheMonth: false
 }
 
-export const parseOhlcvToVertical = (input, len, studyOptions) => {
+export const parseOhlcvToVertical = (input, main) => {
 
+    const {len, studyOptions} = main
 
     if(Boolean(studyOptions))
     {
@@ -37,12 +38,6 @@ export const parseOhlcvToVertical = (input, len, studyOptions) => {
         dayOfTheMonth,
         weekOfTheMonth
     } = studyOptions
-
-    let highMax
-    let lowMin
-    let volMax
-    let volMin
-
 
     const numberColsKeys = ['open', 'high', 'low', 'close', 'volume']
 

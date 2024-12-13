@@ -5,7 +5,6 @@ import {macd} from './src/moving-averages/macd.js'
 import {bollingerBands} from './src/moving-averages/bollingerBands.js'
 import { rsi } from './src/oscillators/rsi.js'
 import {crossPairs} from './src/studies/findCrosses.js'
-import { orb } from './src/oscillators/orb.js'
 import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsing-utilities.js'
 import { candlesStudies } from './src/studies/candleStudies.js'
@@ -25,7 +24,7 @@ export default class OHLCV_INDICATORS {
         this.crossPairsArr = []
         this.inputOhlcv = input
         this.studyOptions = (studyOptions === null) ? defaultStudyOptions : studyOptions
-        this.verticalOhlcv = parseOhlcvToVertical(input, this.len, this.studyOptions)
+        this.verticalOhlcv = parseOhlcvToVertical(input, this)
         this.indicators = {}
         this.studies = {}
         this.utilities = {
@@ -38,7 +37,6 @@ export default class OHLCV_INDICATORS {
             ema: null,
             sma: null,
             macd: null,
-            orb: null,
             bollingerBands: null,
             rsi: null,
             donchianChannels: null,
@@ -253,19 +251,6 @@ export default class OHLCV_INDICATORS {
         Object.assign(this.indicators, result)
 
         return this
-    }
-    orb()
-    {
-
-        this.inputParams.orb ??= []
-        this.inputParams.orb.push([])
-
-        const result = orb(this)
-        Object.assign(this.indicators, result)
-
-        this.priceBased.push('orb_high', 'orb_low')
-
-        return this       
     }
     donchianChannels(period, offset)
     {
