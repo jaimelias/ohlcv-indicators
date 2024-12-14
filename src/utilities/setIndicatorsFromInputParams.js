@@ -38,8 +38,6 @@ export const setIndicatorsFromInputParams = ({ input, inputParams, OHLCV_INDICAT
             }
         }
     }
-
-    console.log(indicators.getLastValues());
-
+    
     return indicators;
 };

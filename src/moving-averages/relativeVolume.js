@@ -1,43 +1,32 @@
-import {FasterSMA} from 'trading-signals'
+import {FasterSMA} from 'trading-signals';
 
-export const relativeVolume = (main, size = 10) => {
-    const {verticalOhlcv} = main
-    const {volume} = verticalOhlcv
-    const col = getRelativeVolume(volume, size)
+export const relativeVolume = (main, index, size = 10) => {
 
-    return {
-        [`relative_volume_${size}`]: col
+    const value = main.verticalOhlcv.volume[index]
+
+    if (!main.instances.hasOwnProperty(`relative_volume_${size}`)) {
+        main.instances[`relative_volume_${size}`] = new FasterSMA(size);
+        main.verticalOhlcv[`relative_volume_${size}`] = new Array(main.len).fill(null);
+        main.verticalOhlcv[`relative_volume_sma_${size}`] = new Array(main.len).fill(null);
     }
-}
 
-export const getRelativeVolume = (volume, size) => {
-    
-    const instance = new FasterSMA(size)
-    const sma = new Array(volume.length).fill(null)
-    const output = new Array(volume.length).fill(null)
+    const smaInstance = main.instances[`relative_volume_${size}`]
+    smaInstance.update(value)
 
-    for(let x = 0; x < volume.length; x++)
-    {
-        let value = null
-
-        instance.update(volume[x])
-
-        try
-        {
-          value = instance.getResult()
-        }
-        catch(err)
-        {
-          value = null
-        }
-
-        sma[x] = value
-
-        if(typeof sma[x-1] === 'number')
-        {
-            output[x] = volume[x] / sma[x-1]
-        }
+    let smaValue;
+    try {
+        smaValue = smaInstance.getResult()
+    } catch (err) {
+        smaValue = null;
     }
-    
-    return output
-}
+
+    main.verticalOhlcv[`relative_volume_sma_${size}`][index] = smaValue;
+
+    if (smaValue !== null && typeof main.verticalOhlcv[`relative_volume_sma_${size}`][index - 1] === 'number') {
+        main.verticalOhlcv[`relative_volume_${size}`][index] = value / main.verticalOhlcv[`relative_volume_sma_${size}`][index - 1];
+    } else {
+        main.verticalOhlcv[`relative_volume_${size}`][index] = null;
+    }
+
+    return true;
+};

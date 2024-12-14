@@ -1,59 +1,46 @@
-export const donchianChannels = (main, period, offset) => {
+const avg = (h, l) => (h + l) / 2;
 
-    const {verticalOhlcv, len} = main
-    const {high, low} = verticalOhlcv
+export const donchianChannels = (main, index, size, offset) => {
+    const { verticalOhlcv } = main;
+    const highs = verticalOhlcv.high;
+    const lows = verticalOhlcv.low;
 
-    return getDonchianChannels(high, low, period, offset, len)
-}
+    // If we don't have enough data to fill one size ending at (index - offset), return
+    if ((index - offset) < (size - 1)) return true;
 
-export const getDonchianChannels = (high, low, period, offset, len) => {
-    const donchian_channel_upper = new Array(len).fill(null)
-    const donchian_channel_lower = new Array(len).fill(null)
-    const donchian_channel_basis = new Array(len).fill(null)
-
-    const maxQueue = []
-    const minQueue = []
-
-    const avg = ((h, l) => (h + l) / 2)
-    
-    for (let i = 0; i < len; i++) {
-
-        while (maxQueue.length && maxQueue[0] <= i - period) {
-            maxQueue.shift()
-        }
-        // Remove smaller values from the end
-        while (maxQueue.length && high[maxQueue[maxQueue.length - 1]] <= high[i]) {
-            maxQueue.pop()
-        }
-        maxQueue.push(i)
-
-        while (minQueue.length && minQueue[0] <= i - period) {
-            minQueue.shift()
-        }
-        while (minQueue.length && low[minQueue[minQueue.length - 1]] >= low[i]) {
-            minQueue.pop()
-        }
-
-        minQueue.push(i)
-
-        if (i >= period - 1) {
-            const upperValue = high[maxQueue[0]]
-            const lowerValue = low[minQueue[0]]
-            const basisValue = avg(upperValue, lowerValue)
-
-            const indexWithOffset = i + offset
-
-            if (indexWithOffset >= 0 && indexWithOffset < len) {
-                donchian_channel_upper[indexWithOffset] = upperValue
-                donchian_channel_lower[indexWithOffset] = lowerValue
-                donchian_channel_basis[indexWithOffset] = basisValue
-            }
-        }
+    // Ensure that the required arrays exist
+    if (!main.instances.hasOwnProperty('donchian_channels')) {
+        main.instances['donchian_channels'] = {};
+        verticalOhlcv['donchian_channel_upper'] = new Array(main.len).fill(null);
+        verticalOhlcv['donchian_channel_basis'] = new Array(main.len).fill(null);
+        verticalOhlcv['donchian_channel_lower'] = new Array(main.len).fill(null);
     }
 
-    return { 
-        donchian_channel_upper, 
-        donchian_channel_lower,
-        donchian_channel_basis 
+
+    // Compute the slice start and end to get exactly 'size' bars
+    const endIdx = (index - offset) + 1;          // inclusive end of the slice
+    const startIdx = endIdx - size;             // start index for slicing
+
+    // If any of these indices is out of bounds, return
+    if (startIdx < 0 || endIdx > main.len) return true;
+
+    // Extract the relevant chunks of data
+    const highChunk = highs.slice(startIdx, endIdx)
+    const lowChunk = lows.slice(startIdx, endIdx)
+
+    // Compute the Donchian channels
+    const upper = Math.max(...highChunk);
+    const lower = Math.min(...lowChunk);
+    const basis = avg(upper, lower);
+
+    // Place the result at index
+    const placementIndex = index;
+
+    if (placementIndex >= 0 && placementIndex < main.len) {
+        verticalOhlcv['donchian_channel_upper'][placementIndex] = upper;
+        verticalOhlcv['donchian_channel_basis'][placementIndex] = basis;
+        verticalOhlcv['donchian_channel_lower'][placementIndex] = lower;
     }
-}
+
+    return true;
+};

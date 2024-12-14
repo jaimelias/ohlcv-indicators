@@ -1,50 +1,47 @@
-import { findCrosses } from "../studies/findCrosses.js";
-import {EMA, MACD, FasterEMA, FasterMACD} from 'trading-signals';
+import {FasterEMA, FasterMACD} from 'trading-signals';
 
+export const macd = (main, index, fastLine = 12, slowLine = 26, signalLine = 9) => {
 
-export const macd = (main, fastLine, slowLine, signalLine) => {
+    const value = main.verticalOhlcv.close[index]
 
-    const {verticalOhlcv} = main
-    const {close} = verticalOhlcv
-    const col = getMACD(close, fastLine, slowLine, signalLine)
+    if (!main.instances.hasOwnProperty('macd')) {
 
-    return col
-}
+        main.autoCrossPairsList.push({fast: 'macd_diff', slow: 'macd_dea'});
 
-export const getMACD = (data, fastLine = 12, slowLine = 26, signalLine = 9) => {
+        main.instances['macd'] = new FasterMACD(
+            new FasterEMA(fastLine),
+            new FasterEMA(slowLine),
+            new FasterEMA(signalLine)
+        );
 
-    const dataLength = data.length
-    const diff = new Array(dataLength).fill(null)
-    const dea = new Array(dataLength).fill(null)
-    const histogram = new Array(dataLength).fill(null)
-
-    const instance = new FasterMACD(new FasterEMA(fastLine), new FasterEMA(slowLine), new FasterEMA(signalLine))
-
-    for(let x = 0; x < dataLength; x++)
-    {
-        let obj = {}
-        instance.update(data[x])
-        
-        try
-        {
-            obj = instance.getResult()
-        }
-        catch(err)
-        {
-            obj = {macd: null, signal: null, histogram: null}
-        }
-    
-        diff[x] = obj.macd
-        dea[x] = obj.signal
-        histogram[x] = obj.histogram
+        main.verticalOhlcv['macd_diff'] = new Array(main.len).fill(null);
+        main.verticalOhlcv['macd_dea'] = new Array(main.len).fill(null);
+        main.verticalOhlcv['macd_histogram'] = new Array(main.len).fill(null);
     }
 
-    const x = findCrosses({fast: diff, slow: dea})
+    const macdInstance = main.instances[`macd`];
+    macdInstance.update(value);
 
-	return {
-		macd_diff: diff, 
-		macd_dea: dea,
-		macd_histogram: histogram,
-        macd_diff_x_macd_dea: x
+    let macdResult;
+    try {
+        macdResult = macdInstance.getResult();
+    } catch (err) {
+        macdResult = { macd: null, signal: null, histogram: null };
     }
-}
+
+    const { macd, signal, histogram } = macdResult;
+
+    if (macd !== null) {
+        main.verticalOhlcv['macd_diff'][index] = macd;
+    }
+
+    if (signal !== null) {
+        main.verticalOhlcv['macd_dea'][index] = signal;
+    }
+
+    if (histogram !== null) {
+        main.verticalOhlcv['macd_histogram'][index] = histogram;
+    }
+
+    return true;
+};

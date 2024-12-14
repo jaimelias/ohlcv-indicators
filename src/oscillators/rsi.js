@@ -1,68 +1,50 @@
-import { getSMA } from "../moving-averages/sma.js";
-import { getEMA } from "../moving-averages/ema.js";
-import { findCrosses } from "../studies/findCrosses.js";
 import {FasterRSI} from 'trading-signals';
+import { FasterSMA } from 'trading-signals';
 
-const ma = {getSMA, getEMA}
 
-export const rsi = (main, period, movingAverage, movingAveragePeriod) => {
-
-    const {verticalOhlcv} = main
-    const {close} = verticalOhlcv
-
-    if(typeof period === 'number' && typeof movingAveragePeriod === 'undefined')
-    {
-        movingAveragePeriod = period
-    }
-
-    const col = getRSI(close, period, movingAverage, movingAveragePeriod)
-
-    return col   
-}
-
-export const getRSI = (data, period = 14, movingAverage = 'SMA', movingAveragePeriod = 14) => {
-
-    const dataLength = data.length
-
-    if (dataLength < period) {
-        return [];
-    }
-
-    let rsi = new Array(dataLength).fill(null)
-    const instance = new FasterRSI(period)
-
-    for(let x = 0; x < dataLength; x++)
-    {
-        let value = null
-
-        if(data[x] !== null)
-        {
-            instance.update(data[x])
-            
-            try
-            {
-                value = instance.getResult()
-            }
-            catch(err)
-            {
-                value = null
-            }
-        }
+export const rsi = (main, index, size) => {
     
-        rsi[x] = value
-    }
+    const value = main.verticalOhlcv.close[index]
 
-    let output = {[`rsi_${period}`]: rsi}
-
-    if(typeof movingAverage === 'string' && typeof movingAveragePeriod === 'number')
+    if(!main.instances.hasOwnProperty(`rsi_${size}`))
     {
-        if(ma.hasOwnProperty(`get${movingAverage}`))
-        {
-            const rsi_smoothed = ma[`get${movingAverage}`](rsi, movingAveragePeriod)
-            output[`rsi_${movingAverage}_${movingAveragePeriod}`] = rsi_smoothed
-            output[`rsi_${period}_x_rsi_${movingAverage}_${movingAveragePeriod}`] = findCrosses({fast: rsi, slow: rsi_smoothed})
-        }
+        main.autoCrossPairsList.push({fast: `rsi_${size}`, slow: `rsi_sma_${size}`})
+        main.instances[`rsi_${size}`] = new FasterRSI(size)
+        main.instances[`rsi_sma_${size}`] = new FasterSMA(size)
+        main.verticalOhlcv[`rsi_${size}`] = new Array(main.len).fill(null)
+        main.verticalOhlcv[`rsi_sma_${size}`] = new Array(main.len).fill(null)
+    }
+    
+    let currentRsi
+    let smoothedRsi
+
+    main.instances[`rsi_${size}`].update(value)
+
+    try
+    {
+        currentRsi = main.instances[`rsi_${size}`].getResult()
+    } catch(err) {
+        currentRsi = null
+    }
+    
+    if(currentRsi)
+    {
+        main.verticalOhlcv[`rsi_${size}`][index] = currentRsi
+        main.instances[`rsi_sma_${size}`].update(currentRsi)
     }
 
-    return output
+    try
+    {
+        smoothedRsi = main.instances[`rsi_sma_${size}`].getResult()
+    } catch(err)
+    {
+        smoothedRsi = null
+    }
+
+    if(smoothedRsi)
+    {
+        main.verticalOhlcv[`rsi_sma_${size}`][index] = smoothedRsi
+    }
+
+    return true
 }

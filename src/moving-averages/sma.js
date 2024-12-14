@@ -1,49 +1,29 @@
 
 import {FasterSMA} from 'trading-signals';
 
-export const sma = (main, size) => {
+export const sma = (main, index, size) => {
 
-  const {verticalOhlcv} = main
-  const {close} = verticalOhlcv
+  const value = main.verticalOhlcv.close[index]
 
-  const col = getSMA(close, size)
- 
-  return {
-    [`sma_${size}`]: col
-  }
-}
-
-export const getSMA = (data, size) => {
-  
-  if(typeof data === 'undefined' || typeof size === 'undefined')
+  if(!main.instances.hasOwnProperty(`sma_${size}`))
   {
-    throw Error('undefined param in getSMA')
+      main.instances[`sma_${size}`] = new FasterSMA(size)
+      main.verticalOhlcv[`sma_${size}`] = new Array(main.len).fill(null)
   }
 
-  const dataLength = data.length
-  const output = new Array(dataLength).fill(null)
-  const instance = new FasterSMA(size)
+  let currSma
+  main.instances[`sma_${size}`].update(value)
 
-  for(let x = 0; x < dataLength; x++)
+  try{
+    currSma = main.instances[`sma_${size}`].getResult()
+  } catch(err)
   {
-      let value = null
-
-      if(data[x] !== null)
-      {
-        instance.update(data[x])
-      
-        try
-        {
-          value = instance.getResult()
-        }
-        catch(err)
-        {
-          value = null
-        }
-      }
-
-      output[x] = value
+    currSma = null
   }
 
-  return output
+  if(currSma)
+  {
+    main.verticalOhlcv[`sma_${size}`][index] = currSma
+  }
+
 }

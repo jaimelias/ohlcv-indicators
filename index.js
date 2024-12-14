@@ -1,15 +1,6 @@
-import { relativeVolume } from './src/moving-averages/relativeVolume.js'
-import {ema} from './src/moving-averages/ema.js'
-import {sma} from './src/moving-averages/sma.js'
-import {macd} from './src/moving-averages/macd.js'
-import {bollingerBands} from './src/moving-averages/bollingerBands.js'
-import { rsi } from './src/oscillators/rsi.js'
 import {crossPairs} from './src/studies/findCrosses.js'
-import { donchianChannels } from './src/moving-averages/donchianChannel.js'
 import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsing-utilities.js'
-import { candlesStudies } from './src/studies/candleStudies.js'
 import { correlation } from './src/studies/correlation.js'
-import { volumeOscillator } from './src/oscillators/volumeOscillator.js'
 import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
 
 export default class OHLCV_INDICATORS {
@@ -19,17 +10,14 @@ export default class OHLCV_INDICATORS {
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
 
+        this.input = input
         this.priceBased = ['open', 'high', 'low', 'close', 'mid_price_open_close', 'mid_price_high_low']
         this.len = input.length
-        this.crossPairsArr = []
-        this.inputOhlcv = input
         this.studyOptions = (studyOptions === null) ? defaultStudyOptions : studyOptions
-        this.verticalOhlcv = parseOhlcvToVertical(input, this)
-        this.indicators = {}
-        this.studies = {}
-        this.utilities = {
-            correlation
-        }
+        this.instances = {}
+        this.autoCrossPairsList = []
+        this.verticalOhlcv = {}
+
         this.inputParams = {
             crossPairs: null,
             lag: null,
@@ -44,13 +32,22 @@ export default class OHLCV_INDICATORS {
             volumeOscillator: null,
         }
 
+        
+        this.studies = {}
+        this.utilities = {
+            correlation
+        }
+
+
         this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
     
         return this 
     }
     
     getData() {
-        this.compute();
+
+        this.compute()
+
         const {verticalOhlcv} = this
         const keys = Object.keys(verticalOhlcv);
         const len = verticalOhlcv[keys[0]].length;
@@ -97,87 +94,43 @@ export default class OHLCV_INDICATORS {
 
     compute() {
 
-
-        if(Object.keys(this.indicators).length === 0) return this
-
-
-        const addColumn = this.addColumn.bind(this)
-
-        for(const [key, arr] of Object.entries( this.indicators))
-        {
-            if(!this.verticalOhlcv.hasOwnProperty(key))
-            {
-                addColumn(key, arr)
-            }
-            else
-            {
-                delete this.indicators[key]
-            }
-        }
+        parseOhlcvToVertical(this.input, this)
 
         return this
-    }
-
-    addColumn(key, arr) {
-        const {len} = this
-        key = key.toLowerCase();
-    
-        if (arr.length > len) {
-            throw new Error(`Invalid column data: The length of the new column exceeds the length of the OHLCV data`);
-        }
-    
-        if (arr.length < len) {
-            const nanCount = len - arr.length
-            arr = new Array(nanCount).fill(null).concat(arr)
-        }
-    
-        this.verticalOhlcv[key] = arr
     }
     
 
     crossPairs(arr)
     {
 
-        this.inputParams.crossPairs ??= []
-        this.inputParams.crossPairs.push([arr])
-        
         this.compute()
 
-        const {x, c} = crossPairs(this, arr)
-        Object.assign(this.indicators, x)
-        Object.assign(this.studies, c)
+        const crossList = [...this.autoCrossPairsList, ...arr]
+        this.inputParams.crossPairs ??= []
+        this.inputParams.crossPairs.push([crossList])
 
-        this.compute()   
+        const {x, c} = crossPairs(this, crossList)
+        Object.assign(this.verticalOhlcv, x)
+        Object.assign(this.studies, c)
 
         return this
     }
 
     lag(colKeys = ['close'], lags = 1) {
 
-
         this.inputParams.lag ??= []
         this.inputParams.lag.push([colKeys, lags])
 
-        this.compute();
-        const {verticalOhlcv, priceBased} = this;
-    
-        for (let x = 0; x < colKeys.length; x++) {
-            for (let lag = 1; lag <= lags; lag++) {
-                // Create lagged column name and slice the array with the correct lag
-                const key = `${colKeys[x]}_lag_${lag}`;
-                const values = verticalOhlcv[colKeys[x]].slice(0, -(lag));
-    
-                Object.assign(this.indicators, {[key]: values})
+        for(let x = 0; x < colKeys.length; x++)
+        {
+            const key = colKeys[x]
 
-                if(priceBased.find(v => key.startsWith(v)))
-                {
-                    this.priceBased.push(key)
-                }
+            if(this.priceBased.find(v => key.startsWith(v)))
+            {
+                this.priceBased.push(key)
             }
         }
-
-    
-        this.compute();
+        
         return this;
     }
     
@@ -185,10 +138,6 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.relativeVolume ??= []
         this.inputParams.relativeVolume.push([size])
-
-        const result = relativeVolume(this, size)
-        Object.assign(this.indicators, result)
-
  
         return this
     }
@@ -197,10 +146,6 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.ema ??= []
         this.inputParams.ema.push([size])
-
-        const result = ema(this, size)
-        Object.assign(this.indicators, result)
-
         this.priceBased.push(`ema_${size}`)
 
         return this
@@ -209,10 +154,6 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.sma ??= []
         this.inputParams.sma.push([size])
-
-        const result = sma(this, size)
-        Object.assign(this.indicators, result)
-
         this.priceBased.push(`sma_${size}`)
 
         return this 
@@ -221,72 +162,74 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.macd ??= []
         this.inputParams.macd.push([fastLine, slowLine, signalLine])
-
-        const result = macd(this, fastLine, slowLine, signalLine)
-        Object.assign(this.indicators, result)
         
         return this
 
     }
-    bollingerBands(size, times, bollingerBandsStudies)
-    {
-
-        this.inputParams.bollingerBands ??= []
-        this.inputParams.bollingerBands.push([size, times, bollingerBandsStudies])
-
-        const result = bollingerBands(this, size, times, bollingerBandsStudies)
-        Object.assign(this.indicators, result)
-
-        this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower')
-
-        return this
+    bollingerBands(size = 20, times = 2, bollingerBandsStudies) {
+        // Validate size and times
+        if (typeof size !== 'number' || size <= 0) {
+            throw new Error('Invalid parameter: "size" must be a positive number in bollingerBands.');
+        }
+        if (typeof times !== 'number' || times <= 0) {
+            throw new Error('Invalid parameter: "times" must be a positive number in bollingerBands.');
+        }
+    
+        this.inputParams.bollingerBands ??= [];
+        this.inputParams.bollingerBands.push([size, times, bollingerBandsStudies]);
+        this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower');
+    
+        return this;
     }
-    rsi(period, movingAverage, movingAveragePeriod)
+    
+    rsi(size)
     {
+        // Validate size and times
+        if (typeof size !== 'number' || size <= 0) {
+            throw new Error('Invalid parameter: "size" must be a positive number in rsi.');
+        }
 
         this.inputParams.rsi ??= []
-        this.inputParams.rsi.push([period, movingAverage, movingAveragePeriod])
-
-        const result = rsi(this, period, movingAverage, movingAveragePeriod)
-        Object.assign(this.indicators, result)
+        this.inputParams.rsi.push([size])
 
         return this
     }
-    donchianChannels(period, offset)
+    donchianChannels(size = 20, offset = 0)
     {
+        if (typeof size !== 'number' || size <= 0) {
+            throw new Error('The "size" must be a positive number or 0 in donchianChannels.');
+        }
+    
+        if (typeof offset !== 'number' || offset <= 0) {
+            throw new Error('The "offset" must be a positive number or 0 in donchianChannels.');
+        }
 
         this.inputParams.donchianChannels ??= []
-        this.inputParams.donchianChannels.push([period, offset])
-
-        const result = donchianChannels(this, period, offset)
-        Object.assign(this.indicators, result)
-
+        this.inputParams.donchianChannels.push([size, offset])
         this.priceBased.push('donchian_channel_upper', 'donchian_channel_lower', 'donchian_channel_basis')
 
         return this       
     }
-    candlesStudies(period, classify, classificationLevels)
+    candlesStudies(size = 20, classify = true, classificationLevels)
     {
 
+        if (typeof size !== 'number' || size <= 0) {
+            throw new Error('The "size" must be a positive number or 0 in candlesStudies.');
+        }
+
+        if (typeof classify !== 'boolean') {
+            throw new Error('The "classify" must be a true or false in candlesStudies.');
+        }
+
         this.inputParams.candlesStudies ??= []
-        this.inputParams.candlesStudies.push([period, classify, classificationLevels])
-
-        const result = candlesStudies(this, period, classify, classificationLevels)
-        Object.assign(this.indicators, result)
-
+        this.inputParams.candlesStudies.push([size, classify, classificationLevels])
         return this       
     }
 
-    volumeOscillator(fastPeriod, slowPeriod)
+    volumeOscillator(fastSize, slowSize)
     {
-
-
         this.inputParams.volumeOscillator ??= []
-        this.inputParams.volumeOscillator.push([fastPeriod, slowPeriod])
-
-        const result = volumeOscillator(this, fastPeriod, slowPeriod)
-        Object.assign(this.indicators, result)
-
+        this.inputParams.volumeOscillator.push([fastSize, slowSize])
         return this           
     }
 }

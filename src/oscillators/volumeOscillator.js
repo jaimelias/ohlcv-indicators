@@ -1,47 +1,43 @@
-import { FasterEMA } from 'trading-signals'
-import { findCrosses } from "../studies/findCrosses.js";
+import { FasterEMA } from 'trading-signals';
 
+export const volumeOscillator = (main, index, fastSize = 5, slowSize = 10) => {
 
-export const volumeOscillator = (main, fastPeriod = 5, slowPeriod = 10) => {
-    const { verticalOhlcv } = main;
-    const { volume } = verticalOhlcv;
+    const value = main.verticalOhlcv.volume[index]
 
-    return getVolumeOscillator(volume, fastPeriod, slowPeriod);
-
-}
-
-export const getVolumeOscillator = (volume, fastPeriod, slowPeriod) => {
-    const fastEMA = new FasterEMA(fastPeriod)
-    const slowEMA = new FasterEMA(slowPeriod)
-    const volume_oscillator = new Array(volume.length).fill(null)
-
-    for (let i = 0; i < volume.length; i++) {
-
-        fastEMA.update(volume[i])
-        slowEMA.update(volume[i])
-
-        let fastValue = null
-        let slowValue = null
-
-        try {
-            fastValue = fastEMA.getResult()
-        } catch (err) {
-            fastValue = null
-        }
-
-        try {
-            slowValue = slowEMA.getResult()
-        } catch (err) {
-            slowValue = null
-        }
-
-        if (typeof fastValue === 'number' && typeof slowValue === 'number' && slowValue !== 0) {
-
-            volume_oscillator[i] = 100 * (fastValue - slowValue) / slowValue
-        }
+    if (!main.instances.hasOwnProperty(`volume_oscillator`)) {
+        main.instances[`volume_oscillator`] = {
+            fastEMA: new FasterEMA(fastSize),
+            slowEMA: new FasterEMA(slowSize)
+        };
+        main.verticalOhlcv[`volume_oscillator`] = new Array(main.len).fill(null);
+        main.autoCrossPairsList.push({ fast: `volume_oscillator`, slow: 0 });
     }
 
-    const volume_oscillator_x_0 = findCrosses({fast: volume_oscillator, slow: new Array(volume.length).fill(0)})
+    const { fastEMA, slowEMA } = main.instances[`volume_oscillator`];
 
-    return {volume_oscillator, volume_oscillator_x_0}
-}
+    fastEMA.update(value);
+    slowEMA.update(value);
+
+    let fastValue = null;
+    let slowValue = null;
+
+    try {
+        fastValue = fastEMA.getResult();
+    } catch (err) {
+        fastValue = null;
+    }
+
+    try {
+        slowValue = slowEMA.getResult();
+    } catch (err) {
+        slowValue = null;
+    }
+
+    if (typeof fastValue === 'number' && typeof slowValue === 'number' && slowValue !== 0) {
+        main.verticalOhlcv[`volume_oscillator`][index] = 100 * (fastValue - slowValue) / slowValue
+    } else {
+        main.verticalOhlcv[`volume_oscillator`][index] = null;
+    }
+
+    return true;
+};

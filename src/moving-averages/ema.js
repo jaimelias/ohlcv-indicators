@@ -1,54 +1,29 @@
 
-import {EMA, FasterEMA} from 'trading-signals'
+import {FasterEMA} from 'trading-signals'
 
-export const ema = (main, size) => {
+export const ema = (main, index, size) => {
 
-  const {verticalOhlcv} = main
-  const {close} = verticalOhlcv
+  const value = main.verticalOhlcv.close[index]
 
-  const col = getEMA(close, size)
-
-  return {
-    [`ema_${size}`]: col
-  }
-}
-
-export const getEMA = (data, size) => {
-  
-
-  if(typeof data === 'undefined' || typeof size === 'undefined')
+  if(!main.instances.hasOwnProperty(`ema_${size}`))
   {
-    throw Error('undefined param in getEMA')
+      main.instances[`ema_${size}`] = new FasterEMA(size)
+      main.verticalOhlcv[`ema_${size}`] = new Array(main.len).fill(null)
   }
 
-  const dataLength = data.length
-  const output = new Array(dataLength).fill(null)
-  const instance = new FasterEMA(size)
+  let currSma
+  main.instances[`ema_${size}`].update(value)
 
-  for(let x = 0; x < dataLength; x++)
+  try{
+    currSma = main.instances[`ema_${size}`].getResult()
+  } catch(err)
   {
-      
-      let value = null
-
-      if(data[x] !== null)
-      {
-        instance.update(data[x])
-      
-        try
-        {
-          value = instance.getResult()
-        }
-        catch(err)
-        {
-          value = null
-        }
-      }
-      
-      output[x] = value
+    currSma = null
   }
 
-
-
-  return output
+  if(currSma)
+  {
+    main.verticalOhlcv[`ema_${size}`][index] = currSma
+  }
 
 }
