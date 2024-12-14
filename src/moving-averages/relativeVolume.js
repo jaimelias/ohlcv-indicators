@@ -20,7 +20,7 @@ export const relativeVolume = (main, index, size = 10) => {
     try {
         smaValue = smaInstance.getResult()
     } catch (err) {
-        smaValue = null;
+        //do nothing
     }
 
     main.verticalOhlcv[`relative_volume_sma_${size}`][index] = smaValue;

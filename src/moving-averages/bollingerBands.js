@@ -35,13 +35,15 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
     try {
         result = instance.getResult();
     } catch (err) {
-        result = { upper: null, middle: null, lower: null };
+       //do nothing
     }
 
+    if(!result) return true
+
     const { upper, middle, lower } = result;
-    main.verticalOhlcv[`bollinger_bands_upper`][index] = upper;
-    main.verticalOhlcv[`bollinger_bands_middle`][index] = middle;
-    main.verticalOhlcv[`bollinger_bands_lower`][index] = lower;
+    main.verticalOhlcv.bollinger_bands_upper[index] = upper;
+    main.verticalOhlcv.bollinger_bands_middle[index] = middle;
+    main.verticalOhlcv.bollinger_bands_lower[index] = lower;
 
     if (!bollingerBandsStudies) return true;
 
@@ -49,21 +51,23 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
     let height = null;
     let heightMean;
 
-    if (upper !== null && lower !== null) {
-        range = (value - lower) / (upper - lower);
-        height = upper - lower;
+    range = (value - lower) / (upper - lower);
+    height = upper - lower;
 
-        heightInstance.update(height);
+    heightInstance.update(height);
 
-        try {
-            heightMean = heightInstance.getResult();
-        } catch (err) {
-            heightMean = null;
-        }
+    try {
+        heightMean = heightInstance.getResult();
+    } catch (err) {
+        //do nothing
     }
 
-    main.verticalOhlcv[`bollinger_bands_range`][index] = range;
-    main.verticalOhlcv[`bollinger_bands_height`][index] = classifySize(height, heightMean, 1.5);
+    main.verticalOhlcv.bollinger_bands_range[index] = range;
 
+    if(heightMean)
+    {
+        main.verticalOhlcv.bollinger_bands_height[index] = classifySize(height, heightMean, 1.5);
+    }
+    
     return true;
 };

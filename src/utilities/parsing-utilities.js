@@ -25,13 +25,13 @@ const indicatorFunctions = {
 const validateFirstDate = (arr) => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
 
 export const defaultStudyOptions = {
-    midPriceOpenClose: false,
-    midPriceHighLow: false,
-    sessionIndex: false,
-    sessionIntradayIndex: false,
-    dayOfTheWeek: false,
-    dayOfTheMonth: false,
-    weekOfTheMonth: false
+    midPriceOpenClose: true,
+    midPriceHighLow: true,
+    sessionIndex: true,
+    sessionIntradayIndex: true,
+    dayOfTheWeek: true,
+    dayOfTheMonth: true,
+    weekOfTheMonth: true
 }
 
 const getDateInfo = (dateString) => {
@@ -49,8 +49,8 @@ const getDateInfo = (dateString) => {
     };
 }
 
-export const parseOhlcvToVertical = (input, main) => {
-    const { len, studyOptions, inputParams } = main
+export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
+    const { len, studyOptions = {}, inputParams } = main
 
     if (studyOptions) {
         const studyOptionKeys = Object.keys(studyOptions)
@@ -79,46 +79,70 @@ export const parseOhlcvToVertical = (input, main) => {
     const numberColsKeysSet = new Set(numberColsKeys)
     const vert = main.verticalOhlcv
 
-    // Initialize arrays for numerical columns
-    for (let i = 0; i < numberColsKeys.length; i++) {
-        vert[numberColsKeys[i]] = new Array(len)
-    }
-
-    // Extract other keys and initialize their arrays
-    const inputKeys = Object.keys(input[0])
-    const otherKeys = []
-    for (let i = 0; i < inputKeys.length; i++) {
-        const key = inputKeys[i]
-        if (!numberColsKeysSet.has(key)) {
-            vert[key] = new Array(len)
-            otherKeys.push(key)
-        }
-    }
-
-    const isValidDate = validateFirstDate(input)
-    let prevDateStr
-    let sessionIndexCount = 0
-    let sessionIntradayIndexCount = 0
-
-    // Initialize date-related arrays if necessary
-    if (isValidDate) {
-        if (sessionIndex) {
-            main.verticalOhlcv['session_index'] = new Array(len)
-        }
-        if (sessionIntradayIndex) {
-            main.verticalOhlcv['session_intraday_index'] = new Array(len)
-        }
-        if (dayOfTheWeek) {
-            main.verticalOhlcv['day_of_the_week'] = new Array(len)
-        }
-        if (dayOfTheMonth) {
-            main.verticalOhlcv['day_of_the_month'] = new Array(len)
-        }
-        if (weekOfTheMonth) {
-            main.verticalOhlcv['week_of_the_month'] = new Array(len)
+    let isValidDate = false
+    if (startIndex === 0) {
+        // Fresh initialization
+        // Initialize arrays for numerical columns
+        for (let i = 0; i < numberColsKeys.length; i++) {
+            vert[numberColsKeys[i]] = new Array(len)
         }
 
-        prevDateStr = input[0].date.slice(0, 10)
+        // Extract other keys and initialize their arrays
+        const inputKeys = Object.keys(input[0])
+        const otherKeys = []
+        for (let i = 0; i < inputKeys.length; i++) {
+            const key = inputKeys[i]
+            if (!numberColsKeysSet.has(key)) {
+                vert[key] = new Array(len)
+                otherKeys.push(key)
+            }
+        }
+        main.otherKeys = otherKeys
+
+        isValidDate = validateFirstDate(input)
+
+        if (isValidDate) {
+            if (sessionIndex) {
+                vert['session_index'] = new Array(len)
+            }
+            if (sessionIntradayIndex) {
+                vert['session_intraday_index'] = new Array(len)
+            }
+            if (dayOfTheWeek) {
+                vert['day_of_the_week'] = new Array(len)
+            }
+            if (dayOfTheMonth) {
+                vert['day_of_the_month'] = new Array(len)
+            }
+            if (weekOfTheMonth) {
+                vert['week_of_the_month'] = new Array(len)
+            }
+
+            main.prevDateStr = input[0].date.slice(0, 10)
+            main.sessionIndexCount = 0
+            main.sessionIntradayIndexCount = 0
+            main.cachedDayInfo = getDateInfo(main.prevDateStr)
+        } else {
+            // If no valid date, ensure these are null
+            main.prevDateStr = null
+            main.sessionIndexCount = null
+            main.sessionIntradayIndexCount = null
+            main.cachedDayInfo = null
+        }
+    } else {
+        // startIndex > 0
+        // We assume arrays and keys are already set
+        if (!main.otherKeys) {
+            throw new Error("otherKeys not found in main. Ensure you run with startIndex=0 first to initialize.")
+        }
+
+        // Validate that state variables needed are present
+        if (!main.hasOwnProperty('prevDateStr')) {
+            throw new Error("prevDateStr missing in main. Make sure to store state after initial run.")
+        }
+
+        // If we had a valid date initially, we continue with date computations
+        isValidDate = main.prevDateStr !== null
     }
 
     // Pre-process indicator params
@@ -152,14 +176,19 @@ export const parseOhlcvToVertical = (input, main) => {
 
     // References for other keys arrays
     const otherArrays = {}
-    for (let i = 0; i < otherKeys.length; i++) {
-        const k = otherKeys[i]
+    for (let i = 0; i < main.otherKeys.length; i++) {
+        const k = main.otherKeys[i]
         otherArrays[k] = vert[k]
     }
 
-    // Cached date info for the current date
-    let cachedDayInfo = getDateInfo(prevDateStr) // initial date info if needed
-    for (let x = 0; x < len; x++) {
+    // For date/session logic, use previously stored state if startIndex > 0
+    let prevDateStr = main.prevDateStr
+    let sessionIndexCount = main.sessionIndexCount
+    let sessionIntradayIndexCount = main.sessionIntradayIndexCount
+    let cachedDayInfo = main.cachedDayInfo
+
+    // Compute indicators and fill data from startIndex to len
+    for (let x = startIndex; x < len; x++) {
         const current = input[x]
 
         // Assign OHLCV
@@ -184,8 +213,8 @@ export const parseOhlcvToVertical = (input, main) => {
         }
 
         // Other keys
-        for (let i = 0; i < otherKeys.length; i++) {
-            const k = otherKeys[i]
+        for (let i = 0; i < main.otherKeys.length; i++) {
+            const k = main.otherKeys[i]
             otherArrays[k][x] = current[k]
         }
 
@@ -200,26 +229,32 @@ export const parseOhlcvToVertical = (input, main) => {
             }
 
             if (dayOfTheWeek) {
-                main.verticalOhlcv.day_of_the_week[x] = cachedDayInfo.day_of_the_week
+                vert.day_of_the_week[x] = cachedDayInfo.day_of_the_week
             }
 
             if (dayOfTheMonth) {
-                main.verticalOhlcv.day_of_the_month[x] = cachedDayInfo.day_of_the_month
+                vert.day_of_the_month[x] = cachedDayInfo.day_of_the_month
             }
 
             if (weekOfTheMonth) {
-                main.verticalOhlcv.week_of_the_month[x] = cachedDayInfo.week_of_the_month
+                vert.week_of_the_month[x] = cachedDayInfo.week_of_the_month
             }
 
             if (sessionIndex) {
-                main.verticalOhlcv.session_index[x] = sessionIndexCount
+                vert.session_index[x] = sessionIndexCount
             }
 
             if (sessionIntradayIndex) {
-                main.verticalOhlcv.session_intraday_index[x] = sessionIntradayIndexCount
+                vert.session_intraday_index[x] = sessionIntradayIndexCount
             }
 
             sessionIntradayIndexCount++
         }
     }
+
+    // Store current state so that we can continue from here in subsequent calls
+    main.prevDateStr = prevDateStr
+    main.sessionIndexCount = sessionIndexCount
+    main.sessionIntradayIndexCount = sessionIntradayIndexCount
+    main.cachedDayInfo = cachedDayInfo
 }

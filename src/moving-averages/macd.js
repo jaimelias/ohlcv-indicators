@@ -25,24 +25,18 @@ export const macd = (main, index, fastLine = 12, slowLine = 26, signalLine = 9) 
     macdInstance.update(value);
 
     let macdResult;
+    
     try {
         macdResult = macdInstance.getResult();
     } catch (err) {
-        macdResult = { macd: null, signal: null, histogram: null };
+        //do nothing
     }
 
-    const { macd, signal, histogram } = macdResult;
 
-    if (macd !== null) {
-        main.verticalOhlcv['macd_diff'][index] = macd;
-    }
-
-    if (signal !== null) {
-        main.verticalOhlcv['macd_dea'][index] = signal;
-    }
-
-    if (histogram !== null) {
-        main.verticalOhlcv['macd_histogram'][index] = histogram;
+    if (macdResult) {
+        main.verticalOhlcv['macd_diff'][index] = macdResult.macd;
+        main.verticalOhlcv['macd_dea'][index] = macdResult.signal;
+        main.verticalOhlcv['macd_histogram'][index] = macdResult.histogram;
     }
 
     return true;

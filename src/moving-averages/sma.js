@@ -18,7 +18,7 @@ export const sma = (main, index, size) => {
     currSma = main.instances[`sma_${size}`].getResult()
   } catch(err)
   {
-    currSma = null
+    //do nothing
   }
 
   if(currSma)
