@@ -3,8 +3,81 @@ const gt = (f, s) => f > s
 const lt = (f, s) => f < s
 
 
+
+export const crossPairs = (main, arr) => {
+    
+    const {verticalOhlcv, len} = main
+    const slowNumArrCache = {};
+    const x = {}
+    const c = {}
+
+    for (const { fast, slow, count } of arr) {
+        // Validate parameters
+        if (!fast || !slow) continue;
+    
+        // Prepare slowNumArr if 'slow' is a number
+        if (typeof slow === 'number' && !slowNumArrCache[slow]) {
+
+            slowNumArrCache[slow] = Array(len).fill(slow)
+        }
+    
+        const crossName = `${fast}_x_${slow}`
+        const countName = `${fast}_c_${slow}`
+
+        const splitCount = arr => (typeof count !== 'undefined') ? (arr.slice(-count)).filter(o => o === 1 || o === -1).length : 0
+
+        //cross already exists
+        if(verticalOhlcv[crossName])
+        {
+            const cross = verticalOhlcv[crossName]
+            x[crossName] = cross    
+            
+            if(typeof count !== 'undefined')
+            {
+                c[countName] = splitCount(cross)
+            }
+            
+        }
+        //cross created from 2 columns
+        else if ((verticalOhlcv[fast] || fast === 'price') && verticalOhlcv[slow]) {
+
+            const cross = (fast === 'price') 
+            ? findCrosses({
+                fast: verticalOhlcv.close, 
+                high: verticalOhlcv.high, 
+                low: verticalOhlcv.low, 
+                slow: verticalOhlcv[slow]}
+            ) 
+            : findCrosses({fast: verticalOhlcv[fast], slow: verticalOhlcv[slow]})
+
+            x[crossName] = cross
+
+            if(typeof count !== 'undefined')
+            {
+                c[countName] = splitCount(cross)
+            }
+
+        }
+        //cross created from 1 column and an number
+        else if (verticalOhlcv[fast] && slowNumArrCache[slow]) {
+            const cross = findCrosses({fast: verticalOhlcv[fast], slow: slowNumArrCache[slow]})
+            x[crossName] = cross
+
+            if(typeof count !== 'undefined'){
+                c[countName] = splitCount(cross)
+            }
+
+        } else {
+            throw Error(`Missing ohlcv properties for ${fast} or ${slow}`);
+        }
+    }
+
+    return {x, c}
+}
+
+
 // Function to find crosses between two arrays: fast and slow
-export const findCrosses = ({fast, high, low, slow}) => {
+const findCrosses = ({fast, high, low, slow}) => {
     // Map states based on comparison of fast and slow arrays
 
     const dataLength = fast.length
@@ -80,131 +153,48 @@ export const findCrosses = ({fast, high, low, slow}) => {
 
 
 const flatGroupsToNumArr = groups => {
-
-    const groupLengths = groups.map(g => g.length)
-
-    return groups.map((group, gIndex) => {
-        let initialValue = groupLengths[gIndex]
-
-        return group.map((s, i) => {
-            let v = initialValue - i
-
-            if(s === 0.5)
-            {
-                v = 0
-            }
-            if(s === 1)
-            {
-                v = v * 1
-            }
-            if(s === 0)
-            {
-                v = v * -1
-            }
-
-            return v
-        }).reverse()
-    }).flat()
+    const result = [];
+    
+    for (const group of groups) {
+        const length = group.length;
+        
+        for (let i = length - 1; i >= 0; i--) {
+            const s = group[i];
+            const offset = length - i;
+            result.push(
+                s === 0.5 ? 0 : offset * (s === 1 ? 1 : -1)
+            );
+        }
+    }
+    
+    return result;
 }
 
 
 // Helper function to group consecutive values
-export const groupConsecutiveValues = arr => {
-    if (arr.length === 0) return []
+const groupConsecutiveValues = (arr) => {
+    const length = arr.length;
+    if (length === 0) return [];
 
-    return arr.reduce((acc, currentValue, index, array) => {
-        if (index === 0) {
-            // Start the first group with the first element
-            acc.push([currentValue])
+    const result = [];
+    let currentGroup = [arr[0]];
+
+    for (let i = 1; i < length; i++) {
+        const currentValue = arr[i];
+        const prevValue = arr[i - 1];
+
+        if (currentValue === prevValue) {
+            // Same value, continue the current group
+            currentGroup.push(currentValue);
         } else {
-            // Get the previous value
-            const prevValue = array[index - 1]
-            const currentGroup = acc[acc.length - 1]
-
-            // Check the direction of the previous and current values
-            if (currentValue !== prevValue) {
-                // Start a new group if the direction changes
-                acc.push([currentValue]);
-            } else {
-                // Otherwise, add to the current group
-                currentGroup.push(currentValue);
-            }
-        }
-        return acc
-    }, [])
-}
-
-
-
-export const crossPairs = (main, arr) => {
-
-
-
-    const {verticalOhlcv, len} = main
-    const slowNumArrCache = {};
-    const x = {}
-    const c = {}
-
-    for (const { fast, slow, count } of arr) {
-        // Validate parameters
-        if (!fast || !slow) continue;
-    
-        // Prepare slowNumArr if 'slow' is a number
-        if (typeof slow === 'number' && !slowNumArrCache[slow]) {
-
-            slowNumArrCache[slow] = Array(len).fill(slow)
-        }
-    
-        const crossName = `${fast}_x_${slow}`
-        const countName = `${fast}_c_${slow}`
-
-        const splitCount = arr => (typeof count !== 'undefined') ? (arr.slice(-count)).filter(o => o === 1 || o === -1).length : 0
-
-        //cross already exists
-        if(verticalOhlcv[crossName])
-        {
-            const cross = verticalOhlcv[crossName]
-            x[crossName] = cross    
-            
-            if(typeof count !== 'undefined')
-            {
-                c[countName] = splitCount(cross)
-            }
-            
-        }
-        //cross created from 2 columns
-        else if ((verticalOhlcv[fast] || fast === 'price') && verticalOhlcv[slow]) {
-
-            const cross = (fast === 'price') 
-            ? findCrosses({
-                fast: verticalOhlcv.close, 
-                high: verticalOhlcv.high, 
-                low: verticalOhlcv.low, 
-                slow: verticalOhlcv[slow]}
-            ) 
-            : findCrosses({fast: verticalOhlcv[fast], slow: verticalOhlcv[slow]})
-
-            x[crossName] = cross
-
-            if(typeof count !== 'undefined')
-            {
-                c[countName] = splitCount(cross)
-            }
-
-        }
-        //cross created from 1 column and an number
-        else if (verticalOhlcv[fast] && slowNumArrCache[slow]) {
-            const cross = findCrosses({fast: verticalOhlcv[fast], slow: slowNumArrCache[slow]})
-            x[crossName] = cross
-
-            if(typeof count !== 'undefined'){
-                c[countName] = splitCount(cross)
-            }
-
-        } else {
-            throw Error(`Missing ohlcv properties for ${fast} or ${slow}`);
+            // Value changed, finalize the current group and start a new one
+            result.push(currentGroup);
+            currentGroup = [currentValue];
         }
     }
 
-    return {x, c}
-}
+    // Push the last group
+    result.push(currentGroup);
+
+    return result;
+};

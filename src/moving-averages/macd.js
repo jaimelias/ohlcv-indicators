@@ -14,9 +14,11 @@ export const macd = (main, index, fastLine = 12, slowLine = 26, signalLine = 9) 
             new FasterEMA(signalLine)
         );
 
-        main.verticalOhlcv['macd_diff'] = new Array(main.len).fill(null);
-        main.verticalOhlcv['macd_dea'] = new Array(main.len).fill(null);
-        main.verticalOhlcv['macd_histogram'] = new Array(main.len).fill(null);
+        Object.assign(main.verticalOhlcv, {
+            macd_diff: new Array(main.len).fill(null),
+            macd_dea: new Array(main.len).fill(null),
+            macd_histogram: new Array(main.len).fill(null),
+        })
     }
 
     const macdInstance = main.instances[`macd`];

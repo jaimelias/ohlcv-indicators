@@ -5,10 +5,14 @@ export const volumeOscillator = (main, index, fastSize = 5, slowSize = 10) => {
     const value = main.verticalOhlcv.volume[index]
 
     if (!main.instances.hasOwnProperty(`volume_oscillator`)) {
-        main.instances[`volume_oscillator`] = {
-            fastEMA: new FasterEMA(fastSize),
-            slowEMA: new FasterEMA(slowSize)
-        };
+
+        Object.assign(main.instances, {
+            volume_oscillator: {
+                fastEMA: new FasterEMA(fastSize),
+                slowEMA: new FasterEMA(slowSize)
+            }
+        })
+
         main.verticalOhlcv[`volume_oscillator`] = new Array(main.len).fill(null);
         main.autoCrossPairsList.push({ fast: `volume_oscillator`, slow: 0 });
     }

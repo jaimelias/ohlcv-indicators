@@ -6,17 +6,25 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
     const value = main.verticalOhlcv.close[index]
 
     if (!main.instances.hasOwnProperty(`bollinger_bands`)) {
-        main.instances[`bollinger_bands`] = {
+
+        Object.assign(main.instances, {bollinger_bands: {
             instance: new FasterBollingerBands(size, times),
             heightInstance: bollingerBandsStudies ? new FasterSMA(size) : null
-        };
-        main.verticalOhlcv[`bollinger_bands_upper`] = new Array(main.len).fill(null);
-        main.verticalOhlcv[`bollinger_bands_middle`] = new Array(main.len).fill(null);
-        main.verticalOhlcv[`bollinger_bands_lower`] = new Array(main.len).fill(null);
+        }})
+
+
+        Object.assign(main.verticalOhlcv, {
+            bollinger_bands_upper: new Array(main.len).fill(null),
+            bollinger_bands_middle: new Array(main.len).fill(null),
+            bollinger_bands_lower: new Array(main.len).fill(null)
+        })
 
         if (bollingerBandsStudies) {
-            main.verticalOhlcv[`bollinger_bands_range`] = new Array(main.len).fill(null);
-            main.verticalOhlcv[`bollinger_bands_height`] = new Array(main.len).fill(null);
+
+            Object.assign(main.verticalOhlcv, {
+                bollinger_bands_range: new Array(main.len).fill(null),
+                bollinger_bands_height: new Array(main.len).fill(null),
+            })
         }
     }
 

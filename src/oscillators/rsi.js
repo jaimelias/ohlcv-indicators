@@ -9,10 +9,16 @@ export const rsi = (main, index, size) => {
     if(!main.instances.hasOwnProperty(`rsi_${size}`))
     {
         main.autoCrossPairsList.push({fast: `rsi_${size}`, slow: `rsi_sma_${size}`})
-        main.instances[`rsi_${size}`] = new FasterRSI(size)
-        main.instances[`rsi_sma_${size}`] = new FasterSMA(size)
-        main.verticalOhlcv[`rsi_${size}`] = new Array(main.len).fill(null)
-        main.verticalOhlcv[`rsi_sma_${size}`] = new Array(main.len).fill(null)
+
+        Object.assign(main.instances, {
+            [`rsi_${size}`]: new FasterRSI(size),
+            [`rsi_sma_${size}`]: new FasterSMA(size)
+        })
+
+        Object.assign(main.verticalOhlcv, {
+            [`rsi_${size}`]: new Array(main.len).fill(null),
+            [`rsi_sma_${size}`]: new Array(main.len).fill(null)
+        })
     }
     
     let currentRsi

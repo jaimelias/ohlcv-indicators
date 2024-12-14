@@ -1,19 +1,23 @@
 const avg = (h, l) => (h + l) / 2;
 
 export const donchianChannels = (main, index, size, offset) => {
-    const { verticalOhlcv } = main;
-    const highs = verticalOhlcv.high;
-    const lows = verticalOhlcv.low;
+
+    const highs = main.verticalOhlcv.high;
+    const lows = main.verticalOhlcv.low;
 
     // If we don't have enough data to fill one size ending at (index - offset), return
     if ((index - offset) < (size - 1)) return true;
 
     // Ensure that the required arrays exist
     if (!main.instances.hasOwnProperty('donchian_channels')) {
+        
         main.instances['donchian_channels'] = {};
-        verticalOhlcv['donchian_channel_upper'] = new Array(main.len).fill(null);
-        verticalOhlcv['donchian_channel_basis'] = new Array(main.len).fill(null);
-        verticalOhlcv['donchian_channel_lower'] = new Array(main.len).fill(null);
+
+        Object.assign(main.verticalOhlcv, {
+            donchian_channel_upper: new Array(main.len).fill(null),
+            donchian_channel_basis: new Array(main.len).fill(null),
+            donchian_channel_lower: new Array(main.len).fill(null),
+        })
     }
 
 
@@ -37,9 +41,9 @@ export const donchianChannels = (main, index, size, offset) => {
     const placementIndex = index;
 
     if (placementIndex >= 0 && placementIndex < main.len) {
-        verticalOhlcv['donchian_channel_upper'][placementIndex] = upper;
-        verticalOhlcv['donchian_channel_basis'][placementIndex] = basis;
-        verticalOhlcv['donchian_channel_lower'][placementIndex] = lower;
+        main.verticalOhlcv['donchian_channel_upper'][placementIndex] = upper;
+        main.verticalOhlcv['donchian_channel_basis'][placementIndex] = basis;
+        main.verticalOhlcv['donchian_channel_lower'][placementIndex] = lower;
     }
 
     return true;
