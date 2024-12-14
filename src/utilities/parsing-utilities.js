@@ -1,5 +1,3 @@
-
-
 import { rsi } from "../oscillators/rsi.js"
 import { sma } from "../moving-averages/sma.js"
 import { ema } from "../moving-averages/ema.js"
@@ -10,7 +8,6 @@ import { bollingerBands } from "../moving-averages/bollingerBands.js"
 import { volumeOscillator } from "../oscillators/volumeOscillator.js"
 import { candlesStudies } from "../studies/candleStudies.js"
 import { lag } from "../studies/lag.js"
-
 
 const indicatorFunctions = {
     rsi,
@@ -25,9 +22,7 @@ const indicatorFunctions = {
     lag
 }
 
-
-//true if first row date starts with yyyy-mm-dd date
-const validateFirstDate = arr => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
+const validateFirstDate = (arr) => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
 
 export const defaultStudyOptions = {
     midPriceOpenClose: false,
@@ -39,16 +34,29 @@ export const defaultStudyOptions = {
     weekOfTheMonth: false
 }
 
+const getDateInfo = (dateString) => {
+    const date = new Date(dateString);
+    const day_of_the_week = date.getDay();
+    const day_of_the_month = date.getDate();
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const dayOffset = firstDayOfMonth.getDay();
+    const week_of_the_month = Math.ceil((day_of_the_month + dayOffset) / 7);
+
+    return {
+        day_of_the_week,
+        day_of_the_month,
+        week_of_the_month
+    };
+}
+
 export const parseOhlcvToVertical = (input, main) => {
+    const { len, studyOptions, inputParams } = main
 
-    const {len, studyOptions, inputParams} = main
-
-    if(Boolean(studyOptions))
-    {
-        for(let k in studyOptions)
-        {
-            if(!defaultStudyOptions.hasOwnProperty(k))
-            {
+    if (studyOptions) {
+        const studyOptionKeys = Object.keys(studyOptions)
+        for (let i = 0; i < studyOptionKeys.length; i++) {
+            const k = studyOptionKeys[i]
+            if (!defaultStudyOptions.hasOwnProperty(k)) {
                 throw new Error(`Key ${k} not found in defaultStudyOptions. Available options: ${Object.keys(defaultStudyOptions).join(', ')}`)
             }
         }
@@ -65,168 +73,149 @@ export const parseOhlcvToVertical = (input, main) => {
     } = studyOptions
 
     const numberColsKeys = ['open', 'high', 'low', 'close', 'volume']
-
-    if(midPriceOpenClose)
-    {
-        numberColsKeys.push('mid_price_open_close')
-    }
-
-    if(midPriceHighLow)
-    {
-        numberColsKeys.push('mid_price_high_low')
-    }
+    if (midPriceOpenClose) numberColsKeys.push('mid_price_open_close')
+    if (midPriceHighLow)   numberColsKeys.push('mid_price_high_low')
 
     const numberColsKeysSet = new Set(numberColsKeys)
+    const vert = main.verticalOhlcv
 
     // Initialize arrays for numerical columns
-    for (const key of numberColsKeys) {
-        main.verticalOhlcv[key] = new Array(len)
+    for (let i = 0; i < numberColsKeys.length; i++) {
+        vert[numberColsKeys[i]] = new Array(len)
     }
 
     // Extract other keys and initialize their arrays
     const inputKeys = Object.keys(input[0])
     const otherKeys = []
-
-    for (const key of inputKeys) {
+    for (let i = 0; i < inputKeys.length; i++) {
+        const key = inputKeys[i]
         if (!numberColsKeysSet.has(key)) {
-            main.verticalOhlcv[key] = new Array(len)
+            vert[key] = new Array(len)
             otherKeys.push(key)
         }
     }
 
-
+    const isValidDate = validateFirstDate(input)
     let prevDateStr
     let sessionIndexCount = 0
     let sessionIntradayIndexCount = 0
-    const isValidDate = validateFirstDate(input)
 
-    if(isValidDate)
-    {
-        if(sessionIndex)
-        {
+    // Initialize date-related arrays if necessary
+    if (isValidDate) {
+        if (sessionIndex) {
             main.verticalOhlcv['session_index'] = new Array(len)
         }
-        
-        if(sessionIntradayIndex)
-        {
+        if (sessionIntradayIndex) {
             main.verticalOhlcv['session_intraday_index'] = new Array(len)
         }
-        
-        if(dayOfTheWeek)
-        {
+        if (dayOfTheWeek) {
             main.verticalOhlcv['day_of_the_week'] = new Array(len)
         }
-        
-        if(dayOfTheMonth)
-        {
+        if (dayOfTheMonth) {
             main.verticalOhlcv['day_of_the_month'] = new Array(len)
         }
-        
-        if(weekOfTheMonth)
-        {
+        if (weekOfTheMonth) {
             main.verticalOhlcv['week_of_the_month'] = new Array(len)
         }
-        
+
         prevDateStr = input[0].date.slice(0, 10)
     }
-    
-    for (let x = 0; x < len; x++) {
-        const current = input[x]
 
-        main.verticalOhlcv.open[x] = current.open
-        main.verticalOhlcv.high[x] = current.high
-        main.verticalOhlcv.low[x] = current.low
-        main.verticalOhlcv.close[x] = current.close
-        main.verticalOhlcv.volume[x] = current.volume
-
-        //indicators
-/*         indicatorFunctions.rsi(main, x, 14)
-        indicatorFunctions.sma(main, x, 7)
-        indicatorFunctions.ema(main, x, 7)
-        indicatorFunctions.macd(main, x, 12, 26, 9)
-        indicatorFunctions.relativeVolume(main, x, 10)
-        indicatorFunctions.donchianChannels(main, x, 0)
-        indicatorFunctions.bollingerBands(main, x, 20, 2)
-        indicatorFunctions.volumeOscillator(main, x, 5, 10)
-        indicatorFunctions.candlesStudies(main, x, 20)
-        indicatorFunctions.lag(main, x, ['close'], 20) */
-
-        //indicatorFunctions.rsi(main, x, ...inputParams.rsi[0])
-
-
-        for(const [key, technical] of Object.entries(inputParams))
-        {
-            if(['crossPairs'].includes(key)) continue
-
+    // Pre-process indicator params
+    const indicatorCalls = []
+    if (inputParams && typeof inputParams === 'object') {
+        for (const key in inputParams) {
+            if (key === 'crossPairs') continue
+            const technical = inputParams[key]
             if (Array.isArray(technical)) {
                 for (let i = 0; i < technical.length; i++) {
                     const params = technical[i];
-    
                     if (Array.isArray(params)) {
-                        if (params.length > 0) {
-                            indicatorFunctions[key](main, x, ...params);
-                        } else {
-                           indicatorFunctions[key](main, x);
-                        }
+                        indicatorCalls.push({
+                            fn: indicatorFunctions[key],
+                            args: params
+                        })
                     }
                 }
             }
+        }
+    }
 
+    // Store references for numeric arrays to avoid repeated dictionary lookups
+    const vo_open = vert.open
+    const vo_high = vert.high
+    const vo_low = vert.low
+    const vo_close = vert.close
+    const vo_volume = vert.volume
+    const vo_mid_oc = midPriceOpenClose ? vert.mid_price_open_close : null
+    const vo_mid_hl = midPriceHighLow ? vert.mid_price_high_low : null
+
+    // References for other keys arrays
+    const otherArrays = {}
+    for (let i = 0; i < otherKeys.length; i++) {
+        const k = otherKeys[i]
+        otherArrays[k] = vert[k]
+    }
+
+    // Cached date info for the current date
+    let cachedDayInfo = getDateInfo(prevDateStr) // initial date info if needed
+    for (let x = 0; x < len; x++) {
+        const current = input[x]
+
+        // Assign OHLCV
+        vo_open[x] = current.open
+        vo_high[x] = current.high
+        vo_low[x] = current.low
+        vo_close[x] = current.close
+        vo_volume[x] = current.volume
+
+        // Run indicator functions
+        for (let i = 0; i < indicatorCalls.length; i++) {
+            const { fn, args } = indicatorCalls[i]
+            fn(main, x, ...args)
         }
 
-        if(midPriceOpenClose)
-        {
-            main.verticalOhlcv.mid_price_open_close[x] = (current.open + current.close) / 2
+        // Mid-price calculations
+        if (vo_mid_oc) {
+            vo_mid_oc[x] = (current.open + current.close) / 2
+        }
+        if (vo_mid_hl) {
+            vo_mid_hl[x] = (current.high + current.low) / 2
         }
 
-        if(midPriceHighLow)
-        {
-            main.verticalOhlcv.mid_price_high_low[x] = (current.high + current.low) / 2
-        }
-       
-        // Process other keys
-        for (const key of otherKeys) {
-            main.verticalOhlcv[key][x] = current[key]
+        // Other keys
+        for (let i = 0; i < otherKeys.length; i++) {
+            const k = otherKeys[i]
+            otherArrays[k][x] = current[k]
         }
 
-        // Date processing for session indices
+        // Date processing for session indices and date fields
         if (isValidDate) {
             const thisDateStr = current.date.slice(0, 10)
-
             if (thisDateStr !== prevDateStr) {
                 prevDateStr = thisDateStr
                 sessionIndexCount++
                 sessionIntradayIndexCount = 0
+                cachedDayInfo = getDateInfo(thisDateStr)
             }
 
-            const {
-                day_of_the_week,
-                day_of_the_month,
-                week_of_the_month
-            } = getDateInfo(thisDateStr)
-
-            if(dayOfTheWeek)
-            {
-                main.verticalOhlcv.day_of_the_week[x] = day_of_the_week
-            }
-            
-            if(dayOfTheMonth)
-            {
-                main.verticalOhlcv.day_of_the_month[x] = day_of_the_month
-            }
-            
-            if(weekOfTheMonth)
-            {
-                main.verticalOhlcv.week_of_the_month[x] = week_of_the_month
+            if (dayOfTheWeek) {
+                main.verticalOhlcv.day_of_the_week[x] = cachedDayInfo.day_of_the_week
             }
 
-            if(sessionIndex)
-            {
+            if (dayOfTheMonth) {
+                main.verticalOhlcv.day_of_the_month[x] = cachedDayInfo.day_of_the_month
+            }
+
+            if (weekOfTheMonth) {
+                main.verticalOhlcv.week_of_the_month[x] = cachedDayInfo.week_of_the_month
+            }
+
+            if (sessionIndex) {
                 main.verticalOhlcv.session_index[x] = sessionIndexCount
             }
-            
-            if(sessionIntradayIndex)
-            {
+
+            if (sessionIntradayIndex) {
                 main.verticalOhlcv.session_intraday_index[x] = sessionIntradayIndexCount
             }
 
@@ -234,25 +223,3 @@ export const parseOhlcvToVertical = (input, main) => {
         }
     }
 }
-
-
-const getDateInfo = dateString => {
-    const date = new Date(dateString);
-  
-    // Get day of the week (0 for Sunday, 1 for Monday, etc.)
-    const day_of_the_week = date.getDay()
-  
-    // Get day of the month
-    const day_of_the_month = date.getDate();
-  
-    // Calculate the week of the month
-    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    const dayOffset = firstDayOfMonth.getDay(); // Day of the week for the 1st day of the month
-    const week_of_the_month = Math.ceil((day_of_the_month + dayOffset) / 7);
-  
-    return {
-        day_of_the_week,
-        day_of_the_month,
-        week_of_the_month
-    };
-  }
