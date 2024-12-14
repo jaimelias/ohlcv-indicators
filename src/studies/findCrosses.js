@@ -6,8 +6,8 @@ const lt = (f, s) => f < s
 
 export const crossPairs = (main, arr) => {
     
-    const {verticalOhlcv, len} = main
-    const slowNumArrCache = {};
+    const {verticalOhlcv} = main
+
     const x = {}
     const c = {}
 
@@ -16,9 +16,9 @@ export const crossPairs = (main, arr) => {
         if (!fast || !slow) continue;
     
         // Prepare slowNumArr if 'slow' is a number
-        if (typeof slow === 'number' && !slowNumArrCache[slow]) {
+        if (typeof slow === 'number') {
 
-            slowNumArrCache[slow] = Array(len).fill(slow)
+            main.verticalOhlcv[slow] = new Array(main.len).fill(slow)
         }
     
         const crossName = `${fast}_x_${slow}`
@@ -57,18 +57,6 @@ export const crossPairs = (main, arr) => {
                 c[countName] = splitCount(cross)
             }
 
-        }
-        //cross created from 1 column and an number
-        else if (verticalOhlcv[fast] && slowNumArrCache[slow]) {
-            const cross = findCrosses({fast: verticalOhlcv[fast], slow: slowNumArrCache[slow]})
-            x[crossName] = cross
-
-            if(typeof count !== 'undefined'){
-                c[countName] = splitCount(cross)
-            }
-
-        } else {
-            throw Error(`Missing ohlcv properties for ${fast} or ${slow}`);
         }
     }
 
