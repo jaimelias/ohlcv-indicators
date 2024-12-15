@@ -1,6 +1,6 @@
 {
   "name": "ohlcv-indicators",
-  "version": "1.9.3",
+  "version": "1.9.4",
   "description": "A JavaScript library featuring optimized trading indicators for OHLCV arrays [{open, high, low, close, value}]. This library is optimized for backtesting and trading bot development.",
   "main": "index.js",
   "type": "module",
@@ -8,7 +8,8 @@
     "test": "node test/test.js",
     "study": "node test/study.js",
     "count": "node test/countUps.js",
-    "build": "npx webpack"
+    "build": "npx webpack",
+    "cross": "node src/studies/findCrosses2.js"
   },
   "author": "https://jaimelias.com/",
   "license": "ISC",

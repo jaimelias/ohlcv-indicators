@@ -6,9 +6,9 @@ export const rsi = (main, index, size) => {
     
     const value = main.verticalOhlcv.close[index]
 
-    if(!main.instances.hasOwnProperty(`rsi_${size}`))
+    if(index === 0)
     {
-        main.autoCrossPairsList.push({fast: `rsi_${size}`, slow: `rsi_sma_${size}`})
+        main.crossPairsList.push({fast: `rsi_${size}`, slow: `rsi_sma_${size}`})
 
         Object.assign(main.instances, {
             [`rsi_${size}`]: new FasterRSI(size),

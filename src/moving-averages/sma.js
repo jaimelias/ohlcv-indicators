@@ -5,7 +5,7 @@ export const sma = (main, index, size) => {
 
   const value = main.verticalOhlcv.close[index]
 
-  if(!main.instances.hasOwnProperty(`sma_${size}`))
+  if(index === 0)
   {
       main.instances[`sma_${size}`] = new FasterSMA(size)
       main.verticalOhlcv[`sma_${size}`] = new Array(main.len).fill(null)

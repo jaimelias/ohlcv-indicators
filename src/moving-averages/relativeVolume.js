@@ -4,7 +4,7 @@ export const relativeVolume = (main, index, size = 10) => {
 
     const value = main.verticalOhlcv.volume[index]
 
-    if (!main.instances.hasOwnProperty(`relative_volume_${size}`)) {
+    if (index === 0) {
         main.instances[`relative_volume_${size}`] = new FasterSMA(size);
 
         Object.assign(main.verticalOhlcv, {

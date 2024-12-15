@@ -1,4 +1,3 @@
-import {crossPairs} from './src/studies/findCrosses.js'
 import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsing-utilities.js'
 import { correlation } from './src/studies/correlation.js'
 import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
@@ -15,7 +14,7 @@ export default class OHLCV_INDICATORS {
         this.len = input.length
         this.studyOptions = (studyOptions === null) ? defaultStudyOptions : studyOptions
         this.instances = {}
-        this.autoCrossPairsList = []
+        this.crossPairsList = []
         this.verticalOhlcv = {}
 
         this.inputParams = {
@@ -100,21 +99,16 @@ export default class OHLCV_INDICATORS {
     }
     
 
+
     crossPairs(arr)
     {
-
-        this.compute()
-
-        const crossList = [...this.autoCrossPairsList, ...arr]
+        this.crossPairsList = [...this.crossPairsList, ...arr]
         this.inputParams.crossPairs ??= []
-        this.inputParams.crossPairs.push([crossList])
-
-        const {x, c} = crossPairs(this, crossList)
-        Object.assign(this.verticalOhlcv, x)
-        Object.assign(this.studies, c)
-
+        this.inputParams.crossPairs.push([this.crossPairsList])
+        
         return this
     }
+
 
     lag(colKeys = ['close'], lags = 1) {
 

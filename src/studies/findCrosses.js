@@ -1,188 +1,185 @@
-const eq = (f, s) => f === s
-const gt = (f, s) => f > s
-const lt = (f, s) => f < s
+const eq = (fast, slow) => fast === slow
+const gt = (fast, slow) => fast > slow
+const lt = (fast, slow) => fast < slow
 
 
+//this class counts how many intervals have passed between crosses: fast crossed slow line, high crossed slow line or low crossed slow line.
+//interval === 0 for no crosses yet or the lines are equal
+//interval >= 1 for an upwards crosses
+//interval <= -1 from downward crosses
 
-export const crossPairs = (main, arr) => {
-    
-    const {verticalOhlcv} = main
+class CrossInstance {
 
-    const x = {}
-    const c = {}
-
-    for (const { fast, slow, count } of arr) {
-        // Validate parameters
-        if (!fast || !slow) continue;
-    
-        // Prepare slowNumArr if 'slow' is a number
-        if (typeof slow === 'number') {
-
-            main.verticalOhlcv[slow] = new Array(main.len).fill(slow)
-        }
-    
-        const crossName = `${fast}_x_${slow}`
-        const countName = `${fast}_c_${slow}`
-
-        const splitCount = arr => (typeof count !== 'undefined') ? (arr.slice(-count)).filter(o => o === 1 || o === -1).length : 0
-
-        //cross already exists
-        if(verticalOhlcv[crossName])
-        {
-            const cross = verticalOhlcv[crossName]
-            x[crossName] = cross    
-            
-            if(typeof count !== 'undefined')
-            {
-                c[countName] = splitCount(cross)
-            }
-            
-        }
-        //cross created from 2 columns
-        else if ((verticalOhlcv[fast] || fast === 'price') && verticalOhlcv[slow]) {
-
-            const cross = (fast === 'price') 
-            ? findCrosses({
-                fast: verticalOhlcv.close, 
-                high: verticalOhlcv.high, 
-                low: verticalOhlcv.low, 
-                slow: verticalOhlcv[slow]}
-            ) 
-            : findCrosses({fast: verticalOhlcv[fast], slow: verticalOhlcv[slow]})
-
-            x[crossName] = cross
-
-            if(typeof count !== 'undefined')
-            {
-                c[countName] = splitCount(cross)
-            }
-
-        }
-    }
-
-    return {x, c}
-}
-
-
-// Function to find crosses between two arrays: fast and slow
-const findCrosses = ({fast, high, low, slow}) => {
-    // Map states based on comparison of fast and slow arrays
-
-    const dataLength = fast.length
-
-    if(dataLength ==! slow.length)
+    constructor()
     {
-        throw Error('fast and slow do not have the same length')
+        this.interval = 0
+        this.prevState = 0.5
+        this.prevFast = null
+        this.prevSlow = null
+        this.prevHigh = null
+        this.prevLow = null
+        this.areHighAndLowUndefined = false
+        this.index = 0
+        this.crossIndexes = {
+            up: [],
+            down: []
+        }
+
     }
-
-    const state = new Array(dataLength).fill(0.5)
-
-    for(let x = 0; x < dataLength; x++)
+    update({fast, high, slow, low})
     {
-        const prevState = state?.[x-1] || 0.5
-        const f = fast[x]
-        const s = slow[x]
-        const hi = high?.[x]
-        const lo = low?.[x]
+        let currState = this.prevState
 
-        if(high || low)
+        if(!this.areHighAndLowUndefined)
         {
-            if(typeof hi === 'undefined' || typeof lo === 'undefined') continue
-        }
-
-        const prevS = slow[x - 1]
-        const prevHi = high?.[x-1]
-        const prevLo = low?.[x-1]
-
-        if(high || low)
-        {
-            if(typeof prevHi === 'undefined' || typeof prevLo === 'undefined' || typeof prevS === 'undefined') continue
-        }
-        
-        let value
-
-        if(f === null || s === null) value = 0.5
-
-        else if(eq(f, s)) {
-            value = prevState
-        }
-        else if(gt(f, s)) {
-
-            if(lt(lo, s) && gt(prevLo, prevS))
+            if(typeof high === 'undefined' || typeof low === 'undefined')
             {
-                value = 0
+                this.areHighAndLowUndefined = true
+            }
+        }
+
+        if(fast === null || slow === null){
+            currState = 0.5
+        }
+        else if(eq(fast, slow)) {
+            currState = 0.5
+        }
+        else if(gt(fast, slow)) {
+
+            if(this.areHighAndLowUndefined)
+            {
+                currState = 1
             }
             else
             {
-                value = 1
+                if ([low, slow, this.prevLow, this.prevSlow].every(v => v !== null) && lt(low, slow) && gt(this.prevLow, this.prevSlow))
+                {
+                    currState = 0
+                }
+                else
+                {
+                    currState = 1
+                }
             }
         }
-        else if(lt(f, s)) {
+        else if(lt(fast, slow)) {
 
-            if(gt(hi, s) && lt(prevHi, prevS))
+            if(this.areHighAndLowUndefined)
             {
-                value = 1
+                currState = 0
             }
             else
             {
-                value = 0
+                if([high, slow, this.prevHigh, this.prevSlow].every(v => v !== null) && gt(high, slow) && lt(this.prevHigh, this.prevSlow))
+                {
+                    currState = 1
+                }
+                else
+                {
+                    currState = 0
+                }
             }
         }
-        
-        state[x] = value
+
+        if(currState === 0.5)
+        {
+            this.interval = 0
+        }
+        else if(currState === 1)
+        {
+            if(this.prevState <= 0.5)
+            {
+                this.interval = 1
+            }
+            else
+            {
+                this.interval++
+            }
+        }
+        else if(currState === 0)
+        {
+            if(this.prevState >= 0.5)
+            {
+                this.interval = -1
+            }
+            else
+            {
+                this.interval--
+            }
+        }
+
+
+        if(this.interval === 1) this.crossIndexes.up.push(this.index)
+        if(this.interval === -1) this.crossIndexes.down.push(this.index)
+
+        //save prev state
+        this.index++
+        this.prevState = currState
+        this.prevFast = fast
+        this.prevSlow = slow
+        this.prevHigh = high
+        this.prevLow = low
     }
 
+    getResult()
+    {
+        return this.interval
+    }
 
-
-    const groups = groupConsecutiveValues(state)
-
-    return flatGroupsToNumArr(groups)
 }
 
+export const crossPairs = (main, index, arr) => {
 
-const flatGroupsToNumArr = groups => {
-    const result = [];
-    
-    for (const group of groups) {
-        const length = group.length;
+    const {len} = main
+
+    for (const { fast, slow } of arr)
+    {
+
         
-        for (let i = length - 1; i >= 0; i--) {
-            const s = group[i];
-            const offset = length - i;
-            result.push(
-                s === 0.5 ? 0 : offset * (s === 1 ? 1 : -1)
-            );
+
+        if (!fast || !slow) continue
+
+        let crossName = `${fast}_x_${slow}`
+
+        if(index === 0)
+        {
+            if(typeof slow === 'number')
+            {
+                main.verticalOhlcv[slow] = new Array(len).fill(slow)
+            }
+            
+            if(fast !== 'price' && !main.verticalOhlcv.hasOwnProperty(fast)) throw Error(`fast "${fast} not found in crossPairs"`)
+            if(!main.verticalOhlcv.hasOwnProperty(slow)) throw Error(`slow "${slow} not found in crossPairs"`)
+
+
+            main.instances[crossName] = new CrossInstance()
+            main.verticalOhlcv[crossName] = new Array(len).fill(null)
         }
+
+        let fastValue
+        let closeValue
+        let highValue
+        let lowValue
+        let slowValue
+
+        if(fast === 'price')
+        {
+            closeValue = main.verticalOhlcv.close[index]
+            highValue = main.verticalOhlcv.high[index]
+            lowValue = main.verticalOhlcv.low[index]
+            slowValue = main.verticalOhlcv[slow][index]
+
+            main.instances[crossName].update({fast: closeValue, slow: slowValue, high: highValue, low: lowValue})
+
+        } else
+        {
+            fastValue = main.verticalOhlcv[fast][index]
+            slowValue = main.verticalOhlcv[slow][index]
+
+            main.instances[crossName].update({fast: fastValue, slow: slowValue})
+        }
+
+        main.verticalOhlcv[crossName][index] = main.instances[crossName].getResult()
     }
-    
-    return result;
+
 }
-
-
-// Helper function to group consecutive values
-const groupConsecutiveValues = (arr) => {
-    const length = arr.length;
-    if (length === 0) return [];
-
-    const result = [];
-    let currentGroup = [arr[0]];
-
-    for (let i = 1; i < length; i++) {
-        const currentValue = arr[i];
-        const prevValue = arr[i - 1];
-
-        if (currentValue === prevValue) {
-            // Same value, continue the current group
-            currentGroup.push(currentValue);
-        } else {
-            // Value changed, finalize the current group and start a new one
-            result.push(currentGroup);
-            currentGroup = [currentValue];
-        }
-    }
-
-    // Push the last group
-    result.push(currentGroup);
-
-    return result;
-};

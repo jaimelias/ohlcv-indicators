@@ -8,6 +8,7 @@ import { bollingerBands } from "../moving-averages/bollingerBands.js"
 import { volumeOscillator } from "../oscillators/volumeOscillator.js"
 import { candlesStudies } from "../studies/candleStudies.js"
 import { lag } from "../studies/lag.js"
+import {crossPairs} from "../studies/findCrosses.js"
 
 const indicatorFunctions = {
     rsi,
@@ -19,7 +20,7 @@ const indicatorFunctions = {
     bollingerBands,
     volumeOscillator,
     candlesStudies,
-    lag
+    lag,
 }
 
 const validateFirstDate = (arr) => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
@@ -149,13 +150,13 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     const indicatorCalls = []
     if (inputParams && typeof inputParams === 'object') {
         for (const key in inputParams) {
-            if (key === 'crossPairs') continue
             const technical = inputParams[key]
             if (Array.isArray(technical)) {
                 for (let i = 0; i < technical.length; i++) {
                     const params = technical[i];
                     if (Array.isArray(params)) {
                         indicatorCalls.push({
+                            key,
                             fn: indicatorFunctions[key],
                             args: params
                         })
@@ -198,11 +199,7 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
         vo_close[x] = current.close
         vo_volume[x] = current.volume
 
-        // Run indicator functions
-        for (let i = 0; i < indicatorCalls.length; i++) {
-            const { fn, args } = indicatorCalls[i]
-            fn(main, x, ...args)
-        }
+
 
         // Mid-price calculations
         if (vo_mid_oc) {
@@ -249,6 +246,17 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
             }
 
             sessionIntradayIndexCount++
+
+
+            // Run indicator functions
+            for (let i = 0; i < indicatorCalls.length; i++) {
+                const { fn, args, key } = indicatorCalls[i]
+                if(key === 'crossPairs' || key === 'lag') continue
+                fn(main, x, ...args)
+            }
+
+            lag(main, x, inputParams.lag)
+            crossPairs(main, x, main.crossPairsList)
         }
     }
 

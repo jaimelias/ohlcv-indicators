@@ -5,11 +5,8 @@ export const donchianChannels = (main, index, size, offset) => {
     const highs = main.verticalOhlcv.high;
     const lows = main.verticalOhlcv.low;
 
-    // If we don't have enough data to fill one size ending at (index - offset), return
-    if ((index - offset) < (size - 1)) return true;
-
     // Ensure that the required arrays exist
-    if (!main.instances.hasOwnProperty('donchian_channels')) {
+    if (index === 0) {
         
         main.instances['donchian_channels'] = {};
 

@@ -5,7 +5,7 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
 
     const value = main.verticalOhlcv.close[index]
 
-    if (!main.instances.hasOwnProperty(`bollinger_bands`)) {
+    if (index === 0) {
 
         Object.assign(main.instances, {bollinger_bands: {
             instance: new FasterBollingerBands(size, times),

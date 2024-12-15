@@ -4,9 +4,9 @@ export const macd = (main, index, fastLine = 12, slowLine = 26, signalLine = 9) 
 
     const value = main.verticalOhlcv.close[index]
 
-    if (!main.instances.hasOwnProperty('macd')) {
+    if (index === 0) {
 
-        main.autoCrossPairsList.push({fast: 'macd_diff', slow: 'macd_dea'});
+        main.crossPairsList.push({fast: 'macd_diff', slow: 'macd_dea'});
 
         main.instances['macd'] = new FasterMACD(
             new FasterEMA(fastLine),

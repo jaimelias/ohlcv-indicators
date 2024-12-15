@@ -5,7 +5,7 @@ export const ema = (main, index, size) => {
 
   const value = main.verticalOhlcv.close[index]
 
-  if(!main.instances.hasOwnProperty(`ema_${size}`))
+  if(index === 0)
   {
       main.instances[`ema_${size}`] = new FasterEMA(size)
       main.verticalOhlcv[`ema_${size}`] = new Array(main.len).fill(null)
