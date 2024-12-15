@@ -1,5 +1,7 @@
 export const lag = (main, index, params) => {
 
+    if(!params) return true
+
     for(let p = 0; p < params.length; p++)
     {
         const [colKeys, lags] = params[p]
