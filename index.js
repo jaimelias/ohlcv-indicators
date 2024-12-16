@@ -9,6 +9,9 @@ export default class OHLCV_INDICATORS {
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
 
+
+        this.lastComputedIndex = 0
+
         this.input = input
         this.priceBased = ['open', 'high', 'low', 'close', 'mid_price_open_close', 'mid_price_high_low']
         this.len = input.length
@@ -93,12 +96,15 @@ export default class OHLCV_INDICATORS {
 
     compute() {
 
-        parseOhlcvToVertical(this.input, this)
+       
+        if(this.len > this.lastComputedIndex){ 
+            parseOhlcvToVertical(this.input, this)
+        }
+        
 
         return this
     }
     
-
 
     crossPairs(arr)
     {

@@ -257,6 +257,7 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
 
             lag(main, x, inputParams.lag)
             crossPairs(main, x, main.crossPairsList)
+            main.lastComputedIndex++
         }
     }
 
