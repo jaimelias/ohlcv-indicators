@@ -150,24 +150,7 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     }
 
     // Pre-process indicator params
-    const indicatorCalls = []
-    if (inputParams && typeof inputParams === 'object') {
-        for (const key in inputParams) {
-            const technical = inputParams[key]
-            if (Array.isArray(technical)) {
-                for (let i = 0; i < technical.length; i++) {
-                    const params = technical[i];
-                    if (Array.isArray(params)) {
-                        indicatorCalls.push({
-                            key,
-                            fn: indicatorFunctions[key],
-                            args: params
-                        })
-                    }
-                }
-            }
-        }
-    }
+    const indicatorCalls = processIndicatorCalls(inputParams)
 
     // Store references for numeric arrays to avoid repeated dictionary lookups
     const vo_open = vert.open
@@ -258,11 +241,12 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
                 if(key === 'crossPairs' || key === 'lag') continue
                 fn(main, x, ...args)
             }
-
-            lag(main, x, inputParams.lag)
-            crossPairs(main, x, main.crossPairsList)
-            main.lastComputedIndex++
         }
+
+
+        lag(main, x, inputParams.lag)
+        crossPairs(main, x, main.crossPairsList)
+        main.lastComputedIndex++
     }
 
     // Store current state so that we can continue from here in subsequent calls
@@ -271,3 +255,23 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     main.sessionIntradayIndexCount = sessionIntradayIndexCount
     main.cachedDayInfo = cachedDayInfo
 }
+
+const processIndicatorCalls = (inputParams) => {
+    if (!inputParams || typeof inputParams !== 'object') return [];
+
+    const indicatorCalls = [];
+    for (const [key, technical] of Object.entries(inputParams)) {
+        if (Array.isArray(technical)) {
+            for (const params of technical) {
+                if (Array.isArray(params)) {
+                    indicatorCalls.push({
+                        key,
+                        fn: indicatorFunctions[key],
+                        args: params,
+                    });
+                }
+            }
+        }
+    }
+    return indicatorCalls;
+};
