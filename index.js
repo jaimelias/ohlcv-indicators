@@ -48,15 +48,8 @@ export default class OHLCV_INDICATORS {
     getData() {
 
         this.compute()
-
-
-
-
+        
         const {verticalOhlcv} = this
-
-        console.log(JSON.stringify(verticalOhlcv))
-
-
         const keys = Object.keys(verticalOhlcv);
         const len = verticalOhlcv[keys[0]].length;
         const keysLength = keys.length;
@@ -100,16 +93,35 @@ export default class OHLCV_INDICATORS {
     
     }
 
-    compute() {
-
-       
-        if(this.len > this.lastComputedIndex){ 
-            parseOhlcvToVertical(this.input, this)
+    compute(change) {
+        if (change) {
+            const { date: changeDate } = change;
+            const lastIndex = this.len - 1;
+            const inputDate = this.input[lastIndex]?.date;
+    
+            if (this.lastComputedIndex === 0) {
+                this.compute();
+            }
+    
+            if (inputDate !== changeDate) {
+                // Add new item
+                this.len++;
+                this.input.push(change);
+                parseOhlcvToVertical(this.input, this, this.len);
+            } else {
+                // Modify the last item
+                this.input[lastIndex] = change;
+                parseOhlcvToVertical(this.input, this, lastIndex);
+            }
         }
-        
-
-        return this
+    
+        if (this.len > this.lastComputedIndex && !change) {
+            parseOhlcvToVertical(this.input, this, 0);
+        }
+    
+        return this;
     }
+    
     
 
     crossPairs(arr)

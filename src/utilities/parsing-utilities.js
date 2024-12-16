@@ -53,6 +53,9 @@ const getDateInfo = (dateString) => {
 export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     const { len, studyOptions = {}, inputParams } = main
 
+
+
+
     if (studyOptions) {
         const studyOptionKeys = Object.keys(studyOptions)
         for (let i = 0; i < studyOptionKeys.length; i++) {
@@ -188,6 +191,9 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     let sessionIntradayIndexCount = main.sessionIntradayIndexCount
     let cachedDayInfo = main.cachedDayInfo
 
+
+
+
     // Compute indicators and fill data from startIndex to len
     for (let x = startIndex; x < len; x++) {
         const current = input[x]
@@ -198,8 +204,6 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
         vo_low[x] = current.low
         vo_close[x] = current.close
         vo_volume[x] = current.volume
-
-
 
         // Mid-price calculations
         if (vo_mid_oc) {
