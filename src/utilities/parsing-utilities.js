@@ -23,7 +23,7 @@ const indicatorFunctions = {
     lag,
 }
 
-const validateFirstDate = (arr) => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
+const validateFirstDate = arr => arr[0].hasOwnProperty('date') && typeof arr[0].date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(arr[0].date)
 
 export const defaultStudyOptions = {
     midPriceOpenClose: true,

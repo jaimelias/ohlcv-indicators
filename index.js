@@ -9,7 +9,6 @@ export default class OHLCV_INDICATORS {
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
 
-
         this.lastComputedIndex = 0
 
         this.input = input
@@ -50,7 +49,14 @@ export default class OHLCV_INDICATORS {
 
         this.compute()
 
+
+
+
         const {verticalOhlcv} = this
+
+        console.log(JSON.stringify(verticalOhlcv))
+
+
         const keys = Object.keys(verticalOhlcv);
         const len = verticalOhlcv[keys[0]].length;
         const keysLength = keys.length;
@@ -144,6 +150,10 @@ export default class OHLCV_INDICATORS {
 
     ema(size) {
 
+        if (typeof size !== 'number' || size <= 0) {
+            throw new Error('"size" must be a positive number in ema.');
+        }
+
         this.inputParams.ema ??= []
         this.inputParams.ema.push([size])
         this.priceBased.push(`ema_${size}`)
@@ -152,16 +162,30 @@ export default class OHLCV_INDICATORS {
     }
     sma(size) {
 
+        if (typeof size !== 'number' || size <= 0) {
+            throw new Error('"size" must be a positive number in sma.');
+        }
+
         this.inputParams.sma ??= []
         this.inputParams.sma.push([size])
         this.priceBased.push(`sma_${size}`)
 
         return this 
     }
-    macd(fastLine, slowLine, signalLine) {
+    macd(fast = 12, slow = 26, signal = 9) {
+
+        if (typeof fast !== 'number' || fast <= 0) {
+            throw new Error('"fast" must be a positive number in macd.');
+        }
+        if (typeof slow !== 'number' || slow <= fast) {
+            throw new Error('"slow" must be a positive number greater than "fast" in macd.');
+        }
+        if (typeof signal !== 'number' || signal <= 0) {
+            throw new Error('"signal" must be a positive number in macd.');
+        }
 
         this.inputParams.macd ??= []
-        this.inputParams.macd.push([fastLine, slowLine, signalLine])
+        this.inputParams.macd.push([fast, slow, signal])
         
         return this
 
@@ -186,7 +210,7 @@ export default class OHLCV_INDICATORS {
     {
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
-            throw new Error('Invalid parameter: "size" must be a positive number in rsi.');
+            throw new Error('"size" must be a positive number in rsi.');
         }
 
         this.inputParams.rsi ??= []
@@ -197,11 +221,11 @@ export default class OHLCV_INDICATORS {
     donchianChannels(size = 20, offset = 0)
     {
         if (typeof size !== 'number' || size <= 0) {
-            throw new Error('The "size" must be a positive number or 0 in donchianChannels.');
+            throw new Error('"size" must be a positive number or 0 in donchianChannels.');
         }
     
         if (typeof offset !== 'number' || offset <= 0) {
-            throw new Error('The "offset" must be a positive number or 0 in donchianChannels.');
+            throw new Error('"offset" must be a positive number or 0 in donchianChannels.');
         }
 
         this.inputParams.donchianChannels ??= []
@@ -214,11 +238,11 @@ export default class OHLCV_INDICATORS {
     {
 
         if (typeof size !== 'number' || size <= 0) {
-            throw new Error('The "size" must be a positive number or 0 in candlesStudies.');
+            throw new Error('"size" must be a positive number or 0 in candlesStudies.');
         }
 
         if (typeof classify !== 'boolean') {
-            throw new Error('The "classify" must be a true or false in candlesStudies.');
+            throw new Error('"classify" must be a true or false in candlesStudies.');
         }
 
         this.inputParams.candlesStudies ??= []
@@ -226,8 +250,19 @@ export default class OHLCV_INDICATORS {
         return this       
     }
 
-    volumeOscillator(fastSize, slowSize)
+    volumeOscillator(fastSize = 5, slowSize = 10)
     {
+
+
+        if (typeof fastSize !== 'number' || fastSize <= 0) {
+            throw new Error('fastSize" must be a positive number in volumeOscillator.');
+        }
+
+        if (typeof slowSize !== 'number' || slowSize <= fastSize) {
+            throw new Error('"slowSize" must be a positive number greater than the "fastSize" in volumeOscillator.');
+        }
+
+
         this.inputParams.volumeOscillator ??= []
         this.inputParams.volumeOscillator.push([fastSize, slowSize])
         return this           

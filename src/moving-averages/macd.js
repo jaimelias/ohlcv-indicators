@@ -1,6 +1,6 @@
 import {FasterEMA, FasterMACD} from 'trading-signals';
 
-export const macd = (main, index, fastLine = 12, slowLine = 26, signalLine = 9) => {
+export const macd = (main, index, fast, slow, signal) => {
 
     const value = main.verticalOhlcv.close[index]
 
@@ -9,9 +9,9 @@ export const macd = (main, index, fastLine = 12, slowLine = 26, signalLine = 9) 
         main.crossPairsList.push({fast: 'macd_diff', slow: 'macd_dea'});
 
         main.instances['macd'] = new FasterMACD(
-            new FasterEMA(fastLine),
-            new FasterEMA(slowLine),
-            new FasterEMA(signalLine)
+            new FasterEMA(fast),
+            new FasterEMA(slow),
+            new FasterEMA(signal)
         );
 
         Object.assign(main.verticalOhlcv, {

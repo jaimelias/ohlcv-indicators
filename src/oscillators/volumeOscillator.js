@@ -1,6 +1,6 @@
 import { FasterEMA } from 'trading-signals';
 
-export const volumeOscillator = (main, index, fastSize = 5, slowSize = 10) => {
+export const volumeOscillator = (main, index, fast, slow) => {
 
     const value = main.verticalOhlcv.volume[index]
 
@@ -8,8 +8,8 @@ export const volumeOscillator = (main, index, fastSize = 5, slowSize = 10) => {
 
         Object.assign(main.instances, {
             volume_oscillator: {
-                fastEMA: new FasterEMA(fastSize),
-                slowEMA: new FasterEMA(slowSize)
+                fastEMA: new FasterEMA(fast),
+                slowEMA: new FasterEMA(slow)
             }
         })
 
