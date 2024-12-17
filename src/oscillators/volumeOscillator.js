@@ -19,8 +19,8 @@ export const volumeOscillator = (main, index, fast, slow) => {
 
     const { fastEMA, slowEMA } = main.instances[`volume_oscillator`];
 
-    fastEMA.update(value);
-    slowEMA.update(value);
+    fastEMA.update(value, main.lastIndexReplace);
+    slowEMA.update(value, main.lastIndexReplace);
 
     let fastValue = null;
     let slowValue = null;

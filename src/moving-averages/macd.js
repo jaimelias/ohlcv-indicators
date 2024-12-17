@@ -22,7 +22,7 @@ export const macd = (main, index, fast, slow, signal) => {
     }
 
     const macdInstance = main.instances[`macd`];
-    macdInstance.update(value);
+    macdInstance.update(value, main.lastIndexReplace);
 
     let macdResult;
     

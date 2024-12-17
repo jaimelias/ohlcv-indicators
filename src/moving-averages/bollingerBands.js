@@ -31,7 +31,7 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
     }
 
     const { instance, heightInstance } = main.instances[`bollinger_bands`];
-    instance.update(value);
+    instance.update(value, main.lastIndexReplace);
 
     let result;
     try {
@@ -56,7 +56,7 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
     range = (value - lower) / (upper - lower);
     height = upper - lower;
 
-    heightInstance.update(height);
+    heightInstance.update(height, main.lastIndexReplace);
 
     try {
         heightMean = heightInstance.getResult();

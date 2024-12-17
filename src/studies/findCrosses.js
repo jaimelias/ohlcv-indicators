@@ -12,18 +12,20 @@ class CrossInstance {
 
     constructor()
     {
-        this.interval = 0
-        this.prevState = 0.5
-        this.prevFast = null
-        this.prevSlow = null
-        this.prevHigh = null
-        this.prevLow = null
-        this.areHighAndLowUndefined = false
-        this.index = 0
-        this.crossIndexes = {
-            up: [],
-            down: []
-        }
+        Object.assign(this, {
+            interval: 0,
+            prevState: 0.5,
+            prevFast: null,
+            prevSlow: null,
+            prevHigh: null,
+            prevLow: null,
+            areHighAndLowUndefined: false,
+            index: 0,
+            crossIndexes: {
+                up: [],
+                down: []
+            }
+        })        
 
     }
     update({fast, high, slow, low})
@@ -113,12 +115,14 @@ class CrossInstance {
         if(this.interval === -1) this.crossIndexes.down.push(this.index)
 
         //save prev state
-        this.index++
-        this.prevState = currState
-        this.prevFast = fast
-        this.prevSlow = slow
-        this.prevHigh = high
-        this.prevLow = low
+        Object.assign(this, {
+            index: this.index + 1,
+            prevState: currState,
+            prevFast: fast,
+            prevSlow: slow,
+            prevHigh: high,
+            prevLow: low
+        })        
     }
 
     getResult()

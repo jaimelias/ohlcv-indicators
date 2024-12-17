@@ -16,6 +16,7 @@ export default class OHLCV_INDICATORS {
         this.priceBased = ['open', 'high', 'low', 'close', 'mid_price_open_close', 'mid_price_high_low']
         this.len = input.length
         this.studyOptions = (studyOptions === null) ? defaultStudyOptions : studyOptions
+        this.lastIndexReplace = false 
         this.instances = {}
         this.crossPairsList = []
         this.verticalOhlcv = {}
@@ -128,20 +129,23 @@ export default class OHLCV_INDICATORS {
             const lastIndex = this.len - 1;
             const inputDate = this.input[lastIndex]?.date;
     
+            //fallback if .compute(change) is triggered before .compute() alone
             if (this.lastComputedIndex === 0) {
-                this.compute();
+                this.compute()
             }
-    
+
+
             if (inputDate !== changeDate) {
                 // Add new item
-                this.len++;
-                this.input.push(change);
-                parseOhlcvToVertical(this.input, this, this.len);
+                this.len++
+                this.input.push(change)
+                parseOhlcvToVertical(this.input, this, this.len)
             } else {
                 // Modify the last item
-                this.input[lastIndex] = change;
-                parseOhlcvToVertical(this.input, this, lastIndex);
+                this.input[lastIndex] = change
+                parseOhlcvToVertical(this.input, this, lastIndex)
             }
+
         }
     
 

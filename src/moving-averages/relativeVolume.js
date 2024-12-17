@@ -5,16 +5,18 @@ export const relativeVolume = (main, index, size = 10) => {
     const value = main.verticalOhlcv.volume[index]
 
     if (index === 0) {
-        main.instances[`relative_volume_${size}`] = new FasterSMA(size);
+        main.instances[`relative_volume_${size}`] = {
+            instance: new FasterSMA(size),
+            prevRelativeVolumeSma: null
+        }
 
         Object.assign(main.verticalOhlcv, {
             [`relative_volume_${size}`]: new Array(main.len).fill(null),
-            [`relative_volume_sma_${size}`]: new Array(main.len).fill(null)
         })
     }
 
-    const smaInstance = main.instances[`relative_volume_${size}`]
-    smaInstance.update(value)
+    const smaInstance = main.instances[`relative_volume_${size}`].instance
+    smaInstance.update(value, main.lastIndexReplace)
 
     let smaValue;
     try {
@@ -23,13 +25,16 @@ export const relativeVolume = (main, index, size = 10) => {
         //do nothing
     }
 
-    main.verticalOhlcv[`relative_volume_sma_${size}`][index] = smaValue;
+    const {prevRelativeVolumeSma} = main.instances[`relative_volume_${size}`]
 
-    if (smaValue !== null && typeof main.verticalOhlcv[`relative_volume_sma_${size}`][index - 1] === 'number') {
-        main.verticalOhlcv[`relative_volume_${size}`][index] = value / main.verticalOhlcv[`relative_volume_sma_${size}`][index - 1];
+    if (smaValue !== null && prevRelativeVolumeSma !== null) {
+        main.verticalOhlcv[`relative_volume_${size}`][index] = value / prevRelativeVolumeSma;
     } else {
         main.verticalOhlcv[`relative_volume_${size}`][index] = null;
     }
+
+
+    main.instances[`relative_volume_${size}`].prevRelativeVolumeSma = smaValue
 
     return true;
 };

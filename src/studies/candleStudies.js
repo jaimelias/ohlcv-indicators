@@ -88,15 +88,15 @@ export const candlesStudies = (main, index, size, classify = true, classificatio
         } = main.instances.candleStudies;
 
         // Update instances with current absolute values
-        topInstance.update(Math.abs(topSize));
-        bottomInstance.update(Math.abs(bottomSize));
-        shadowSizeInstance.update(Math.abs(shadowSize));
-        gapInstance.update(gapSize);
-        bodySizeInstance.update(candleBodySize);
-        closeDirectionInstance.update(closeDirection);
-        highDirectionInstance.update(highDirection);
-        lowDirectionInstance.update(lowDirection);
-        openDirectionInstance.update(openDirection);
+        topInstance.update(Math.abs(topSize), main.lastIndexReplace);
+        bottomInstance.update(Math.abs(bottomSize), main.lastIndexReplace);
+        shadowSizeInstance.update(Math.abs(shadowSize), main.lastIndexReplace);
+        gapInstance.update(gapSize, main.lastIndexReplace);
+        bodySizeInstance.update(candleBodySize, main.lastIndexReplace);
+        closeDirectionInstance.update(closeDirection, main.lastIndexReplace);
+        highDirectionInstance.update(highDirection, main.lastIndexReplace);
+        lowDirectionInstance.update(lowDirection, main.lastIndexReplace);
+        openDirectionInstance.update(openDirection, main.lastIndexReplace);
 
         try {
             topSizeMean = topInstance.getResult();

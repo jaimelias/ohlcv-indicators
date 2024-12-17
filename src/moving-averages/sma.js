@@ -12,7 +12,7 @@ export const sma = (main, index, size) => {
   }
 
   let currSma
-  main.instances[`sma_${size}`].update(value)
+  main.instances[`sma_${size}`].update(value, main.lastIndexReplace)
 
   try{
     currSma = main.instances[`sma_${size}`].getResult()
