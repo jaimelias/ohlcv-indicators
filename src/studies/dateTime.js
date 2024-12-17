@@ -1,5 +1,3 @@
-export const validateDate = dateString => typeof dateString === 'string' &&  /^\d{4}-\d{2}-\d{2}/.test(dateString)
-
 export const dateTime = (main, index) => {
 
     if(index === 0)

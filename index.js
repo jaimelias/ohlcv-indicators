@@ -1,14 +1,15 @@
 import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { correlation } from './src/studies/correlation.js'
 import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
-import { validateDate } from './src/studies/dateTime.js'
+import { validateDate } from './src/utilities/validators.js'
+import { isAlreadyComputed } from './src/utilities/validators.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null}) {
 
-        if(!Array.isArray(input)) throw Error('input ohlcv must be an array: ' + ticker)
-        if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
-        if(!input[0].hasOwnProperty('close')) throw Error('input ohlcv array objects require at least close property: ' + ticker)
+        if(!Array.isArray(input)) throw Error('input OHLCV must be an array: ' + ticker)
+        if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
+        if(!input[0].hasOwnProperty('close')) throw Error('input OHLCV array objects require at least close property: ' + ticker)
 
         this.lastComputedIndex = 0
 
@@ -32,10 +33,11 @@ export default class OHLCV_INDICATORS {
     
         return this 
     }
-    
+
+
     getData() {
 
-        //getData method returns the last object (row) of the new ohlcv with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
+        //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
         
         const {verticalOhlcv} = this
@@ -84,7 +86,7 @@ export default class OHLCV_INDICATORS {
 
     compute(change) {
 
-        //checks the first row in ohlcv input to verify if the date property is valid
+        //checks the first row in OHLCV input to verify if the date property is valid
         this.isValidDate = this.input[0].hasOwnProperty('date') && validateDate(this.input[0].date)
 
          //compute method can be used to process indicators if no arguments are provided
@@ -94,20 +96,20 @@ export default class OHLCV_INDICATORS {
             parseOhlcvToVertical(this.input, this, 0);
         }        
 
-        //compute method can be used to add new or update the last datapoints if a new ohlcv object is passed with a valid date property
+        //compute method can be used to add new or update the last datapoints if a new OHLCV object is passed with a valid date property
         //valid date properties: "2024-12-16 15:45:00" or "2024-12-16"
         if (change && typeof change === 'object') {
 
             if (!['open', 'high', 'low', 'close', 'volume', 'date'].every(f => Object.keys(change).includes(f))) {
-                throw Error('Invalid ohlcv object sent in "compute". Correct usage: .compute({open: 108.25, high: 108.410004, low: 108.25, close: 99999999, volume: 875903, date: "2024-12-16 15:45:00" || "2024-12-16"})');
+                throw Error('Invalid OHLCV object sent in "compute". Correct usage: .compute({open: 108.25, high: 108.410004, low: 108.25, close: 99999999, volume: 875903, date: "2024-12-16 15:45:00" || "2024-12-16"})');
             }            
             if(!this.isValidDate)
             {
-                throw Error('All the ohlcv rows require a valid date property to access the compute change method. Correct date format: "2024-12-16 15:45:00" or "2024-12-16"')
+                throw Error('All the OHLCV rows require a valid date property to access the compute change method. Correct date format: "2024-12-16 15:45:00" or "2024-12-16"')
             }
             if(!validateDate(change.date))
             {
-                throw Error('The date in the new ohlcv row is invalid. Correct date format: "2024-12-16 15:45:00" or "2024-12-16"')
+                throw Error('The date in the new OHLCV row is invalid. Correct date format: "2024-12-16 15:45:00" or "2024-12-16"')
             }
 
             const { date: changeDate } = change;
@@ -142,6 +144,8 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr)
     {
+        isAlreadyComputed(this)
+
         this.crossPairsList = [...this.crossPairsList, ...arr]
 
         this.inputParams.push({key: 'crossPairs', params: [this.crossPairsList]})
@@ -151,6 +155,8 @@ export default class OHLCV_INDICATORS {
 
 
     lag(colKeys = ['close'], lags = 1) {
+
+        isAlreadyComputed(this)
 
         this.inputParams.push({key: 'lag', params: [colKeys, lags]})
 
@@ -169,12 +175,16 @@ export default class OHLCV_INDICATORS {
     
     relativeVolume(size) {
 
+        isAlreadyComputed(this)
+
         this.inputParams.push({key: 'relativeVolume', params: [size]})
  
         return this
     }
 
     ema(size) {
+
+        isAlreadyComputed(this)
 
         if (typeof size !== 'number' || size <= 0) {
             throw new Error('"size" must be a positive number in ema.');
@@ -187,6 +197,8 @@ export default class OHLCV_INDICATORS {
     }
     sma(size) {
 
+        isAlreadyComputed(this)
+
         if (typeof size !== 'number' || size <= 0) {
             throw new Error('"size" must be a positive number in sma.');
         }
@@ -198,6 +210,8 @@ export default class OHLCV_INDICATORS {
         return this 
     }
     macd(fast = 12, slow = 26, signal = 9) {
+
+        isAlreadyComputed(this)
 
         if (typeof fast !== 'number' || fast <= 0) {
             throw new Error('"fast" must be a positive number in macd.');
@@ -215,6 +229,9 @@ export default class OHLCV_INDICATORS {
 
     }
     bollingerBands(size = 20, stdDev = 2, options = {}) {
+
+
+        isAlreadyComputed(this)
 
         if(!options || typeof options !== 'object')
         {
@@ -239,6 +256,8 @@ export default class OHLCV_INDICATORS {
     
     rsi(size)
     {
+        isAlreadyComputed(this)
+
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
             throw new Error('"size" must be a positive number in rsi.');
@@ -250,6 +269,8 @@ export default class OHLCV_INDICATORS {
     }
     donchianChannels(size = 20, offset = 0)
     {
+        isAlreadyComputed(this)
+
         if (typeof size !== 'number' || size <= 0) {
             throw new Error('"size" must be a positive number or 0 in donchianChannels.');
         }
@@ -263,23 +284,28 @@ export default class OHLCV_INDICATORS {
 
         return this       
     }
-    candlesStudies(size = 20, classify = true, classificationLevels)
+    candleStudies(size = 20, classify = true, classificationLevels)
     {
 
+        isAlreadyComputed(this)
+
         if (typeof size !== 'number' || size <= 0) {
-            throw new Error('"size" must be a positive number or 0 in candlesStudies.');
+            throw new Error('"size" must be a positive number or 0 in candleStudies.');
         }
 
         if (typeof classify !== 'boolean') {
-            throw new Error('"classify" must be a true or false in candlesStudies.');
+            throw new Error('"classify" must be a true or false in candleStudies.');
         }
 
-        this.inputParams.push({key: 'candlesStudies', params: [size, classify, classificationLevels]})
+        this.inputParams.push({key: 'candleStudies', params: [size, classify, classificationLevels]})
         return this       
     }
 
     volumeOscillator(fastSize = 5, slowSize = 10)
     {
+
+        isAlreadyComputed(this)
+
         if (typeof fastSize !== 'number' || fastSize <= 0) {
             throw new Error('fastSize" must be a positive number in volumeOscillator.');
         }
@@ -293,11 +319,15 @@ export default class OHLCV_INDICATORS {
     }
     dateTime()
     {
+        isAlreadyComputed(this)
+
         this.inputParams.push({key: 'dateTime', params: []})
         return this           
     }
     priceVariations()
     {
+        isAlreadyComputed(this)
+
         this.inputParams.push({key: 'priceVariations', params: []})
         return this           
     }

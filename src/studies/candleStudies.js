@@ -1,7 +1,7 @@
 import { FasterSMA } from 'trading-signals';
 import { classifySize } from '../utilities/classification.js';
 
-export const candlesStudies = (main, index, size, classify = true, classificationLevels = {}) => {
+export const candleStudies = (main, index, size, classify = true, classificationLevels = {}) => {
 
     const { changeLevel = 7, sizeLevel = 5 } = classificationLevels;
 
@@ -44,7 +44,7 @@ export const candlesStudies = (main, index, size, classify = true, classificatio
     const prevLow = main.verticalOhlcv.low[index-1]
     const prevClose = main.verticalOhlcv.close[index-1]
 
-    if ([prevOpen, prevHigh, prevLow, prevClose].some(v => typeof v === 'undefined')) return true;
+    if (index === 0) return true;
 
     const currOpen = main.verticalOhlcv.open[index]
     const currHigh = main.verticalOhlcv.high[index]

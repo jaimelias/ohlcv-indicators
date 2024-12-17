@@ -1,3 +1,4 @@
+import { validateInputParams } from "./validators.js"
 import { rsi } from "../oscillators/rsi.js"
 import { sma } from "../moving-averages/sma.js"
 import { ema } from "../moving-averages/ema.js"
@@ -6,11 +7,12 @@ import { relativeVolume } from "../moving-averages/relativeVolume.js"
 import { donchianChannels } from "../moving-averages/donchianChannel.js"
 import { bollingerBands } from "../moving-averages/bollingerBands.js"
 import { volumeOscillator } from "../oscillators/volumeOscillator.js"
-import { candlesStudies } from "../studies/candleStudies.js"
+import { candleStudies } from "../studies/candleStudies.js"
 import { lag } from "../studies/lag.js"
 import {crossPairs} from "../studies/findCrosses.js"
 import { dateTime } from "../studies/dateTime.js"
 import { priceVariations } from "../studies/priceVariations.js"
+
 
 const indicatorFunctions = {
     dateTime,
@@ -23,7 +25,7 @@ const indicatorFunctions = {
     donchianChannels,
     bollingerBands,
     volumeOscillator,
-    candlesStudies
+    candleStudies
 }
 
 
@@ -33,6 +35,8 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     main.nullArray = new Array(len).fill(null)
 
     if (startIndex === 0) {
+
+        validateInputParams(main)
 
         const baseKeys = ['open', 'high', 'low', 'close', 'volume'];
         const baseKeysSet = new Set(baseKeys);
