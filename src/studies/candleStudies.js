@@ -8,15 +8,15 @@ export const candlesStudies = (main, index, size, classify = true, classificatio
     if(index === 0)
     {
         Object.assign(main.verticalOhlcv, {
-            candle_gap_size: new Array(main.len).fill(null),
-            candle_body_size: new Array(main.len).fill(null),
-            candle_top_size: new Array(main.len).fill(null),
-            candle_bottom_size: new Array(main.len).fill(null),
-            candle_shadow_size: new Array(main.len).fill(null),
-            candle_close_direction: new Array(main.len).fill(null),
-            candle_high_direction: new Array(main.len).fill(null),
-            candle_low_direction: new Array(main.len).fill(null),
-            candle_open_direction: new Array(main.len).fill(null),          
+            candle_gap_size: [...main.nullArray],
+            candle_body_size: [...main.nullArray],
+            candle_top_size: [...main.nullArray],
+            candle_bottom_size: [...main.nullArray],
+            candle_shadow_size: [...main.nullArray],
+            candle_close_direction: [...main.nullArray],
+            candle_high_direction: [...main.nullArray],
+            candle_low_direction: [...main.nullArray],
+            candle_open_direction: [...main.nullArray],          
         })
     }
 

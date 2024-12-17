@@ -13,7 +13,7 @@ export const volumeOscillator = (main, index, fast, slow) => {
             }
         })
 
-        main.verticalOhlcv[`volume_oscillator`] = new Array(main.len).fill(null);
+        main.verticalOhlcv[`volume_oscillator`] = [...main.nullArray];
         main.crossPairsList.push({ fast: `volume_oscillator`, slow: 0 });
     }
 

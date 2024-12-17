@@ -154,7 +154,7 @@ export const crossPairs = (main, index, arr) => {
 
 
             main.instances[crossName] = new CrossInstance()
-            main.verticalOhlcv[crossName] = new Array(main.len).fill(null)
+            main.verticalOhlcv[crossName] = [...main.nullArray]
         }
 
         let fastValue

@@ -34,6 +34,8 @@ export const defaultStudyOptions = {
 export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     const { len, studyOptions = {}, inputParams } = main
 
+    main.nullArray = new Array(len).fill(null)
+
     if (studyOptions) {
         const studyOptionKeys = Object.keys(studyOptions);
         for (let i = 0; i < studyOptionKeys.length; i++) {

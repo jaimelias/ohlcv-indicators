@@ -7,13 +7,11 @@ export const donchianChannels = (main, index, size, offset) => {
 
     // Ensure that the required arrays exist
     if (index === 0) {
-        
-        main.instances['donchian_channels'] = {};
 
         Object.assign(main.verticalOhlcv, {
-            donchian_channel_upper: new Array(main.len).fill(null),
-            donchian_channel_basis: new Array(main.len).fill(null),
-            donchian_channel_lower: new Array(main.len).fill(null),
+            donchian_channel_upper: [...main.nullArray],
+            donchian_channel_basis: [...main.nullArray],
+            donchian_channel_lower: [...main.nullArray],
         })
     }
 

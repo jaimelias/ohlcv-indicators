@@ -16,8 +16,8 @@ export const rsi = (main, index, size) => {
         })
 
         Object.assign(main.verticalOhlcv, {
-            [`rsi_${size}`]: new Array(main.len).fill(null),
-            [`rsi_sma_${size}`]: new Array(main.len).fill(null)
+            [`rsi_${size}`]: [...main.nullArray],
+            [`rsi_sma_${size}`]: [...main.nullArray]
         })
     }
     

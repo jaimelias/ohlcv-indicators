@@ -8,7 +8,7 @@ export const ema = (main, index, size) => {
   if(index === 0)
   {
       main.instances[`ema_${size}`] = new FasterEMA(size)
-      main.verticalOhlcv[`ema_${size}`] = new Array(main.len).fill(null)
+      main.verticalOhlcv[`ema_${size}`] = [...main.nullArray]
   }
 
   let currSma

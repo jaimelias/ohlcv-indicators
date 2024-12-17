@@ -11,7 +11,7 @@ export const relativeVolume = (main, index, size = 10) => {
         }
 
         Object.assign(main.verticalOhlcv, {
-            [`relative_volume_${size}`]: new Array(main.len).fill(null),
+            [`relative_volume_${size}`]: [...main.nullArray],
         })
     }
 

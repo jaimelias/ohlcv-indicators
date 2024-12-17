@@ -12,7 +12,7 @@ export const lag = (main, index, params) => {
                 const key = `${colKeys[x]}_lag_${lag}`;
                 // If the array does not exist, initialize it
                 if (index === 0) {
-                    main.verticalOhlcv[key] = new Array(main.len).fill(null)
+                    main.verticalOhlcv[key] = [...main.nullArray]
                 }
 
                 // Compute the lagged index

@@ -19,14 +19,14 @@ export const dateTime = (main, index) => {
         })
 
         Object.assign(main.verticalOhlcv, {
-            day_of_the_week: new Array(main.len).fill(null),
-            day_of_the_month: new Array(main.len).fill(null),
-            week_of_the_month: new Array(main.len).fill(null),
-            hour: new Array(main.len).fill(null),
-            month: new Array(main.len).fill(null),
-            year: new Array(main.len).fill(null),
-            session_daily_index: new Array(main.len).fill(null),
-            session_intraday_index: new Array(main.len).fill(null),
+            day_of_the_week: [...main.nullArray],
+            day_of_the_month: [...main.nullArray],
+            week_of_the_month: [...main.nullArray],
+            hour: [...main.nullArray],
+            month: [...main.nullArray],
+            year: [...main.nullArray],
+            session_daily_index: [...main.nullArray],
+            session_intraday_index: [...main.nullArray],
         })
     }
 

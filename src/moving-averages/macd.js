@@ -15,9 +15,9 @@ export const macd = (main, index, fast, slow, signal) => {
         );
 
         Object.assign(main.verticalOhlcv, {
-            macd_diff: new Array(main.len).fill(null),
-            macd_dea: new Array(main.len).fill(null),
-            macd_histogram: new Array(main.len).fill(null),
+            macd_diff: [...main.nullArray],
+            macd_dea: [...main.nullArray],
+            macd_histogram: [...main.nullArray],
         })
     }
 
