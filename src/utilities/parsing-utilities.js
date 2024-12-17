@@ -81,7 +81,8 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
         for (let i = 0; i < indicatorCalls.length; i++) {
             const { fn, args, key } = indicatorCalls[i];
             if (key === 'crossPairs' || key === 'lag') continue;
-            fn(main, x, ...args);
+
+            fn(main, x, ...args)
         }
 
         lag(main, x);
@@ -99,6 +100,9 @@ const processIndicatorCalls = inputParams => {
         if (Array.isArray(technical)) {
             for (const params of technical) {
                 if (Array.isArray(params)) {
+
+                    console.log(key, params)
+
                     indicatorCalls.push({
                         key,
                         fn: indicatorFunctions[key],
@@ -108,5 +112,6 @@ const processIndicatorCalls = inputParams => {
             }
         }
     }
+
     return indicatorCalls;
 };

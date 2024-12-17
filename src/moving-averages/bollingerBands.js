@@ -1,32 +1,44 @@
 import {FasterBollingerBands, FasterSMA} from 'trading-signals';
 import { classifySize } from '../utilities/classification.js';
 
-export const bollingerBands = (main, index, size, times, bollingerBandsStudies = false) => {
+let defaultTarget = 'close'
 
-    const value = main.verticalOhlcv.close[index]
+export const bollingerBands = (main, index, size, times, options) => {
+
+    const {height, range, target} = options
+    let suffix = (target === defaultTarget) ? '' : `_${target}`
 
     if (index === 0) {
 
+        if(!main.verticalOhlcv.hasOwnProperty(target))
+        {
+            throw new Error(`bollingerBands could not find target "${target}"`)
+        }
+
         Object.assign(main.instances, {
-            bollinger_bands: {
+            [`bollinger_bands${suffix}`]: {
                 instance: new FasterBollingerBands(size, times),
-                heightInstance: bollingerBandsStudies ? new FasterSMA(size) : null
+                heightInstance: height ? new FasterSMA(size) : null
             }
         })
         
         Object.assign(main.verticalOhlcv, {
-            bollinger_bands_upper: [...main.nullArray],
-            bollinger_bands_middle: [...main.nullArray],
-            bollinger_bands_lower: [...main.nullArray],
-            ...(bollingerBandsStudies && {
-                bollinger_bands_range: [...main.nullArray],
-                bollinger_bands_height: [...main.nullArray]
+            [`bollinger_bands_upper${suffix}`]: [...main.nullArray],
+            [`bollinger_bands_middle${suffix}`]: [...main.nullArray],
+            [`bollinger_bands_lower${suffix}`]: [...main.nullArray],
+            ...(height && {
+                [`bollinger_bands_height${suffix}`]: [...main.nullArray]
+            }),
+            ...(range && {
+                [`bollinger_bands_range${suffix}`]: [...main.nullArray],
             })
         })
     }
 
-    const { instance, heightInstance } = main.instances[`bollinger_bands`];
-    instance.update(value, main.lastIndexReplace);
+    
+    const { instance, heightInstance } = main.instances[`bollinger_bands${suffix}`]
+    const value = main.verticalOhlcv[target][index]
+    instance.update(value, main.lastIndexReplace)
 
     let result;
     try {
@@ -38,20 +50,20 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
     if(!result) return true
 
     const { upper, middle, lower } = result;
-    main.verticalOhlcv.bollinger_bands_upper[index] = upper;
-    main.verticalOhlcv.bollinger_bands_middle[index] = middle;
-    main.verticalOhlcv.bollinger_bands_lower[index] = lower;
+    main.verticalOhlcv[`bollinger_bands_upper${suffix}`][index] = upper;
+    main.verticalOhlcv[`bollinger_bands_middle${suffix}`][index] = middle;
+    main.verticalOhlcv[`bollinger_bands_lower${suffix}`][index] = lower;
 
-    if (!bollingerBandsStudies) return true;
+    if (!height && !range) return true;
 
-    let range = null;
-    let height = null;
+    let rangeValue = null;
+    let heightValue = null;
     let heightMean;
 
-    range = (value - lower) / (upper - lower);
-    height = upper - lower;
+    rangeValue = (value - lower) / (upper - lower);
+    heightValue = upper - lower;
 
-    heightInstance.update(height, main.lastIndexReplace);
+    heightInstance.update(heightValue, main.lastIndexReplace);
 
     try {
         heightMean = heightInstance.getResult();
@@ -59,11 +71,11 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
         //do nothing
     }
 
-    main.verticalOhlcv.bollinger_bands_range[index] = range;
+    main.verticalOhlcv[`bollinger_bands_range${suffix}`][index] = rangeValue;
 
     if(heightMean)
     {
-        main.verticalOhlcv.bollinger_bands_height[index] = classifySize(height, heightMean, 1.5);
+        main.verticalOhlcv[`bollinger_bands_height${suffix}`][index] = classifySize(heightValue, heightMean, 1.5);
     }
     
     return true;

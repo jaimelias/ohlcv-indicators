@@ -233,17 +233,25 @@ export default class OHLCV_INDICATORS {
         return this
 
     }
-    bollingerBands(size = 20, times = 2, bollingerBandsStudies) {
+    bollingerBands(size = 20, stdDev = 2, options = {}) {
+
+        if(!options || typeof options !== 'object')
+        {
+            throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
+        }
+
+        const {target = 'close', height = false, range = false} = options
+
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
-            throw new Error('Invalid parameter: "size" must be a positive number in bollingerBands.');
+            throw new Error('"size" must be a positive number in bollingerBands.');
         }
-        if (typeof times !== 'number' || times <= 0) {
-            throw new Error('Invalid parameter: "times" must be a positive number in bollingerBands.');
+        if (typeof stdDev !== 'number' || stdDev <= 0) {
+            throw new Error('"stdDev" must be a positive number in bollingerBands.');
         }
     
         this.inputParams.bollingerBands ??= [];
-        this.inputParams.bollingerBands.push([size, times, bollingerBandsStudies]);
+        this.inputParams.bollingerBands.push([size, stdDev, {target, height, range}]);
         this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower');
     
         return this;
