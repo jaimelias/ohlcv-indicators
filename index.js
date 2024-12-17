@@ -1,10 +1,10 @@
-import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsing-utilities.js'
+import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { correlation } from './src/studies/correlation.js'
 import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
 import { validateDate } from './src/studies/dateTime.js'
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, studyOptions = null}) {
+    constructor({input, ticker = null}) {
 
         if(!Array.isArray(input)) throw Error('input ohlcv must be an array: ' + ticker)
         if(input.length === 0) throw Error('input ohlcv must not be empty: ' + ticker)
@@ -13,18 +13,16 @@ export default class OHLCV_INDICATORS {
         this.lastComputedIndex = 0
 
         this.input = input
-        this.priceBased = ['open', 'high', 'low', 'close', 'mid_price_open_close', 'mid_price_high_low']
+        this.priceBased = ['open', 'high', 'low', 'close']
         this.len = input.length
-        this.studyOptions = (studyOptions === null) ? defaultStudyOptions : studyOptions
         this.lastIndexReplace = false 
         this.instances = {}
         this.crossPairsList = []
         this.verticalOhlcv = {}
 
         this.inputParams = {
+            priceVariations: null,
             dateTime: null,
-            crossPairs: null,
-            lag: null,
             relativeVolume: null,
             ema: null,
             sma: null,
@@ -34,6 +32,8 @@ export default class OHLCV_INDICATORS {
             donchianChannels: null,
             candlesStudies: null,
             volumeOscillator: null,
+            lag: null,
+            crossPairs: null,
         }
 
         
@@ -315,6 +315,13 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.dateTime ??= []
         this.inputParams.dateTime.push([])
+        return this           
+    }
+    priceVariations()
+    {
+
+        this.inputParams.priceVariations ??= []
+        this.inputParams.priceVariations.push([])
         return this           
     }
 }

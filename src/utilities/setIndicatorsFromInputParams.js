@@ -1,5 +1,5 @@
-export const setIndicatorsFromInputParams = ({ input, inputParams, OHLCV_INDICATORS, studyOptions }) => {
-    const indicators = new OHLCV_INDICATORS({ input, studyOptions });
+export const setIndicatorsFromInputParams = ({ input, inputParams, OHLCV_INDICATORS }) => {
+    const indicators = new OHLCV_INDICATORS({ input });
 
     for (const [key, technical] of Object.entries(inputParams)) {
 

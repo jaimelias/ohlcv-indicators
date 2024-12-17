@@ -10,9 +10,11 @@ import { candlesStudies } from "../studies/candleStudies.js"
 import { lag } from "../studies/lag.js"
 import {crossPairs} from "../studies/findCrosses.js"
 import { dateTime } from "../studies/dateTime.js"
+import { priceVariations } from "../studies/priceVariations.js"
 
 const indicatorFunctions = {
     dateTime,
+    priceVariations,
     rsi,
     sma,
     ema,
@@ -25,51 +27,29 @@ const indicatorFunctions = {
     lag,
 }
 
-export const defaultStudyOptions = {
-    midPriceOpenClose: false,
-    midPriceHighLow: false
-}
-
 
 export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
-    const { len, studyOptions = {}, inputParams } = main
+    const { len, inputParams } = main
 
     main.nullArray = new Array(len).fill(null)
 
-    if (studyOptions) {
-        const studyOptionKeys = Object.keys(studyOptions);
-        for (let i = 0; i < studyOptionKeys.length; i++) {
-            const k = studyOptionKeys[i];
-            if (!defaultStudyOptions.hasOwnProperty(k)) {
-                throw new Error(`Key ${k} not found in defaultStudyOptions. Available options: ${Object.keys(defaultStudyOptions).join(', ')}`);
-            }
-        }
-    }
-
-    const {
-        midPriceOpenClose,
-        midPriceHighLow,
-    } = studyOptions;
-
-    const numberColsKeys = ['open', 'high', 'low', 'close', 'volume'];
-    if (midPriceOpenClose) numberColsKeys.push('mid_price_open_close');
-    if (midPriceHighLow)   numberColsKeys.push('mid_price_high_low');
-
-    const numberColsKeysSet = new Set(numberColsKeys);
-
     if (startIndex === 0) {
+
+        const baseKeys = ['open', 'high', 'low', 'close', 'volume'];
+        const baseKeysSet = new Set(baseKeys);
+
         // Fresh initialization
-        for (let i = 0; i < numberColsKeys.length; i++) {
-            main.verticalOhlcv[numberColsKeys[i]] = new Array(len);
+        for (let i = 0; i < baseKeys.length; i++) {
+            main.verticalOhlcv[baseKeys[i]] = [...main.nullArray]
         }
 
         const inputKeys = Object.keys(input[0]);
         const otherKeys = [];
         for (let i = 0; i < inputKeys.length; i++) {
-            const key = inputKeys[i];
-            if (!numberColsKeysSet.has(key)) {
-                main.verticalOhlcv[key] = new Array(len);
-                otherKeys.push(key);
+            const key = inputKeys[i]
+            if (!baseKeysSet.has(key)) {
+                main.verticalOhlcv[key] = [...main.nullArray]
+                otherKeys.push(key)
             }
         }
         main.otherKeys = otherKeys;
@@ -93,13 +73,6 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
         main.verticalOhlcv.close[x] = current.close;
         main.verticalOhlcv.volume[x] = current.volume;
 
-        if (midPriceOpenClose) {
-            main.verticalOhlcv.mid_price_open_close[x] = (current.open + current.close) / 2;
-        }
-        if (midPriceHighLow) {
-            main.verticalOhlcv.mid_price_high_low[x] = (current.high + current.low) / 2;
-        }
-
         for (let i = 0; i < main.otherKeys.length; i++) {
             const k = main.otherKeys[i];
             main.verticalOhlcv[k][x] = current[k];
@@ -111,14 +84,14 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
             fn(main, x, ...args);
         }
 
-        lag(main, x, inputParams.lag);
-        crossPairs(main, x, main.crossPairsList);
+        lag(main, x);
+        crossPairs(main, x);
         main.lastComputedIndex++;
     }
 };
 
 
-const processIndicatorCalls = (inputParams) => {
+const processIndicatorCalls = inputParams => {
     if (!inputParams || typeof inputParams !== 'object') return [];
 
     const indicatorCalls = [];

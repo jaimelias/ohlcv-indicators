@@ -132,11 +132,13 @@ class CrossInstance {
 
 }
 
-export const crossPairs = (main, index, arr) => {
+export const crossPairs = (main, index) => {
 
-    if(!arr) return
+    const {crossPairsList} = main
 
-    for (const { fast, slow } of arr)
+    if(!crossPairsList) return
+
+    for (const { fast, slow } of crossPairsList)
     {
         if (!fast || !slow) continue
 

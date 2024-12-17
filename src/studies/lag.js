@@ -1,4 +1,6 @@
-export const lag = (main, index, params) => {
+export const lag = (main, index) => {
+
+    const {lag: params} = main.inputParams
 
     if(!params) return true
 

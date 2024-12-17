@@ -1,5 +1,3 @@
-const avg = (h, l) => (h + l) / 2;
-
 export const donchianChannels = (main, index, size, offset) => {
 
     const highs = main.verticalOhlcv.high;
@@ -30,7 +28,7 @@ export const donchianChannels = (main, index, size, offset) => {
     // Compute the Donchian channels
     const upper = Math.max(...highChunk);
     const lower = Math.min(...lowChunk);
-    const basis = avg(upper, lower);
+    const basis = (upper + lower) / 2;
 
     // Place the result at index
     const placementIndex = index;
