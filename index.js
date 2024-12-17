@@ -1,6 +1,7 @@
 import { parseOhlcvToVertical, defaultStudyOptions } from './src/utilities/parsing-utilities.js'
 import { correlation } from './src/studies/correlation.js'
 import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
+import { validateDate } from './src/studies/dateTime.js'
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, studyOptions = null}) {
@@ -20,6 +21,7 @@ export default class OHLCV_INDICATORS {
         this.verticalOhlcv = {}
 
         this.inputParams = {
+            dateTime: null,
             crossPairs: null,
             lag: null,
             relativeVolume: null,
@@ -47,6 +49,7 @@ export default class OHLCV_INDICATORS {
     
     getData() {
 
+        //getData method returns the last object (row) of the new ohlcv with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
         
         const {verticalOhlcv} = this
@@ -94,7 +97,33 @@ export default class OHLCV_INDICATORS {
     }
 
     compute(change) {
-        if (change) {
+
+        //checks the first row in ohlcv input to verify if the date property is valid
+        this.isValidDate = this.input[0].hasOwnProperty('date') && validateDate(this.input[0].date)
+
+         //compute method can be used to process indicators if no arguments are provided
+         //compute method can be called to access the .verticalOhlcv object
+         //compute method is called automatically if getLastValues or getDate methods are called
+        if (this.len > this.lastComputedIndex && !change) {
+            parseOhlcvToVertical(this.input, this, 0);
+        }        
+
+        //compute method can be used to add new or update the last datapoints if a new ohlcv object is passed with a valid date property
+        //valid date properties: "2024-12-16 15:45:00" or "2024-12-16"
+        if (change && typeof change === 'object') {
+
+            if (!['open', 'high', 'low', 'close', 'volume', 'date'].every(f => Object.keys(change).includes(f))) {
+                throw Error('Invalid ohlcv object sent in "compute". Correct usage: .compute({open: 108.25, high: 108.410004, low: 108.25, close: 99999999, volume: 875903, date: "2024-12-16 15:45:00" || "2024-12-16"})');
+            }            
+            if(!this.isValidDate)
+            {
+                throw Error('All the ohlcv rows require a valid date property to access the compute change method. Correct date format: "2024-12-16 15:45:00" or "2024-12-16"')
+            }
+            if(!validateDate(change.date))
+            {
+                throw Error('The date in the new ohlcv row is invalid. Correct date format: "2024-12-16 15:45:00" or "2024-12-16"')
+            }
+
             const { date: changeDate } = change;
             const lastIndex = this.len - 1;
             const inputDate = this.input[lastIndex]?.date;
@@ -115,9 +144,7 @@ export default class OHLCV_INDICATORS {
             }
         }
     
-        if (this.len > this.lastComputedIndex && !change) {
-            parseOhlcvToVertical(this.input, this, 0);
-        }
+
     
         return this;
     }
@@ -277,6 +304,13 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.volumeOscillator ??= []
         this.inputParams.volumeOscillator.push([fastSize, slowSize])
+        return this           
+    }
+    dateTime()
+    {
+
+        this.inputParams.dateTime ??= []
+        this.inputParams.dateTime.push([])
         return this           
     }
 }

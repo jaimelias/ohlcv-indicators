@@ -7,10 +7,12 @@ export const bollingerBands = (main, index, size, times, bollingerBandsStudies =
 
     if (index === 0) {
 
-        Object.assign(main.instances, {bollinger_bands: {
-            instance: new FasterBollingerBands(size, times),
-            heightInstance: bollingerBandsStudies ? new FasterSMA(size) : null
-        }})
+        Object.assign(main.instances, {
+            bollinger_bands: {
+                instance: new FasterBollingerBands(size, times),
+                heightInstance: bollingerBandsStudies ? new FasterSMA(size) : null
+            }
+        })
 
 
         Object.assign(main.verticalOhlcv, {
