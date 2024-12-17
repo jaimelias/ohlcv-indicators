@@ -20,23 +20,8 @@ export default class OHLCV_INDICATORS {
         this.crossPairsList = []
         this.verticalOhlcv = {}
 
-        this.inputParams = {
-            priceVariations: null,
-            dateTime: null,
-            relativeVolume: null,
-            ema: null,
-            sma: null,
-            macd: null,
-            bollingerBands: null,
-            rsi: null,
-            donchianChannels: null,
-            candlesStudies: null,
-            volumeOscillator: null,
-            lag: null,
-            crossPairs: null,
-        }
+        this.inputParams = []
 
-        
         this.studies = {}
         this.utilities = {
             correlation
@@ -158,8 +143,8 @@ export default class OHLCV_INDICATORS {
     crossPairs(arr)
     {
         this.crossPairsList = [...this.crossPairsList, ...arr]
-        this.inputParams.crossPairs ??= []
-        this.inputParams.crossPairs.push([this.crossPairsList])
+
+        this.inputParams.push({key: 'crossPairs', params: [this.crossPairsList]})
         
         return this
     }
@@ -167,8 +152,7 @@ export default class OHLCV_INDICATORS {
 
     lag(colKeys = ['close'], lags = 1) {
 
-        this.inputParams.lag ??= []
-        this.inputParams.lag.push([colKeys, lags])
+        this.inputParams.push({key: 'lag', params: [colKeys, lags]})
 
         for(let x = 0; x < colKeys.length; x++)
         {
@@ -185,8 +169,7 @@ export default class OHLCV_INDICATORS {
     
     relativeVolume(size) {
 
-        this.inputParams.relativeVolume ??= []
-        this.inputParams.relativeVolume.push([size])
+        this.inputParams.push({key: 'relativeVolume', params: [size]})
  
         return this
     }
@@ -197,8 +180,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number in ema.');
         }
 
-        this.inputParams.ema ??= []
-        this.inputParams.ema.push([size])
+        this.inputParams.push({key: 'ema', params: [size]})
         this.priceBased.push(`ema_${size}`)
 
         return this
@@ -209,8 +191,8 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number in sma.');
         }
 
-        this.inputParams.sma ??= []
-        this.inputParams.sma.push([size])
+
+        this.inputParams.push({key: 'sma', params: [size]})
         this.priceBased.push(`sma_${size}`)
 
         return this 
@@ -227,8 +209,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"signal" must be a positive number in macd.');
         }
 
-        this.inputParams.macd ??= []
-        this.inputParams.macd.push([fast, slow, signal])
+        this.inputParams.push({key: 'macd', params: [fast, slow, signal]})
         
         return this
 
@@ -250,8 +231,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"stdDev" must be a positive number in bollingerBands.');
         }
     
-        this.inputParams.bollingerBands ??= [];
-        this.inputParams.bollingerBands.push([size, stdDev, {target, height, range}]);
+        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, range}]});
         this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower');
     
         return this;
@@ -264,8 +244,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number in rsi.');
         }
 
-        this.inputParams.rsi ??= []
-        this.inputParams.rsi.push([size])
+        this.inputParams.push({key: 'rsi', params: [size]})
 
         return this
     }
@@ -279,8 +258,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"offset" must be a positive number or 0 in donchianChannels.');
         }
 
-        this.inputParams.donchianChannels ??= []
-        this.inputParams.donchianChannels.push([size, offset])
+        this.inputParams.push({key: 'donchianChannels', params: [size, offset]})
         this.priceBased.push('donchian_channel_upper', 'donchian_channel_lower', 'donchian_channel_basis')
 
         return this       
@@ -296,15 +274,12 @@ export default class OHLCV_INDICATORS {
             throw new Error('"classify" must be a true or false in candlesStudies.');
         }
 
-        this.inputParams.candlesStudies ??= []
-        this.inputParams.candlesStudies.push([size, classify, classificationLevels])
+        this.inputParams.push({key: 'candlesStudies', params: [size, classify, classificationLevels]})
         return this       
     }
 
     volumeOscillator(fastSize = 5, slowSize = 10)
     {
-
-
         if (typeof fastSize !== 'number' || fastSize <= 0) {
             throw new Error('fastSize" must be a positive number in volumeOscillator.');
         }
@@ -313,23 +288,17 @@ export default class OHLCV_INDICATORS {
             throw new Error('"slowSize" must be a positive number greater than the "fastSize" in volumeOscillator.');
         }
 
-
-        this.inputParams.volumeOscillator ??= []
-        this.inputParams.volumeOscillator.push([fastSize, slowSize])
+        this.inputParams.push({key: 'volumeOscillator', params: [fastSize, slowSize]})
         return this           
     }
     dateTime()
     {
-
-        this.inputParams.dateTime ??= []
-        this.inputParams.dateTime.push([])
+        this.inputParams.push({key: 'dateTime', params: []})
         return this           
     }
     priceVariations()
     {
-
-        this.inputParams.priceVariations ??= []
-        this.inputParams.priceVariations.push([])
+        this.inputParams.push({key: 'priceVariations', params: []})
         return this           
     }
 }

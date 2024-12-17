@@ -23,8 +23,7 @@ const indicatorFunctions = {
     donchianChannels,
     bollingerBands,
     volumeOscillator,
-    candlesStudies,
-    lag,
+    candlesStudies
 }
 
 
@@ -93,24 +92,14 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
 
 
 const processIndicatorCalls = inputParams => {
-    if (!inputParams || typeof inputParams !== 'object') return [];
+    if (!inputParams || typeof inputParams !== 'object') return []
 
-    const indicatorCalls = [];
-    for (const [key, technical] of Object.entries(inputParams)) {
-        if (Array.isArray(technical)) {
-            for (const params of technical) {
-                if (Array.isArray(params)) {
+    const indicatorCalls = []
 
-                    console.log(key, params)
-
-                    indicatorCalls.push({
-                        key,
-                        fn: indicatorFunctions[key],
-                        args: params,
-                    });
-                }
-            }
-        }
+    for(let x = 0; x < inputParams.length; x++)
+    {
+        const {key, params} = inputParams[x]
+        indicatorCalls.push({key, fn: indicatorFunctions[key], args: params})
     }
 
     return indicatorCalls;

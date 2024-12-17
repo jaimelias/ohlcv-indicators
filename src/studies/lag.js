@@ -1,8 +1,10 @@
 export const lag = (main, index) => {
 
-    const {lag: params} = main.inputParams
+    const findParams = main.inputParams.filter(o => o.key === 'lag')
 
-    if(!params) return true
+    if(typeof findParams !== 'object') return
+
+    const params = findParams.map(o => o.params)
 
     for(let p = 0; p < params.length; p++)
     {

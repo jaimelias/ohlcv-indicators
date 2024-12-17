@@ -134,11 +134,17 @@ class CrossInstance {
 
 export const crossPairs = (main, index) => {
 
-    const {crossPairsList} = main
 
-    if(!crossPairsList) return
+    if(index === 0)
+    {
+        const findParams = main.inputParams.filter(o => o.key === 'crossPairs')
 
-    for (const { fast, slow } of crossPairsList)
+        if(typeof findParams !== 'object') return
+
+        main.instances.crossPairs = {crossPairsList: findParams.flatMap(o => o.params.flat())}
+    }
+
+    for (const { fast, slow } of main.instances.crossPairs.crossPairsList)
     {
         if (!fast || !slow) continue
 
