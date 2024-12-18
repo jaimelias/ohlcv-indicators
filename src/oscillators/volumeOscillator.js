@@ -14,7 +14,7 @@ export const volumeOscillator = (main, index, fast, slow) => {
         })
 
         main.verticalOhlcv[`volume_oscillator`] = [...main.nullArray];
-        main.crossPairsList.push({ fast: `volume_oscillator`, slow: 0 });
+        main.crossPairsList.push({ fast: `volume_oscillator`, slow: 0, isDefault: true });
     }
 
     const { fastEMA, slowEMA } = main.instances[`volume_oscillator`];

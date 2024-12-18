@@ -8,7 +8,7 @@ export const rsi = (main, index, size) => {
 
     if(index === 0)
     {
-        main.crossPairsList.push({fast: `rsi_${size}`, slow: `rsi_sma_${size}`})
+        main.crossPairsList.push({fast: `rsi_${size}`, slow: `rsi_sma_${size}`, isDefault: true})
 
         Object.assign(main.instances, {
             [`rsi_${size}`]: new FasterRSI(size),

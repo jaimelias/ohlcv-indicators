@@ -147,7 +147,6 @@ export default class OHLCV_INDICATORS {
         isAlreadyComputed(this)
 
         this.crossPairsList = [...this.crossPairsList, ...arr]
-
         this.inputParams.push({key: 'crossPairs', params: [this.crossPairsList]})
         
         return this

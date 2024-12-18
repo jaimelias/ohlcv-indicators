@@ -6,7 +6,7 @@ export const macd = (main, index, fast, slow, signal) => {
 
     if (index === 0) {
 
-        main.crossPairsList.push({fast: 'macd_diff', slow: 'macd_dea'});
+        main.crossPairsList.push({fast: 'macd_diff', slow: 'macd_dea', isDefault: true});
 
         main.instances['macd'] = new FasterMACD(
             new FasterEMA(fast),
