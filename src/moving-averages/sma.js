@@ -1,21 +1,25 @@
 
 import {FasterSMA} from 'trading-signals';
 
-export const sma = (main, index, size) => {
+export const sma = (main, index, size, target) => {
 
   const value = main.verticalOhlcv.close[index]
 
+  let prefix =  (typeof target === 'string' && main.verticalOhlcv.hasOwnProperty(target)) ? `${target}_` : ''
+  const keyName = `${prefix}sma_${size}`
+
+
   if(index === 0)
   {
-      main.instances[`sma_${size}`] = new FasterSMA(size)
-      main.verticalOhlcv[`sma_${size}`] = [...main.nullArray]
+      main.instances[keyName] = new FasterSMA(size)
+      main.verticalOhlcv[keyName] = [...main.nullArray]
   }
 
   let currSma
-  main.instances[`sma_${size}`].update(value, main.lastIndexReplace)
+  main.instances[keyName].update(value, main.lastIndexReplace)
 
   try{
-    currSma = main.instances[`sma_${size}`].getResult()
+    currSma = main.instances[keyName].getResult()
   } catch(err)
   {
     //do nothing
@@ -23,7 +27,7 @@ export const sma = (main, index, size) => {
 
   if(currSma)
   {
-    main.verticalOhlcv[`sma_${size}`][index] = currSma
+    main.verticalOhlcv[keyName][index] = currSma
   }
 
 }

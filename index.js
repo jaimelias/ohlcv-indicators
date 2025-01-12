@@ -181,29 +181,43 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    ema(size) {
+    ema(size, options = {}) {
 
         isAlreadyComputed(this)
+
+        if(!options || typeof options !== 'object')
+        {
+            throw new Error('"options" must be an object in ema. eg: {target, height, range}');
+        }
+
+        const {target = 'close'} = options
 
         if (typeof size !== 'number' || size <= 0) {
             throw new Error('"size" must be a positive number in ema.');
         }
 
-        this.inputParams.push({key: 'ema', params: [size]})
+        this.inputParams.push({key: 'ema', params: [size, target]})
         this.priceBased.push(`ema_${size}`)
 
         return this
     }
-    sma(size) {
+    sma(size, options = {}) {
 
         isAlreadyComputed(this)
+
+        if(!options || typeof options !== 'object')
+        {
+            throw new Error('"options" must be an object in sma. eg: {target, height, range}');
+        }
+
+        const {target = 'close'} = options
 
         if (typeof size !== 'number' || size <= 0) {
             throw new Error('"size" must be a positive number in sma.');
         }
 
 
-        this.inputParams.push({key: 'sma', params: [size]})
+        this.inputParams.push({key: 'sma', params: [size, target]})
         this.priceBased.push(`sma_${size}`)
 
         return this 

@@ -1,29 +1,32 @@
 
 import {FasterEMA} from 'trading-signals'
 
-export const ema = (main, index, size) => {
+export const ema = (main, index, size, target) => {
 
   const value = main.verticalOhlcv.close[index]
 
+  let prefix =  (typeof target === 'string' && main.verticalOhlcv.hasOwnProperty(target)) ? `${target}_` : ''
+  const keyName = `${prefix}ema_${size}`
+
   if(index === 0)
   {
-      main.instances[`ema_${size}`] = new FasterEMA(size)
-      main.verticalOhlcv[`ema_${size}`] = [...main.nullArray]
+      main.instances[keyName] = new FasterEMA(size)
+      main.verticalOhlcv[keyName] = [...main.nullArray]
   }
 
-  let currSma
-  main.instances[`ema_${size}`].update(value, main.lastIndexReplace)
+  let currEma
+  main.instances[keyName].update(value, main.lastIndexReplace)
 
   try{
-    currSma = main.instances[`ema_${size}`].getResult()
+    currEma = main.instances[keyName].getResult()
   } catch(err)
   {
-    currSma = null
+    currEma = null
   }
 
-  if(currSma)
+  if(currEma)
   {
-    main.verticalOhlcv[`ema_${size}`][index] = currSma
+    main.verticalOhlcv[keyName][index] = currEma
   }
 
 }
