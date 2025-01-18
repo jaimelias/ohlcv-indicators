@@ -5,7 +5,7 @@ export const ema = (main, index, size, target) => {
 
   const value = main.verticalOhlcv.close[index]
 
-  let prefix =  (typeof target === 'string' && main.verticalOhlcv.hasOwnProperty(target)) ? `${target}_` : ''
+  let prefix =  (typeof target === 'string' && main.verticalOhlcv.hasOwnProperty(target) && target !== 'close') ? `${target}_` : ''
   const keyName = `${prefix}ema_${size}`
 
   if(index === 0)
