@@ -56,12 +56,9 @@ export const bollingerBands = (main, index, size, times, options) => {
 
     if (!height && !range) return true;
 
-    let rangeValue = null;
-    let heightValue = null;
     let heightMean;
-
-    rangeValue = (value - lower) / (upper - lower);
-    heightValue = upper - lower;
+    const rangeValue = (value - lower) / (upper - lower);
+    const heightValue = upper - lower;
 
     heightInstance.update(heightValue, main.lastIndexReplace);
 

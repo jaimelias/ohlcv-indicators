@@ -280,7 +280,7 @@ export default class OHLCV_INDICATORS {
 
         return this
     }
-    donchianChannels(size = 20, offset = 0)
+    donchianChannels(size = 20, offset = 0, options = {})
     {
         isAlreadyComputed(this)
 
@@ -292,7 +292,9 @@ export default class OHLCV_INDICATORS {
             throw new Error('"offset" must be a positive number or 0 in donchianChannels.');
         }
 
-        this.inputParams.push({key: 'donchianChannels', params: [size, offset]})
+        const {height = false, range = false} = options
+
+        this.inputParams.push({key: 'donchianChannels', params: [size, offset, {height, range}]})
         this.priceBased.push('donchian_channel_upper', 'donchian_channel_lower', 'donchian_channel_basis')
 
         return this       
