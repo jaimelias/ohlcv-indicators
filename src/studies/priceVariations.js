@@ -9,6 +9,8 @@ export const priceVariations = (main, index) => {
             mid_price_open_close: [...main.nullArray],
             mid_price_high_low: [...main.nullArray]
         })
+
+
     }
 
     const open = main.verticalOhlcv.open[index]
@@ -16,7 +18,11 @@ export const priceVariations = (main, index) => {
     const low = main.verticalOhlcv.low[index]
     const close = main.verticalOhlcv.close[index]
 
+    if(index === 0)
+    {
+        console.log({open, high, low, close})
+    }
+
     main.verticalOhlcv.mid_price_open_close[index] = (open + close) / 2
     main.verticalOhlcv.mid_price_high_low[index] = (high + low) / 2
-
 }

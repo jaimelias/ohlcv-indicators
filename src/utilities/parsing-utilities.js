@@ -12,6 +12,7 @@ import { lag } from "../studies/lag.js"
 import {crossPairs} from "../studies/findCrosses.js"
 import { dateTime } from "../studies/dateTime.js"
 import { priceVariations } from "../studies/priceVariations.js"
+import { relativePositions } from "../studies/relativePosition.js"
 
 
 const indicatorFunctions = {
@@ -83,11 +84,12 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
 
         for (let i = 0; i < indicatorCalls.length; i++) {
             const { fn, args, key } = indicatorCalls[i];
-            if (key === 'crossPairs' || key === 'lag') continue;
+            if (key === 'crossPairs' || key === 'lag' || key === 'relativePositions') continue;
 
             fn(main, x, ...args)
         }
 
+        relativePositions(main, x)
         lag(main, x);
         crossPairs(main, x);
         main.lastComputedIndex++;

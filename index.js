@@ -346,4 +346,24 @@ export default class OHLCV_INDICATORS {
         this.inputParams.push({key: 'priceVariations', params: []})
         return this           
     }
+
+    relativePositions(options = {})
+    {
+        isAlreadyComputed(this)
+
+        const {wrapper =  'bollinger_bands', lag = 0} = options
+
+        if(!wrapper || !['bollinger_bands', 'donchian_channel'].includes(wrapper))
+        {
+            throw new Error('Invalid "wrapper" property in "relativePositions". Only "bollinger_bands" or "donchian_channel" values are accepted.')
+        }
+
+        if(typeof lag !== 'number' || lag < 0)
+        {
+            throw new Error('Invalid "lag" property in "relativePositions". Only positive number are accepted.')
+        }
+
+        this.inputParams.push({key: 'relativePositions', params: [wrapper, lag]})
+        return this 
+    }
 }
