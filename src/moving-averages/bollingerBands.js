@@ -3,10 +3,10 @@ import { classifySize } from '../utilities/classification.js';
 
 const defaultTarget = 'close';
 
-export const bollingerBands = (main, index, size, times, options) => {
+export const bollingerBands = (main, index, size, stdDev, options) => {
   const { height, range, target } = options;
   const suffix = target === defaultTarget ? '' : `_${target}`;
-  const indicatorKey = `${size}_${times}${suffix}`;
+  const indicatorKey = `${size}_${stdDev}${suffix}`;
 
   if (index === 0) {
     if (!main.verticalOhlcv.hasOwnProperty(target)) {
@@ -16,7 +16,7 @@ export const bollingerBands = (main, index, size, times, options) => {
     const numberOfIndicators = main.inputParams.filter(o => o.key === 'bollingerBands').length;
     const prefix =
       numberOfIndicators > 1
-        ? `bollinger_bands_${size}_${times}${suffix}`
+        ? `bollinger_bands_${indicatorKey}`
         : `bollinger_bands${suffix}`;
 
     // Initialize the instance container if it does not exist.
@@ -31,7 +31,7 @@ export const bollingerBands = (main, index, size, times, options) => {
 
     // Create the Bollinger Bands (and optional height) indicator instance.
     main.instances.bollinger_bands.settings[indicatorKey] = {
-      instance: new FasterBollingerBands(size, times),
+      instance: new FasterBollingerBands(size, stdDev),
       heightInstance: height ? new FasterSMA(size) : null,
     };
 
@@ -50,7 +50,7 @@ export const bollingerBands = (main, index, size, times, options) => {
   // Determine the prefix used for output keys.
   const subPrefix =
     main.instances.bollinger_bands.numberOfIndicators > 1
-      ? `bollinger_bands_${size}_${times}${suffix}`
+      ? `bollinger_bands_${indicatorKey}`
       : `bollinger_bands${suffix}`;
 
   const { instance, heightInstance } = main.instances.bollinger_bands.settings[indicatorKey];

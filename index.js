@@ -222,7 +222,7 @@ export default class OHLCV_INDICATORS {
 
         return this 
     }
-    macd(fast = 12, slow = 26, signal = 9) {
+    macd(fast = 12, slow = 26, signal = 9, options = {}) {
 
         isAlreadyComputed(this)
 
@@ -236,7 +236,14 @@ export default class OHLCV_INDICATORS {
             throw new Error('"signal" must be a positive number in macd.');
         }
 
-        this.inputParams.push({key: 'macd', params: [fast, slow, signal]})
+        if(typeof options !== 'object')
+        {
+            throw new Error('"options" must be an object in macd. eg: {target}');
+        }
+
+        const {target = 'close'} = options
+
+        this.inputParams.push({key: 'macd', params: [fast, slow, signal, {target}]})
         
         return this
 
@@ -350,6 +357,11 @@ export default class OHLCV_INDICATORS {
     relativePositions(options = {})
     {
         isAlreadyComputed(this)
+
+        if(typeof options !== 'object')
+        {
+            throw new Error('"options" must be an object in "relativePositions". eg: {wrapper, lang}');
+        }
 
         const {wrapper =  'bollinger_bands', lag = 0} = options
 

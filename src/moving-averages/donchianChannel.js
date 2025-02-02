@@ -11,7 +11,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
   if (index === 0) {
     const numberOfIndicators = main.inputParams.filter(o => o.key === 'donchianChannels').length;
     const prefix =
-      numberOfIndicators > 1 ? `donchian_channel_${size}_${offset}` : 'donchian_channel';
+      numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
 
     Object.assign(main.verticalOhlcv, {
       [`${prefix}_upper`]: [...main.nullArray],
@@ -36,7 +36,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
   // Determine the proper key for output arrays based on the number of indicators.
   const numberOfIndicators = main.instances.donchian_channel.numberOfIndicators;
   const subPrefix =
-    numberOfIndicators > 1 ? `donchian_channel_${size}_${offset}` : 'donchian_channel';
+    numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
   const { heightInstance } = main.instances.donchian_channel.settings[indicatorKey];
 
   // Determine the slice indices for exactly `size` bars.
