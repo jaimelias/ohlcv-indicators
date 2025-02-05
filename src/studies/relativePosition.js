@@ -15,17 +15,17 @@ export const relativePositions = (main, index) => {
     const baseKeys = ['open', 'high', 'low', 'close'];
     const midPriceKeys = hasPriceVariations ? ['mid_price_open_close', 'mid_price_high_low'] : [];
     const dynamicKeys = Object.keys(main.verticalOhlcv).filter(
-      k => k && (k.startsWith('ema') || k.startsWith('sma'))
+      k => k && (k.startsWith('ema') || k.startsWith('sma') && !k.includes('_x_') && !k.includes('_lag_'))
     );
     const keyNames = [...baseKeys, ...midPriceKeys, ...dynamicKeys];
 
     // Process each relativePositions parameter.
     findParams.forEach(({ params }) => {
       const [wrapperParam, lagParam] = params;
-      const instanceSettings = main.instances[wrapperParam].settings;
+      const {settings = {}, numberOfIndicators = 0} = main.instances[wrapperParam]
 
-      for (const indicatorKey of Object.keys(instanceSettings)) {
-        const relativeWrapper = `${wrapperParam}_${indicatorKey}`;
+      for (const indicatorKey of Object.keys(settings)) {
+        const relativeWrapper = (numberOfIndicators > 1) ? `${wrapperParam}_${indicatorKey}` : wrapperParam;
         // Compute the full property names for storing the relative positions.
         const fullKeys = keyNames.map(k => `${prefix}_${relativeWrapper}_${k}`);
 
@@ -43,8 +43,10 @@ export const relativePositions = (main, index) => {
         main.instances.relativePositions.push({ wrapper: relativeWrapper, keyNames });
       }
     });
-  }
 
+    console.log(main.instances.relativePositions)
+  }
+  
   // If no relativePositions were set up, exit.
   if (!main.instances.relativePositions) return true;
 

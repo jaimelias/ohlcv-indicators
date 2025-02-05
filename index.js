@@ -250,7 +250,6 @@ export default class OHLCV_INDICATORS {
     }
     bollingerBands(size = 20, stdDev = 2, options = {}) {
 
-
         isAlreadyComputed(this)
 
         if(!options || typeof options !== 'object')
@@ -258,7 +257,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
         }
 
-        const {target = 'close', height = false, range = false} = options
+        const {target = 'close', height = 0, range = [], zScore = []} = options
 
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
@@ -267,8 +266,17 @@ export default class OHLCV_INDICATORS {
         if (typeof stdDev !== 'number' || stdDev <= 0) {
             throw new Error('"stdDev" must be a positive number in bollingerBands.');
         }
+        if (!Array.isArray(range)) {
+            throw new Error('If set, "range" must be a array of column names in bollingerBands.');
+        }
+        if (!Array.isArray(zScore)) {
+            throw new Error('If set, "zScore" must be a array of column names in bollingerBands.');
+        }
+        if (typeof height !== 'number' || height < size) {
+            throw new Error('"height" must be a number greater than or equal to "size" in bollingerBands.');
+        } 
     
-        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, range}]});
+        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, range, zScore}]});
         this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower');
     
         return this;

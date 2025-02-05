@@ -3,15 +3,12 @@ import { classifySize } from '../utilities/classification.js';
 
 export const donchianChannels = (main, index, size, offset, options) => {
   const { height, range } = options;
-  const highs = main.verticalOhlcv.high;
-  const lows = main.verticalOhlcv.low;
   const indicatorKey = `${size}_${offset}`;
 
   // Initialization: create output arrays and indicator instance on the first call.
   if (index === 0) {
     const numberOfIndicators = main.inputParams.filter(o => o.key === 'donchianChannels').length;
-    const prefix =
-      numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
+    const prefix = numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
 
     Object.assign(main.verticalOhlcv, {
       [`${prefix}_upper`]: [...main.nullArray],
@@ -21,38 +18,64 @@ export const donchianChannels = (main, index, size, offset, options) => {
       ...(range && { [`${prefix}_range`]: [...main.nullArray] })
     });
 
-    if(!main.instances.hasOwnProperty('donchian_channel'))
-    {
-      main.instances.donchian_channel = {numberOfIndicators, settings: {}}
+    if (!main.instances.hasOwnProperty('donchian_channel')) {
+      main.instances.donchian_channel = { numberOfIndicators, settings: {} };
     }
 
+    // In addition to your heightInstance, also initialize deques for highs and lows.
     main.instances.donchian_channel.settings[indicatorKey] = {
       heightInstance: height
         ? new FasterSMA(typeof height === 'number' && height > 0 ? height : size)
-        : null
-    }
+        : null,
+      maxDeque: [], // will hold indices for highs in descending order
+      minDeque: []  // will hold indices for lows in ascending order
+    };
   }
 
-  // Determine the proper key for output arrays based on the number of indicators.
   const numberOfIndicators = main.instances.donchian_channel.numberOfIndicators;
-  const subPrefix =
-    numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
-  const { heightInstance } = main.instances.donchian_channel.settings[indicatorKey];
+  const subPrefix = numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
+  const state = main.instances.donchian_channel.settings[indicatorKey];
+  const { heightInstance, maxDeque, minDeque } = state;
 
-  // Determine the slice indices for exactly `size` bars.
-  const endIdx = (index - offset) + 1; // inclusive
-  const startIdx = endIdx - size;
+  // Compute the “current bar index” for the window.
+  // Note: We use index - offset so that the window is built on the proper part of the array.
+  const currentBarIdx = index - offset;
+  const endIdx = currentBarIdx + 1;    // currentBarIdx is inclusive
+  const startIdx = endIdx - size;        // window: [startIdx, endIdx)
 
-  // If the slice indices are out of bounds, exit early.
+  // If the window is not fully available, exit early.
   if (startIdx < 0 || endIdx > main.len) return true;
 
-  // Slice the required portions of the high and low arrays.
-  const highChunk = highs.slice(startIdx, endIdx);
-  const lowChunk = lows.slice(startIdx, endIdx);
+  const highs = main.verticalOhlcv.high;
+  const lows = main.verticalOhlcv.low;
 
-  // Compute the Donchian channels.
-  const upper = Math.max(...highChunk);
-  const lower = Math.min(...lowChunk);
+  // **Update the maximum deque:**
+  // Remove indices that are out of the current window.
+  while (maxDeque.length && maxDeque[0] < startIdx) {
+    maxDeque.shift();
+  }
+  // Remove indices whose corresponding high value is less than or equal to the current high.
+  while (maxDeque.length && highs[maxDeque[maxDeque.length - 1]] <= highs[currentBarIdx]) {
+    maxDeque.pop();
+  }
+  // Add the current index.
+  maxDeque.push(currentBarIdx);
+
+  // **Update the minimum deque:**
+  // Remove indices that are out of the current window.
+  while (minDeque.length && minDeque[0] < startIdx) {
+    minDeque.shift();
+  }
+  // Remove indices whose corresponding low value is greater than or equal to the current low.
+  while (minDeque.length && lows[minDeque[minDeque.length - 1]] >= lows[currentBarIdx]) {
+    minDeque.pop();
+  }
+  // Add the current index.
+  minDeque.push(currentBarIdx);
+
+  // Now the maximum high is at the front of maxDeque and the minimum low is at the front of minDeque.
+  const upper = highs[maxDeque[0]];
+  const lower = lows[minDeque[0]];
   const basis = (upper + lower) / 2;
   const close = main.verticalOhlcv.close[index];
   const rangeValue = (close - lower) / (upper - lower);
@@ -63,25 +86,22 @@ export const donchianChannels = (main, index, size, offset, options) => {
     heightInstance.update(heightValue, main.lastIndexReplace);
   }
 
-  // Update the computed values in the output arrays if the index is valid.
-  if (index >= 0 && index < main.len) {
-    main.verticalOhlcv[`${subPrefix}_upper`][index] = upper;
-    main.verticalOhlcv[`${subPrefix}_basis`][index] = basis;
-    main.verticalOhlcv[`${subPrefix}_lower`][index] = lower;
-
-    if (range) {
-      main.verticalOhlcv[`${subPrefix}_range`][index] = rangeValue;
+  // Update the computed values in the output arrays.
+  main.verticalOhlcv[`${subPrefix}_upper`][index] = upper;
+  main.verticalOhlcv[`${subPrefix}_basis`][index] = basis;
+  main.verticalOhlcv[`${subPrefix}_lower`][index] = lower;
+  if (range) {
+    main.verticalOhlcv[`${subPrefix}_range`][index] = rangeValue;
+  }
+  if (height && heightInstance) {
+    let heightMean;
+    try {
+      heightMean = heightInstance.getResult();
+    } catch (err) {
+      // Ignore errors if the result isn't ready.
     }
-    if (height && heightInstance) {
-      let heightMean;
-      try {
-        heightMean = heightInstance.getResult();
-      } catch (err) {
-        // Ignore errors if the result isn't ready.
-      }
-      if (heightMean) {
-        main.verticalOhlcv[`${subPrefix}_height`][index] = classifySize(heightValue, heightMean, 1.5);
-      }
+    if (heightMean) {
+      main.verticalOhlcv[`${subPrefix}_height`][index] = classifySize(heightValue, heightMean, 1.5);
     }
   }
 
