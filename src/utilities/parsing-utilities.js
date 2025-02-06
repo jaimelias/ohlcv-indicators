@@ -1,114 +1,150 @@
-import { validateInputParams } from "./validators.js"
-import { rsi } from "../oscillators/rsi.js"
-import { sma } from "../moving-averages/sma.js"
-import { ema } from "../moving-averages/ema.js"
-import { macd } from "../moving-averages/macd.js"
-import { relativeVolume } from "../moving-averages/relativeVolume.js"
-import { donchianChannels } from "../moving-averages/donchianChannel.js"
-import { bollingerBands } from "../moving-averages/bollingerBands.js"
-import { volumeOscillator } from "../oscillators/volumeOscillator.js"
-import { candleStudies } from "../studies/candleStudies.js"
-import { lag } from "../studies/lag.js"
-import {crossPairs} from "../studies/findCrosses.js"
-import { dateTime } from "../studies/dateTime.js"
-import { priceVariations } from "../studies/priceVariations.js"
-import { relativePositions } from "../studies/relativePosition.js"
+import { validateInputParams } from "./validators.js";
+import { rsi } from "../oscillators/rsi.js";
+import { sma } from "../moving-averages/sma.js";
+import { ema } from "../moving-averages/ema.js";
+import { macd } from "../moving-averages/macd.js";
+import { relativeVolume } from "../moving-averages/relativeVolume.js";
+import { donchianChannels } from "../moving-averages/donchianChannel.js";
+import { bollingerBands } from "../moving-averages/bollingerBands.js";
+import { volumeOscillator } from "../oscillators/volumeOscillator.js";
+import { candleStudies } from "../studies/candleStudies.js";
+import { lag } from "../studies/lag.js";
+import { crossPairs } from "../studies/findCrosses.js";
+import { dateTime } from "../studies/dateTime.js";
+import { priceVariations } from "../studies/priceVariations.js";
 
+// Helper to clean non-numeric characters (except "-" at the start and decimal point)
+const cleanNumStr = str => str.replace(/(?!^-)[^0-9.]/g, '');
 
+// Map indicator keys to their respective functions
 const indicatorFunctions = {
-    dateTime,
-    priceVariations,
-    rsi,
-    sma,
-    ema,
-    macd,
-    relativeVolume,
-    donchianChannels,
-    bollingerBands,
-    volumeOscillator,
-    candleStudies
-}
-
-
-export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
-    const { len, inputParams, precisionMultiplier } = main
-
-    const parseNumber = num => (precisionMultiplier > 1) ? num * precisionMultiplier : num
-
-    main.nullArray = new Array(len).fill(null)
-
-    if (startIndex === 0) {
-
-        validateInputParams(main)
-
-        const baseKeys = ['open', 'high', 'low', 'close', 'volume'];
-        const baseKeysSet = new Set(baseKeys);
-
-        // Fresh initialization
-        for (let i = 0; i < baseKeys.length; i++) {
-            main.verticalOhlcv[baseKeys[i]] = [...main.nullArray]
-        }
-
-        const inputKeys = Object.keys(input[0]);
-        const otherKeys = [];
-        for (let i = 0; i < inputKeys.length; i++) {
-            const key = inputKeys[i]
-            if (!baseKeysSet.has(key)) {
-                main.verticalOhlcv[key] = [...main.nullArray]
-                otherKeys.push(key)
-            }
-        }
-        main.otherKeys = otherKeys;
-
-
-    } else {
-        if (!main.otherKeys) {
-            throw new Error("otherKeys not found in main. Ensure you run with startIndex=0 first to initialize.");
-        }
-    }
-
-    const indicatorCalls = processIndicatorCalls(inputParams);
-
-
-    for (let x = startIndex; x < len; x++) {
-        const current = input[x];
-
-        main.verticalOhlcv.open[x] = parseNumber(current.open);
-        main.verticalOhlcv.high[x] = parseNumber(current.high);
-        main.verticalOhlcv.low[x] = parseNumber(current.low);
-        main.verticalOhlcv.close[x] = parseNumber(current.close);
-        main.verticalOhlcv.volume[x] = current.volume;
-
-        for (let i = 0; i < main.otherKeys.length; i++) {
-            const k = main.otherKeys[i];
-            main.verticalOhlcv[k][x] = current[k];
-        }
-
-        for (let i = 0; i < indicatorCalls.length; i++) {
-            const { fn, args, key } = indicatorCalls[i];
-            if (key === 'crossPairs' || key === 'lag' || key === 'relativePositions') continue;
-
-            fn(main, x, ...args)
-        }
-
-        relativePositions(main, x)
-        lag(main, x);
-        crossPairs(main, x);
-        main.lastComputedIndex++;
-    }
+  dateTime,
+  priceVariations,
+  rsi,
+  sma,
+  ema,
+  macd,
+  relativeVolume,
+  donchianChannels,
+  bollingerBands,
+  volumeOscillator,
+  candleStudies
 };
 
+// Processes the inputParams into a list of indicator calls
+const processIndicatorCalls = inputParams =>
+  Array.isArray(inputParams)
+    ? inputParams.map(({ key, params }) => ({
+        key,
+        fn: indicatorFunctions[key],
+        args: params
+      }))
+    : [];
 
-const processIndicatorCalls = inputParams => {
-    if (!inputParams || typeof inputParams !== 'object') return []
+// Sets the input types for each key based on the first row of data
+const setInputTypes = (row0, main) => {
+  const isValidNumberString = str => /^(\d+(\.\d*)?|\.\d+)$/.test(str);
 
-    const indicatorCalls = []
-
-    for(let x = 0; x < inputParams.length; x++)
-    {
-        const {key, params} = inputParams[x]
-        indicatorCalls.push({key, fn: indicatorFunctions[key], args: params})
+  for (const key of Object.keys(main.inputTypes)) {
+    if (!(key in row0)) {
+      throw new Error(`Property "${key}" not found in ohlcv array. ${main.ticker}`);
     }
 
-    return indicatorCalls;
+    let value = row0[key];
+
+    if (typeof value === 'number' && value > 0) {
+      main.inputTypes[key] = 'number';
+    } else if (typeof value === 'string' && isValidNumberString(value)) {
+      main.inputTypes[key] = 'string';
+      value = cleanNumStr(value);
+    } else {
+      throw new Error(`Invalid property "${key}" in ohlcv array. ${main.ticker}`);
+    }
+
+    // Determine precisionMultiplier if not already set
+    if (main.precisionMultiplier === 0) {
+      const [, decimals = ''] = String(value).split('.');
+      const decimalPrecision = Math.max(4, decimals.length);
+      console.log({ decimalPrecision });
+      main.precisionMultiplier = decimalPrecision > 1 ? Math.pow(10, decimalPrecision - 1) : 1;
+    }
+  }
+};
+
+// Parses a number from either a numeric or string input, applying a multiplier to fix precision issues
+const parseNumber = (num, type, precisionMultiplier) => {
+  const addMultiplier = cNum =>
+    precisionMultiplier > 1 ? cNum * precisionMultiplier : cNum;
+
+  if (type === 'number') {
+    return addMultiplier(num);
+  } else if (type === 'string') {
+    const cleanedStr = cleanNumStr(num);
+    return addMultiplier(Number(cleanedStr));
+  }
+  // Optionally: throw an error if type is not recognized
+};
+
+export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
+  const { len, inputParams } = main;
+  main.nullArray = new Array(len).fill(null);
+
+  const BASE_KEYS = ['open', 'high', 'low', 'close', 'volume'];
+  const baseKeysSet = new Set(BASE_KEYS);
+
+  if (startIndex === 0) {
+    // Validate parameters and initialize base keys in verticalOhlcv
+    validateInputParams(main);
+    BASE_KEYS.forEach(key => {
+      main.verticalOhlcv[key] = [...main.nullArray];
+    });
+
+    // Identify any additional keys from the first input row and initialize them
+    const inputKeys = Object.keys(input[0]);
+    const otherKeys = inputKeys.filter(key => !baseKeysSet.has(key));
+    otherKeys.forEach(key => {
+      main.verticalOhlcv[key] = [...main.nullArray];
+    });
+    main.otherKeys = otherKeys;
+
+    // Set the input types once using the first row
+    setInputTypes(input[0], main);
+  } else if (!main.otherKeys) {
+    throw new Error(
+      "otherKeys not found in main. Ensure you run with startIndex=0 first to initialize."
+    );
+  }
+
+  // Prepare the list of indicator function calls
+  const indicatorCalls = processIndicatorCalls(inputParams);
+
+  // Process each row in the input
+  for (let x = startIndex; x < len; x++) {
+    const current = input[x];
+    // Destructure the base keys and use the rest for other properties
+    const { open, high, low, close, volume, ...rest } = current;
+
+    main.verticalOhlcv.open[x] = parseNumber(open, main.inputTypes.open, main.precisionMultiplier);
+    main.verticalOhlcv.high[x] = parseNumber(high, main.inputTypes.high, main.precisionMultiplier);
+    main.verticalOhlcv.low[x] = parseNumber(low, main.inputTypes.low, main.precisionMultiplier);
+    main.verticalOhlcv.close[x] = parseNumber(close, main.inputTypes.close, main.precisionMultiplier);
+    main.verticalOhlcv.volume[x] = volume; // volume remains unparsed
+
+    // Populate any extra keys identified during initialization
+    for (const key of main.otherKeys) {
+      main.verticalOhlcv[key][x] = rest[key];
+    }
+
+    // Run all indicator functions except for the ones processed later
+    for (const { key, fn, args } of indicatorCalls) {
+      if (['crossPairs', 'lag'].includes(key)) continue;
+      fn(main, x, ...args);
+    }
+
+    // Process these indicators separately (ensuring their execution order)
+    lag(main, x);
+    crossPairs(main, x);
+
+    main.lastComputedIndex++;
+  }
 };

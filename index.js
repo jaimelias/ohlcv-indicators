@@ -12,8 +12,8 @@ export default class OHLCV_INDICATORS {
         if(!input[0].hasOwnProperty('close')) throw Error('input OHLCV array objects require at least close property: ' + ticker)
 
         this.lastComputedIndex = 0
-
         this.input = input
+        this.inputTypes = {open: '', high: '', low: '', close: '', volume: ''}
         this.priceBased = ['open', 'high', 'low', 'close']
         this.len = input.length
         this.lastIndexReplace = false 
@@ -28,8 +28,7 @@ export default class OHLCV_INDICATORS {
             correlation
         }
 
-        const decimalPrecision = Math.max(4, String(input[0].close).split('.')[1].length)
-        this.precisionMultiplier = decimalPrecision > 1 ? Math.pow(10, decimalPrecision - 1) : 1
+        this.precisionMultiplier = 0
         this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
     
         return this 
@@ -379,30 +378,5 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.push({key: 'priceVariations', params: []})
         return this           
-    }
-
-    relativePositions(options = {})
-    {
-        isAlreadyComputed(this)
-
-        if(typeof options !== 'object')
-        {
-            throw new Error('"options" must be an object in "relativePositions". eg: {wrapper, lang}');
-        }
-
-        const {wrapper =  'bollinger_bands', lag = 0} = options
-
-        if(!wrapper || !['bollinger_bands', 'donchian_channel'].includes(wrapper))
-        {
-            throw new Error('Invalid "wrapper" property in "relativePositions". Only "bollinger_bands" or "donchian_channel" values are accepted.')
-        }
-
-        if(typeof lag !== 'number' || lag < 0)
-        {
-            throw new Error('Invalid "lag" property in "relativePositions". Only positive number are accepted.')
-        }
-
-        this.inputParams.push({key: 'relativePositions', params: [wrapper, lag]})
-        return this 
     }
 }
