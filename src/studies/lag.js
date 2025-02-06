@@ -8,6 +8,19 @@ export const lag = (main, index) => {
 
         const params = findParams.map(o => o.params)
 
+        for (const [colKeys, lags] of params)
+        {
+            for (const colKey of colKeys)
+            {
+                if(main.priceBased.includes(colKey))
+                {
+                    for (let lag = 1; lag <= lags; lag++) {
+                        main.priceBased.push(`${colKey}_lag_${lag}`)
+                    }
+                }
+            }
+        }
+
         main.instances.lag = {
             lagParams: params
         }

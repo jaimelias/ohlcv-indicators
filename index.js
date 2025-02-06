@@ -28,21 +28,40 @@ export default class OHLCV_INDICATORS {
             correlation
         }
 
-
+        const decimalPrecision = Math.max(4, String(input[0].close).split('.')[1].length)
+        this.precisionMultiplier = decimalPrecision > 1 ? Math.pow(10, decimalPrecision - 1) : 1
         this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
     
         return this 
     }
 
+    getDataAsCols(){
+
+        this.compute()
+
+        const {precisionMultiplier} = this
+        const verticalClone = {...this.verticalOhlcv}
+
+        for(const [key, arr] of Object.entries(verticalClone))
+        {
+            if(this.priceBased.includes(key))
+            {
+                verticalClone[key] = arr.map(v => v / precisionMultiplier)
+            }
+        }
+
+        return verticalClone
+
+    }
 
     getData() {
 
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
         
-        const {verticalOhlcv} = this
-        const keys = Object.keys(verticalOhlcv);
-        const len = verticalOhlcv[keys[0]].length;
+        const columns = this.getDataAsCols()
+        const keys = Object.keys(columns);
+        const len = columns[keys[0]].length;
         const keysLength = keys.length;
     
         // Pre-allocate array to improve memory efficiency
@@ -57,7 +76,7 @@ export default class OHLCV_INDICATORS {
             for (let x = 0; x < keysLength; x++) {
                 const header = keys[x];
 
-                const value = verticalOhlcv[header][i];
+                const value = columns[header][i];
     
                 // If value is null, mark the row to be skipped and break
                 if (value === null || typeof value === 'undefined') {

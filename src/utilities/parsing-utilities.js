@@ -31,7 +31,9 @@ const indicatorFunctions = {
 
 
 export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
-    const { len, inputParams } = main
+    const { len, inputParams, precisionMultiplier } = main
+
+    const parseNumber = num => (precisionMultiplier > 1) ? num * precisionMultiplier : num
 
     main.nullArray = new Array(len).fill(null)
 
@@ -71,10 +73,10 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     for (let x = startIndex; x < len; x++) {
         const current = input[x];
 
-        main.verticalOhlcv.open[x] = current.open;
-        main.verticalOhlcv.high[x] = current.high;
-        main.verticalOhlcv.low[x] = current.low;
-        main.verticalOhlcv.close[x] = current.close;
+        main.verticalOhlcv.open[x] = parseNumber(current.open);
+        main.verticalOhlcv.high[x] = parseNumber(current.high);
+        main.verticalOhlcv.low[x] = parseNumber(current.low);
+        main.verticalOhlcv.close[x] = parseNumber(current.close);
         main.verticalOhlcv.volume[x] = current.volume;
 
         for (let i = 0; i < main.otherKeys.length; i++) {
