@@ -64,48 +64,17 @@ export default class OHLCV_INDICATORS {
 
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
-        
-        const columns = this.getDataAsCols()
-        const keys = Object.keys(columns);
-        const len = columns[keys[0]].length;
-        const keysLength = keys.length;
-    
-        // Pre-allocate array to improve memory efficiency
-        const result = [];
-    
-        // Iterate over the rows
-        for (let i = 0; i < len; i++) {
-            const row = {};
-            let isInvalidValue = false;  // Flag to track if any null value is found
-    
-            // Loop over keys to fill row data
-            for (let x = 0; x < keysLength; x++) {
-                const header = keys[x];
-
-                const value = columns[header][i];
-    
-                // If value is null, mark the row to be skipped and break
-                if (value === null || typeof value === 'undefined') {
-                    isInvalidValue = true;
-                    break;
-                }
-    
-                row[header] =  value
-            }
-    
-            // If no null values were found, add row to result
-            if (!isInvalidValue) {
-                result.push(row);
-            }
-        }
-    
-        return result;
+        return this.horizontalOhlcv.filter(row => 
+            !Object.values(row).some(value => value === undefined || value === null)
+        )
     }
     
     
     getLastValues(){
 
-        return this.getData()[this.getData().length -1]
+        this.compute()
+
+        return this.horizontalOhlcv[this.horizontalOhlcv.length - 1]
     
     }
 
