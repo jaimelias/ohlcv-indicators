@@ -87,11 +87,13 @@ export const donchianChannels = (main, index, size, offset, options) => {
   }
 
   // Update the computed values in the output arrays.
-  main.verticalOhlcv[`${subPrefix}_upper`][index] = upper;
-  main.verticalOhlcv[`${subPrefix}_basis`][index] = basis;
-  main.verticalOhlcv[`${subPrefix}_lower`][index] = lower;
+
+  main.pushToMain({index, key: `${subPrefix}_upper`, value: upper})
+  main.pushToMain({index, key: `${subPrefix}_basis`, value: basis})
+  main.pushToMain({index, key: `${subPrefix}_lower`, value: lower})
+
   if (range) {
-    main.verticalOhlcv[`${subPrefix}_range`][index] = rangeValue;
+    main.pushToMain({index, key: `${subPrefix}_range`, value: rangeValue})
   }
   if (height && heightInstance) {
     let heightMean;
@@ -101,7 +103,8 @@ export const donchianChannels = (main, index, size, offset, options) => {
       // Ignore errors if the result isn't ready.
     }
     if (heightMean) {
-      main.verticalOhlcv[`${subPrefix}_height`][index] = classifySize(heightValue, heightMean, 1.5);
+
+      main.pushToMain({index, key: `${subPrefix}_height`, value: classifySize(heightValue, heightMean, 1.5)})
     }
   }
 

@@ -89,9 +89,9 @@ export const bollingerBands = (main, index, size, stdDev, options) => {
   if (!result) return true;
 
   const { upper, middle, lower } = result;
-  main.verticalOhlcv[`${subPrefix}_upper`][index] = upper;
-  main.verticalOhlcv[`${subPrefix}_middle`][index] = middle;
-  main.verticalOhlcv[`${subPrefix}_lower`][index] = lower;
+  main.pushToMain({index, key: `${subPrefix}_upper`, value: upper})
+  main.pushToMain({index, key: `${subPrefix}_middle`, value: middle})
+  main.pushToMain({index, key: `${subPrefix}_lower`, value: lower})
 
   // Exit early if neither height nor range are requested.
   if (!height && !range) return true;
@@ -107,15 +107,14 @@ export const bollingerBands = (main, index, size, stdDev, options) => {
       // Swallow error if the height result is not ready.
     }
     if (heightMean) {
-      main.verticalOhlcv[`${subPrefix}_height`][index] =
-        classifySize(heightValue, heightMean, 0.5, 7);
+      main.pushToMain({index, key: `${subPrefix}_height`, value: classifySize(heightValue, heightMean, 0.5, 7)})
     }
   }
 
   // Process each range property.
   for (const rangeKey of range) {
     const rangeValue = (main.verticalOhlcv[rangeKey][index] - lower) / (upper - lower);
-    main.verticalOhlcv[`${subPrefix}_range_${rangeKey}`][index] = rangeValue;
+    main.pushToMain({index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue})
   }
 
   // Process each zScore property.
@@ -124,7 +123,9 @@ export const bollingerBands = (main, index, size, stdDev, options) => {
     const zScoreValue = denominator !== 0
       ? (2 * stdDev * (main.verticalOhlcv[zScoreKey][index] - middle)) / denominator
       : 0;
-    main.verticalOhlcv[`${subPrefix}_zscore_${zScoreKey}`][index] = zScoreValue;
+
+      
+    main.pushToMain({index, key: `${subPrefix}_zscore_${zScoreKey}`, value: zScoreValue})
   }
 
   return true;

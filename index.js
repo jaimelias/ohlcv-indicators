@@ -20,6 +20,7 @@ export default class OHLCV_INDICATORS {
         this.instances = {}
         this.crossPairsList = []
         this.verticalOhlcv = {}
+        this.horizontalOhlcv = new Array(this.len).fill({})
 
         this.inputParams = []
 
@@ -32,6 +33,12 @@ export default class OHLCV_INDICATORS {
         this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
     
         return this 
+    }
+
+    pushToMain({index, key, value})
+    {
+        this.verticalOhlcv[key][index] = value
+        this.horizontalOhlcv[index][key] = value
     }
 
     getDataAsCols(){

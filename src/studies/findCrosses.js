@@ -188,7 +188,7 @@ export const crossPairs = (main, index) => {
             main.instances[crossName].update({fast: fastValue, slow: slowValue})
         }
 
-        main.verticalOhlcv[crossName][index] = main.instances[crossName].getResult()
+        main.pushToMain({index, key: crossName, value: main.instances[crossName].getResult()})
     }
 
 }

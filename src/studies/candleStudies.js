@@ -112,45 +112,54 @@ export const candleStudies = (main, index, size, classify = true, classification
             // If there's not enough data, means remain null
         }
 
-        main.verticalOhlcv.candle_body_size[index] = isUp
-            ? classifySize(candleBodySize, bodySizeMean, 2, changeLevel)
-            : -Math.abs(classifySize(candleBodySize, bodySizeMean, 2, changeLevel)) || 0;
+        main.pushToMain({
+            index, 
+            key: 'candle_body_size', 
+            value: isUp 
+                ? classifySize(candleBodySize, bodySizeMean, 2, changeLevel)
+                : -Math.abs(classifySize(candleBodySize, bodySizeMean, 2, changeLevel)) || 0
+        })
 
-        main.verticalOhlcv.candle_gap_size[index] = isUp
+        
+
+        main.pushToMain({index, key: 'candle_gap_size', value: isUp
             ? classifySize(gapSize, gapMean, 2, changeLevel)
-            : -Math.abs(classifySize(gapSize, gapMean, 2, changeLevel)) || 0;
+            : -Math.abs(classifySize(gapSize, gapMean, 2, changeLevel)) || 0})
 
-        main.verticalOhlcv.candle_close_direction[index] = isUp
+
+        main.pushToMain({index, key: 'candle_close_direction', value: isUp
             ? classifySize(closeDirection, closeDirectionMean, 2, changeLevel)
-            : -Math.abs(classifySize(closeDirection, closeDirectionMean, 2, changeLevel)) || 0;
+            : -Math.abs(classifySize(closeDirection, closeDirectionMean, 2, changeLevel)) || 0})
 
-        main.verticalOhlcv.candle_high_direction[index] = isUp
+
+        main.pushToMain({index, key: 'candle_high_direction', value: isUp
             ? classifySize(highDirection, highDirectionMean, 2, changeLevel)
-            : -Math.abs(classifySize(highDirection, highDirectionMean, 2, changeLevel)) || 0;
+            : -Math.abs(classifySize(highDirection, highDirectionMean, 2, changeLevel)) || 0})
 
-        main.verticalOhlcv.candle_low_direction[index] = isUp
+        main.pushToMain({index, key: 'candle_low_direction', value: isUp
             ? classifySize(lowDirection, lowDirectionMean, 2, changeLevel)
-            : -Math.abs(classifySize(lowDirection, lowDirectionMean, 2, changeLevel)) || 0;
+            : -Math.abs(classifySize(lowDirection, lowDirectionMean, 2, changeLevel)) || 0})
 
-        main.verticalOhlcv.candle_open_direction[index] = isUp
+        main.pushToMain({index, key: 'candle_open_direction', value: isUp
             ? classifySize(openDirection, openDirectionMean, 2, changeLevel)
-            : -Math.abs(classifySize(openDirection, openDirectionMean, 2, changeLevel)) || 0;
+            : -Math.abs(classifySize(openDirection, openDirectionMean, 2, changeLevel)) || 0})
 
-        main.verticalOhlcv.candle_top_size[index] = classifySize(topSize, topSizeMean, 0.5, sizeLevel);
-        main.verticalOhlcv.candle_bottom_size[index] = classifySize(bottomSize, bottomSizeMean, 0.5, sizeLevel);
-        main.verticalOhlcv.candle_shadow_size[index] = classifySize(shadowSize, shadowSizeMean, 0.5, sizeLevel);
+        main.pushToMain({index, key: 'candle_top_size', value: classifySize(topSize, topSizeMean, 0.5, sizeLevel)})
+        main.pushToMain({index, key: 'candle_bottom_size', value: classifySize(bottomSize, bottomSizeMean, 0.5, sizeLevel)})
+        main.pushToMain({index, key: 'candle_shadow_size', value: classifySize(shadowSize, shadowSizeMean, 0.5, sizeLevel)})
+
     } else {
         // Without classification, just store raw values
-        main.verticalOhlcv.candle_body_size[index] = isUp ? candleBodySize : -candleBodySize;
-        main.verticalOhlcv.candle_gap_size[index] = isUp ? gapSize : -gapSize;
-        main.verticalOhlcv.candle_close_direction[index] = isUp ? closeDirection : -closeDirection;
-        main.verticalOhlcv.candle_high_direction[index] = isUp ? highDirection : -highDirection;
-        main.verticalOhlcv.candle_low_direction[index] = isUp ? lowDirection : -lowDirection;
-        main.verticalOhlcv.candle_open_direction[index] = isUp ? openDirection : -openDirection;
 
-        main.verticalOhlcv.candle_top_size[index] = topSize;
-        main.verticalOhlcv.candle_bottom_size[index] = bottomSize;
-        main.verticalOhlcv.candle_shadow_size[index] = shadowSize;
+        main.pushToMain({index, key: 'candle_body_size', value: isUp ? candleBodySize : -candleBodySize})
+        main.pushToMain({index, key: 'candle_gap_size', value: isUp ? gapSize : -gapSize})
+        main.pushToMain({index, key: 'candle_close_direction', value: isUp ? closeDirection : -closeDirection})
+        main.pushToMain({index, key: 'candle_high_direction', value: isUp ? highDirection : -highDirection})
+        main.pushToMain({index, key: 'candle_low_direction', value: isUp ? lowDirection : -lowDirection})
+        main.pushToMain({index, key: 'candle_open_direction', value: isUp ? openDirection : -openDirection})
+        main.pushToMain({index, key: 'candle_top_size', value: topSize})
+        main.pushToMain({index, key: 'candle_bottom_size', value: bottomSize})
+        main.pushToMain({index, key: 'candle_shadow_size', value: shadowSize})
     }
 
     return true;

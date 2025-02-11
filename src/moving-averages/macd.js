@@ -63,9 +63,10 @@ export const macd = (main, index, fast, slow, signal, options) => {
 
 
     if (macdResult) {
-        main.verticalOhlcv[`${subPrefix}_diff`][index] = macdResult.macd;
-        main.verticalOhlcv[`${subPrefix}_dea`][index] = macdResult.signal;
-        main.verticalOhlcv[`${subPrefix}_histogram`][index] = macdResult.histogram;
+
+        main.pushToMain({index, key: `${subPrefix}_diff`, value: macdResult.macd})
+        main.pushToMain({index, key: `${subPrefix}_dea`, value: macdResult.signal})
+        main.pushToMain({index, key: `${subPrefix}_histogram`, value: macdResult.histogram})
     }
 
     return true;

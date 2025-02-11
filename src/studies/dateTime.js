@@ -48,15 +48,14 @@ export const dateTime = (main, index) => {
         main.instances.dateTime.sessionIntradayIndexCount = 0
     }
 
-
-    main.verticalOhlcv.session_daily_index[index] = main.instances.dateTime.sessionDailyIndexCount
-    main.verticalOhlcv.session_intraday_index[index] =  main.instances.dateTime.sessionIntradayIndexCount
-    main.verticalOhlcv.day_of_the_week[index] = day_of_the_week
-    main.verticalOhlcv.day_of_the_month[index] = day_of_the_month
-    main.verticalOhlcv.week_of_the_month[index] = week_of_the_month
-    main.verticalOhlcv.month[index] = month
-    main.verticalOhlcv.year[index] = year
-    main.verticalOhlcv.hour[index] = hour
+    main.pushToMain({index, key: 'session_daily_index', value:  main.instances.dateTime.sessionDailyIndexCount})
+    main.pushToMain({index, key: 'session_intraday_index', value: main.instances.dateTime.sessionIntradayIndexCount})
+    main.pushToMain({index, key: 'day_of_the_week', value: day_of_the_week})
+    main.pushToMain({index, key: 'day_of_the_month', value: day_of_the_month})
+    main.pushToMain({index, key: 'week_of_the_month', value: week_of_the_month})
+    main.pushToMain({index, key: 'month', value: month})
+    main.pushToMain({index, key: 'year', value: year})
+    main.pushToMain({index, key: 'hour', value: hour})
 
 }
 

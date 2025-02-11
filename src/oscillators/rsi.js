@@ -35,7 +35,7 @@ export const rsi = (main, index, size) => {
     
     if(currentRsi)
     {
-        main.verticalOhlcv[`rsi_${size}`][index] = currentRsi
+        main.pushToMain({index, key: `rsi_${size}`, value: currentRsi})
         main.instances[`rsi_sma_${size}`].update(currentRsi, main.lastIndexReplace)
     }
 
@@ -49,7 +49,7 @@ export const rsi = (main, index, size) => {
 
     if(smoothedRsi)
     {
-        main.verticalOhlcv[`rsi_sma_${size}`][index] = smoothedRsi
+        main.pushToMain({index, key: `rsi_sma_${size}`, value: smoothedRsi})
     }
 
     return true

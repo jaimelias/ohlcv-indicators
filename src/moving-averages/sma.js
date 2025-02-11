@@ -27,7 +27,7 @@ export const sma = (main, index, size, target) => {
 
   if(currSma)
   {
-    main.verticalOhlcv[keyName][index] = currSma
+    main.pushToMain({index, key: keyName, value: currSma})
   }
 
 }

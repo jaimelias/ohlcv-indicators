@@ -3,6 +3,7 @@ import { FasterEMA } from 'trading-signals';
 export const volumeOscillator = (main, index, fast, slow) => {
 
     const value = main.verticalOhlcv.volume[index]
+    const key = 'volume_oscillator'
 
     if (index === 0) {
 
@@ -13,11 +14,11 @@ export const volumeOscillator = (main, index, fast, slow) => {
             }
         })
 
-        main.verticalOhlcv[`volume_oscillator`] = [...main.nullArray];
-        main.crossPairsList.push({ fast: `volume_oscillator`, slow: 0, isDefault: true });
+        main.verticalOhlcv[key] = [...main.nullArray];
+        main.crossPairsList.push({ fast: key, slow: 0, isDefault: true });
     }
 
-    const { fastEMA, slowEMA } = main.instances[`volume_oscillator`];
+    const { fastEMA, slowEMA } = main.instances[key];
 
     fastEMA.update(value, main.lastIndexReplace);
     slowEMA.update(value, main.lastIndexReplace);
@@ -38,9 +39,10 @@ export const volumeOscillator = (main, index, fast, slow) => {
     }
 
     if (typeof fastValue === 'number' && typeof slowValue === 'number' && slowValue !== 0) {
-        main.verticalOhlcv[`volume_oscillator`][index] = 100 * (fastValue - slowValue) / slowValue
+
+        main.pushToMain({index, key, value:  100 * (fastValue - slowValue) / slowValue})
     } else {
-        main.verticalOhlcv[`volume_oscillator`][index] = null;
+        main.pushToMain({index, key, value:  null})
     }
 
     return true;

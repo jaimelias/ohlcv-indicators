@@ -46,7 +46,7 @@ export const lag = (main, index) => {
 
                 if(laggedIndex <= 0) break
     
-                main.verticalOhlcv[key][index] = currentColumn[laggedIndex]
+                main.pushToMain({index, key, value: currentColumn[laggedIndex]})
             }
         }
     }

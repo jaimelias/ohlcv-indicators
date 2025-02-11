@@ -52,6 +52,8 @@ const setInputTypes = (row0, main) => {
 
     let value = row0[key];
 
+    
+
     if (typeof value === 'number' && value > 0) {
       main.inputTypes[key] = 'number';
     } else if (typeof value === 'string' && isValidNumberString(value)) {
@@ -65,7 +67,6 @@ const setInputTypes = (row0, main) => {
     if (main.precisionMultiplier === 0) {
       const [, decimals = ''] = String(value).split('.');
       const decimalPrecision = Math.max(4, decimals.length);
-      console.log({ decimalPrecision });
       main.precisionMultiplier = decimalPrecision > 1 ? Math.pow(10, decimalPrecision - 1) : 1;
     }
   }
@@ -81,9 +82,24 @@ const parseNumber = (num, type, precisionMultiplier) => {
   } else if (type === 'string') {
     const cleanedStr = cleanNumStr(num);
     return addMultiplier(Number(cleanedStr));
+  } else
+  {
+    return 0 // Optionally: throw an error if type is not recognized
   }
-  // Optionally: throw an error if type is not recognized
+  
 };
+
+const parseVolume = (volume, type) => {
+
+  if(type === 'number') return volume
+  else if(type === 'string'){
+    return Number(cleanNumStr(volume))
+  }
+  else
+  {
+    return 0 // Optionally: throw an error if type is not recognized
+  }
+}
 
 export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
   const { len, inputParams } = main;
@@ -122,17 +138,25 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
   for (let x = startIndex; x < len; x++) {
     const current = input[x];
     // Destructure the base keys and use the rest for other properties
-    const { open, high, low, close, volume, ...rest } = current;
+    const { open, high, low, close, volume, ...rest } = current
+    const {precisionMultiplier} = main
 
-    main.verticalOhlcv.open[x] = parseNumber(open, main.inputTypes.open, main.precisionMultiplier);
-    main.verticalOhlcv.high[x] = parseNumber(high, main.inputTypes.high, main.precisionMultiplier);
-    main.verticalOhlcv.low[x] = parseNumber(low, main.inputTypes.low, main.precisionMultiplier);
-    main.verticalOhlcv.close[x] = parseNumber(close, main.inputTypes.close, main.precisionMultiplier);
-    main.verticalOhlcv.volume[x] = volume; // volume remains unparsed
+    const parsedOpen = parseNumber(open, main.inputTypes.open, precisionMultiplier)
+    const parsedHigh = parseNumber(open, main.inputTypes.high, precisionMultiplier)
+    const parsedLow = parseNumber(open, main.inputTypes.low, precisionMultiplier)
+    const parsedClose = parseNumber(open, main.inputTypes.close, precisionMultiplier)
+    const parsedVolume = parseVolume (volume, main.inputTypes.volume)
+
+    main.pushToMain({index: x, key: 'open', value: parsedOpen})
+    main.pushToMain({index: x, key: 'high', value: parsedHigh})
+    main.pushToMain({index: x, key: 'low', value: parsedLow})
+    main.pushToMain({index: x, key: 'close', value: parsedClose})
+    main.pushToMain({index: x, key: 'volume', value: parsedVolume})
+
 
     // Populate any extra keys identified during initialization
     for (const key of main.otherKeys) {
-      main.verticalOhlcv[key][x] = rest[key];
+      main.pushToMain({index: x, key, value: rest[key]})
     }
 
     // Run all indicator functions except for the ones processed later
