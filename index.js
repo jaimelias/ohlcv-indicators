@@ -3,9 +3,10 @@ import { correlation } from './src/studies/correlation.js'
 import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
 import { validateDate } from './src/utilities/validators.js'
 import { isAlreadyComputed } from './src/utilities/validators.js'
+import { divideByMultiplier } from './src/utilities/precision.js'
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null}) {
+    constructor({input, ticker = null, precision = true}) {
 
         if(!Array.isArray(input)) throw Error('input OHLCV must be an array: ' + ticker)
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
@@ -30,7 +31,8 @@ export default class OHLCV_INDICATORS {
             correlation
         }
 
-        this.precisionMultiplier = 0
+        this.precision = precision
+        this.precisionMultiplier = (this.precision === true) ? 0 : 1
         this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
     
         return this 
@@ -46,16 +48,27 @@ export default class OHLCV_INDICATORS {
 
         this.compute()
 
-        const {precisionMultiplier} = this
+        const {precisionMultiplier, precision} = this
         const verticalClone = {...this.verticalOhlcv}
 
-        for(const [key, arr] of Object.entries(verticalClone))
+        if(precision)
         {
-            if(this.priceBased.includes(key))
+            for(const [key, arr] of Object.entries(verticalClone))
             {
-                verticalClone[key] = arr.map(v => v / precisionMultiplier)
+                if(this.priceBased.includes(key))
+                {
+                    if(this.precision)
+                    {
+                        verticalClone[key] = arr.map(v => v / precisionMultiplier)
+                    }
+                    else
+                    {
+                        verticalClone[key] = arr
+                    }
+                }
             }
         }
+
 
         return verticalClone
 
@@ -65,9 +78,20 @@ export default class OHLCV_INDICATORS {
 
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
-        return this.horizontalOhlcv.filter(row => 
-            !Object.values(row).some(value => value === undefined || value === null)
-        )
+
+        const {precisionMultiplier, priceBased, precision} = this
+
+        if(precision)
+        {
+            return this.horizontalOhlcv
+                .filter(row => !Object.values(row).some(value => value === undefined || value === null))
+                .map(row => divideByMultiplier({row, precisionMultiplier, priceBased}))
+        }
+        else
+        {
+            return this.horizontalOhlcv.filter(row => !Object.values(row).some(value => value === undefined || value === null))           
+        }
+
     }
     
     
@@ -75,8 +99,20 @@ export default class OHLCV_INDICATORS {
 
         this.compute()
 
-        return this.horizontalOhlcv[this.horizontalOhlcv.length - 1]
-    
+        const {precisionMultiplier, priceBased, precision} = this
+
+        if(precision)
+        {
+            return divideByMultiplier({
+                row: this.horizontalOhlcv[this.horizontalOhlcv.length - 1],
+                precisionMultiplier,
+                priceBased
+            })
+        }
+        else
+        {
+            return this.horizontalOhlcv[this.horizontalOhlcv.length - 1]
+        }
     }
 
     compute(change) {

@@ -64,7 +64,7 @@ const setInputTypes = (row0, main) => {
     }
 
     // Determine precisionMultiplier if not already set
-    if (main.precisionMultiplier === 0) {
+    if (main.precisionMultiplier === 0  && main.precision === true) {
       const [, decimals = ''] = String(value).split('.');
       const decimalPrecision = Math.max(4, decimals.length);
       main.precisionMultiplier = decimalPrecision > 1 ? Math.pow(10, decimalPrecision - 1) : 1;
