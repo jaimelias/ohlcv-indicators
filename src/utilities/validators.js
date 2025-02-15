@@ -16,5 +16,5 @@ export const validateInputParams = main => {
 }
 
 export const isAlreadyComputed = main => {
-    if(main.lastComputedIndex !== 0) throw Error('ohlcv is already computed, you can not add new indicators after "compute", "getLastValues" or "getData" methods are called.')
+    if(main.lastComputedIndex !== 0) throw Error('ohlcv is already computed, you can not add new indicators after "compute", "getLastValues" , "getDataAsCols" or "getData" methods are called.')
 }

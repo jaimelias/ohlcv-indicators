@@ -11,6 +11,7 @@ export default class OHLCV_INDICATORS {
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input OHLCV array objects require at least close property: ' + ticker)
 
+        this.isComputed = false
         this.lastComputedIndex = 0
         this.input = input
         this.inputTypes = {open: '', high: '', low: '', close: '', volume: ''}
@@ -79,6 +80,16 @@ export default class OHLCV_INDICATORS {
     }
 
     compute(change) {
+
+
+        //stops the compute if compute is called from getData, getDataAsCols or getLastValues an isComputed is false
+        if(this.isComputed === true && !change)
+        {
+            return this
+        }
+        else{
+            this.isComputed = false
+        }
 
         //checks the first row in OHLCV input to verify if the date property is valid
         this.isValidDate = this.input[0].hasOwnProperty('date') && validateDate(this.input[0].date)
