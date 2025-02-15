@@ -266,8 +266,8 @@ export default class OHLCV_INDICATORS {
         if (!Array.isArray(zScore)) {
             throw new Error('If set, "zScore" must be a array of column names in bollingerBands.');
         }
-        if (typeof height !== 'number' || height < size) {
-            throw new Error('"height" must be a number greater than or equal to "size" in bollingerBands.');
+        if (typeof height !== 'number' || typeof height === 'number' && (height > 0 && height < size)) {
+            throw new Error('"height" must be a "0" or any number greater than or equal to "size" in bollingerBands.');
         } 
     
         this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, range, zScore}]});
