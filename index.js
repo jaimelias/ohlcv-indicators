@@ -81,6 +81,8 @@ export default class OHLCV_INDICATORS {
 
     compute(change) {
 
+        //if change is a valid object and change.date is after the last row in this.input[this.input.length - 1].date pushes change to this.input using the parseOhlcvToVertical function.
+
 
         //stops the compute if compute is called from getData, getDataAsCols or getLastValues an isComputed is false
         if(this.isComputed === true && !change)
