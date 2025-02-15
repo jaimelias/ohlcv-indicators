@@ -22,7 +22,7 @@ export default class OHLCV_INDICATORS {
         this.instances = {}
         this.crossPairsList = []
         this.verticalOhlcv = {}
-        this.horizontalOhlcv = new Array(this.len).fill({})
+        this.horizontalOhlcv = Array.from({ length: this.len }, () => ({}))
 
         this.inputParams = []
 
