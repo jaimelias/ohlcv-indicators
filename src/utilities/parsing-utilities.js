@@ -142,9 +142,9 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
     const {precisionMultiplier} = main
 
     const parsedOpen = parseNumber(open, main.inputTypes.open, precisionMultiplier)
-    const parsedHigh = parseNumber(open, main.inputTypes.high, precisionMultiplier)
-    const parsedLow = parseNumber(open, main.inputTypes.low, precisionMultiplier)
-    const parsedClose = parseNumber(open, main.inputTypes.close, precisionMultiplier)
+    const parsedHigh = parseNumber(high, main.inputTypes.high, precisionMultiplier)
+    const parsedLow = parseNumber(low, main.inputTypes.low, precisionMultiplier)
+    const parsedClose = parseNumber(close, main.inputTypes.close, precisionMultiplier)
     const parsedVolume = parseVolume (volume, main.inputTypes.volume)
 
     main.pushToMain({index: x, key: 'open', value: parsedOpen})
