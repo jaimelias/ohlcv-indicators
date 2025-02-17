@@ -1,166 +1,115 @@
-import { FasterSMA } from 'trading-signals';
-import { classifySize } from '../utilities/classification.js';
+import { FasterSMA, FasterBollingerBands } from 'trading-signals'
+import { classifyBoll } from '../utilities/classification.js'
 
-export const candleStudies = (main, index, size, classify = true, classificationLevels = {}) => {
+const diff = (a, b) => {
+    const value = a - b
+    return {value: Math.abs(value), positive: value >= 0}
+}
 
-    const { changeLevel = 7, sizeLevel = 5 } = classificationLevels;
+export const candleStudies = (main, index, size, stdDev, lag) => {
+
+    const { verticalOhlcv, instances, lastIndexReplace } = main
 
     if(index === 0)
     {
-        Object.assign(main.verticalOhlcv, {
-            candle_gap_size: [...main.nullArray],
-            candle_body_size: [...main.nullArray],
-            candle_top_size: [...main.nullArray],
-            candle_bottom_size: [...main.nullArray],
-            candle_shadow_size: [...main.nullArray],
-            candle_close_direction: [...main.nullArray],
-            candle_high_direction: [...main.nullArray],
-            candle_low_direction: [...main.nullArray],
-            candle_open_direction: [...main.nullArray],          
+        const {nullArray} = main
+
+        Object.assign(verticalOhlcv, {
+            candle_gap: [...nullArray],
+            candle_body: [...nullArray],
+            candle_top: [...nullArray],
+            candle_bottom: [...nullArray],
+            candle_close: [...nullArray],
+            candle_high: [...nullArray],
+            candle_low: [...nullArray],
+            candle_open: [...nullArray],          
         })
-    }
 
-    // Ensure instances exist if classification is enabled
-    if (classify && index === 0) {
-
-        Object.assign(main.instances, {
+        Object.assign(instances, {
             candleStudies: {
-                topInstance: new FasterSMA(size),
-                bottomInstance: new FasterSMA(size),
-                gapInstance: new FasterSMA(size),
-                bodySizeInstance: new FasterSMA(size),
-                shadowSizeInstance: new FasterSMA(size),
-                closeDirectionInstance: new FasterSMA(size),
-                highDirectionInstance: new FasterSMA(size),
-                lowDirectionInstance: new FasterSMA(size),
-                openDirectionInstance: new FasterSMA(size)             
+                bodyInstance: new FasterBollingerBands(size, stdDev),
+                closeInstance: new FasterBollingerBands(size, stdDev),
+                highInstance: new FasterBollingerBands(size, stdDev),
+                lowInstance: new FasterBollingerBands(size, stdDev),
+                openInstance: new FasterBollingerBands(size, stdDev)             
             }
         })
+
+        if(lag > 0)
+        {
+            const keyNames = ['candle_body', 'candle_gap', 'candle_close', 'candle_high', 'candle_low', 'candle_open', 'candle_top', 'candle_bottom']
+            main.lag(keyNames, lag)
+        }
+        
     }
 
     // If we do not have a previous candle, we cannot compute differences
-    const prevOpen = main.verticalOhlcv.open[index-1]
-    const prevHigh = main.verticalOhlcv.high[index-1]
-    const prevLow = main.verticalOhlcv.low[index-1]
-    const prevClose = main.verticalOhlcv.close[index-1]
+    const prevOpen = verticalOhlcv.open[index-1]
+    const prevHigh = verticalOhlcv.high[index-1]
+    const prevLow = verticalOhlcv.low[index-1]
+    const prevClose = verticalOhlcv.close[index-1]
 
-    if (index === 0) return true;
+    if (index === 0) return true
 
-    const currOpen = main.verticalOhlcv.open[index]
-    const currHigh = main.verticalOhlcv.high[index]
-    const currLow = main.verticalOhlcv.low[index]
-    const currClose = main.verticalOhlcv.close[index]
-
-    // Determine candle direction and sizes
-    const isUp = currClose > currOpen;
-    const candleBodySize = Math.abs(currClose - currOpen);
-    const shadowSize = Math.abs(currHigh - currLow);
-
-    const topSize = currHigh - Math.max(currOpen, currClose);
-    const bottomSize = Math.min(currOpen, currClose) - currLow;
-    const gapSize = Math.abs(prevClose - currOpen);
-    const closeDirection = Math.abs(currClose - prevClose);
-    const highDirection = Math.abs(currHigh - prevHigh);
-    const lowDirection = Math.abs(currLow - prevLow);
-    const openDirection = Math.abs(currOpen - prevOpen);
-
-    let gapMean = null;
-    let bottomSizeMean = null;
-    let topSizeMean = null;
-    let bodySizeMean = null;
-    let shadowSizeMean = null;
-    let closeDirectionMean = null;
-    let highDirectionMean = null;
-    let lowDirectionMean = null;
-    let openDirectionMean = null;
-
-    if (classify) {
-        const {
-            topInstance,
-            bottomInstance,
-            gapInstance,
-            bodySizeInstance,
-            shadowSizeInstance,
-            closeDirectionInstance,
-            highDirectionInstance,
-            lowDirectionInstance,
-            openDirectionInstance
-        } = main.instances.candleStudies;
-
-        // Update instances with current absolute values
-        topInstance.update(Math.abs(topSize), main.lastIndexReplace);
-        bottomInstance.update(Math.abs(bottomSize), main.lastIndexReplace);
-        shadowSizeInstance.update(Math.abs(shadowSize), main.lastIndexReplace);
-        gapInstance.update(gapSize, main.lastIndexReplace);
-        bodySizeInstance.update(candleBodySize, main.lastIndexReplace);
-        closeDirectionInstance.update(closeDirection, main.lastIndexReplace);
-        highDirectionInstance.update(highDirection, main.lastIndexReplace);
-        lowDirectionInstance.update(lowDirection, main.lastIndexReplace);
-        openDirectionInstance.update(openDirection, main.lastIndexReplace);
-
-        try {
-            topSizeMean = topInstance.getResult();
-            bottomSizeMean = bottomInstance.getResult();
-            gapMean = gapInstance.getResult();
-            bodySizeMean = bodySizeInstance.getResult();
-            shadowSizeMean = shadowSizeInstance.getResult();
-            closeDirectionMean = closeDirectionInstance.getResult();
-            highDirectionMean = highDirectionInstance.getResult();
-            lowDirectionMean = lowDirectionInstance.getResult();
-            openDirectionMean = openDirectionInstance.getResult();
-        } catch (err) {
-            // If there's not enough data, means remain null
-        }
-
-        main.pushToMain({
-            index, 
-            key: 'candle_body_size', 
-            value: isUp 
-                ? classifySize(candleBodySize, bodySizeMean, 2, changeLevel)
-                : -Math.abs(classifySize(candleBodySize, bodySizeMean, 2, changeLevel)) || 0
-        })
-
-        
-
-        main.pushToMain({index, key: 'candle_gap_size', value: isUp
-            ? classifySize(gapSize, gapMean, 2, changeLevel)
-            : -Math.abs(classifySize(gapSize, gapMean, 2, changeLevel)) || 0})
+    const currOpen = verticalOhlcv.open[index]
+    const currHigh = verticalOhlcv.high[index]
+    const currLow = verticalOhlcv.low[index]
+    const currClose = verticalOhlcv.close[index]
 
 
-        main.pushToMain({index, key: 'candle_close_direction', value: isUp
-            ? classifySize(closeDirection, closeDirectionMean, 2, changeLevel)
-            : -Math.abs(classifySize(closeDirection, closeDirectionMean, 2, changeLevel)) || 0})
+    //sizes
+    const bodySize = diff(currClose, currOpen)
+    const topSize = diff(currHigh, Math.max(currOpen, currClose))
+    const bottomSize = diff(Math.min(currOpen, currClose), currLow)
+    const gapSize = diff(prevClose, currOpen)
+    const closeChange = diff(currClose, prevClose)
+    const highChange = diff(currHigh, prevHigh)
+    const lowChange = diff(currLow, prevLow)
+    const openChange = diff(currOpen, prevOpen)
 
+    let bodyBoll = null
+    let closeBoll = null
+    let highBoll = null
+    let lowBoll = null
+    let openBoll = null
 
-        main.pushToMain({index, key: 'candle_high_direction', value: isUp
-            ? classifySize(highDirection, highDirectionMean, 2, changeLevel)
-            : -Math.abs(classifySize(highDirection, highDirectionMean, 2, changeLevel)) || 0})
+    const {
+        bodyInstance,
+        closeInstance,
+        highInstance,
+        lowInstance,
+        openInstance
+    } = instances.candleStudies
 
-        main.pushToMain({index, key: 'candle_low_direction', value: isUp
-            ? classifySize(lowDirection, lowDirectionMean, 2, changeLevel)
-            : -Math.abs(classifySize(lowDirection, lowDirectionMean, 2, changeLevel)) || 0})
+    // Update instances with current absolute values
+    bodyInstance.update(bodySize.value, lastIndexReplace)
+    closeInstance.update(closeChange.value, lastIndexReplace)
+    highInstance.update(highChange.value, lastIndexReplace)
+    lowInstance.update(lowChange.value, lastIndexReplace)
+    openInstance.update(openChange.value, lastIndexReplace)
 
-        main.pushToMain({index, key: 'candle_open_direction', value: isUp
-            ? classifySize(openDirection, openDirectionMean, 2, changeLevel)
-            : -Math.abs(classifySize(openDirection, openDirectionMean, 2, changeLevel)) || 0})
-
-        main.pushToMain({index, key: 'candle_top_size', value: classifySize(topSize, topSizeMean, 0.5, sizeLevel)})
-        main.pushToMain({index, key: 'candle_bottom_size', value: classifySize(bottomSize, bottomSizeMean, 0.5, sizeLevel)})
-        main.pushToMain({index, key: 'candle_shadow_size', value: classifySize(shadowSize, shadowSizeMean, 0.5, sizeLevel)})
-
-    } else {
-        // Without classification, just store raw values
-
-        main.pushToMain({index, key: 'candle_body_size', value: isUp ? candleBodySize : -candleBodySize})
-        main.pushToMain({index, key: 'candle_gap_size', value: isUp ? gapSize : -gapSize})
-        main.pushToMain({index, key: 'candle_close_direction', value: isUp ? closeDirection : -closeDirection})
-        main.pushToMain({index, key: 'candle_high_direction', value: isUp ? highDirection : -highDirection})
-        main.pushToMain({index, key: 'candle_low_direction', value: isUp ? lowDirection : -lowDirection})
-        main.pushToMain({index, key: 'candle_open_direction', value: isUp ? openDirection : -openDirection})
-        main.pushToMain({index, key: 'candle_top_size', value: topSize})
-        main.pushToMain({index, key: 'candle_bottom_size', value: bottomSize})
-        main.pushToMain({index, key: 'candle_shadow_size', value: shadowSize})
+    try {
+        bodyBoll = bodyInstance.getResult()
+        closeBoll = closeInstance.getResult()
+        highBoll = highInstance.getResult()
+        lowBoll = lowInstance.getResult()
+        openBoll = openInstance.getResult()
+    } catch (err) {
+        // If there's not enough data, means remain null
     }
 
-    return true;
-};
+
+    main.pushToMain({index, key: 'candle_close', value: classifyBoll(closeChange, closeBoll)})
+    main.pushToMain({index, key: 'candle_high', value: classifyBoll(highChange, highBoll)})
+    main.pushToMain({index, key: 'candle_low', value: classifyBoll(lowChange, lowBoll)})
+    main.pushToMain({index, key: 'candle_open', value: classifyBoll(openChange, openBoll)})
+
+    main.pushToMain({index, key: 'candle_body', value: classifyBoll(bodySize, bodyBoll)})
+    main.pushToMain({index, key: 'candle_gap', value: classifyBoll(gapSize, bodyBoll)})
+    main.pushToMain({index, key: 'candle_top', value: classifyBoll(topSize, bodyBoll)})
+    main.pushToMain({index, key: 'candle_bottom', value: classifyBoll(bottomSize, bodyBoll)})
+
+    return true
+}
+
+

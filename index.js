@@ -300,7 +300,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
         }
 
-        const {target = 'close', height = 0, range = [], zScore = []} = options
+        const {target = 'close', height = false, range = [], zScore = []} = options
 
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
@@ -315,8 +315,8 @@ export default class OHLCV_INDICATORS {
         if (!Array.isArray(zScore)) {
             throw new Error('If set, "zScore" must be a array of column names in bollingerBands.');
         }
-        if (typeof height !== 'number' || typeof height === 'number' && (height > 0 && height < size)) {
-            throw new Error('"height" must be a "0" or any number greater than or equal to "size" in bollingerBands.');
+        if (typeof height !== 'boolean') {
+            throw new Error('"height" must be a boolean in bollingerBands.');
         } 
     
         this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, range, zScore}]});
@@ -357,7 +357,7 @@ export default class OHLCV_INDICATORS {
 
         return this       
     }
-    candleStudies(size = 20, classify = true, classificationLevels)
+    candleStudies(size = 20, options = {})
     {
 
         isAlreadyComputed(this)
@@ -366,11 +366,14 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number or 0 in candleStudies.');
         }
 
-        if (typeof classify !== 'boolean') {
-            throw new Error('"classify" must be a true or false in candleStudies.');
+        const {stdDev = 2, lag = 0} = options
+
+        if(typeof stdDev !== 'number' || (typeof stdDev === 'number' && stdDev <= 0))
+        {
+            throw new Error('"stdDev" must be a positive number greater than 0 in candleStudies.');
         }
 
-        this.inputParams.push({key: 'candleStudies', params: [size, classify, classificationLevels]})
+        this.inputParams.push({key: 'candleStudies', params: [size, stdDev, lag]})
         return this       
     }
 
