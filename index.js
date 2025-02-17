@@ -338,7 +338,7 @@ export default class OHLCV_INDICATORS {
 
         return this
     }
-    donchianChannels(size = 20, offset = 1, options = {})
+    donchianChannels(size = 20, offset = 0, options = {})
     {
         isAlreadyComputed(this)
 
