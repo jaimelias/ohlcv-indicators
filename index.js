@@ -338,7 +338,7 @@ export default class OHLCV_INDICATORS {
 
         return this
     }
-    donchianChannels(size = 20, offset = 0, options = {})
+    donchianChannels(size = 20, offset = 1, options = {})
     {
         isAlreadyComputed(this)
 
@@ -346,11 +346,19 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number or 0 in donchianChannels.');
         }
     
-        if (typeof offset !== 'number' || offset <= 0) {
+        if (typeof offset !== 'number' || offset < 0) {
             throw new Error('"offset" must be a positive number or 0 in donchianChannels.');
         }
 
-        const {height = false, range = false} = options
+        const {height = false, range = []} = options
+
+        if (!Array.isArray(range)) {
+            throw new Error('If set, "range" must be a array of column names in donchianChannels.');
+        }
+ 
+        if (typeof height !== 'boolean') {
+            throw new Error('"height" must be a boolean in donchianChannels.');
+        } 
 
         this.inputParams.push({key: 'donchianChannels', params: [size, offset, {height, range}]})
         this.priceBased.push('donchian_channel_upper', 'donchian_channel_lower', 'donchian_channel_basis')
