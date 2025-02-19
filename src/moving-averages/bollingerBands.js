@@ -1,4 +1,5 @@
 import { FasterBollingerBands } from 'trading-signals'
+import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close'
 
@@ -6,7 +7,7 @@ export const bollingerBands = (main, index, size, stdDev, options) => {
   // Destructure options ensure range and zScore default to empty arrays if not provided.
 
   const { verticalOhlcv, instances, lastIndexReplace } = main;
-  const { height, range = [], zScore = [], target } = options
+  const { height, range = [], zScore = [], target, scale } = options
   const suffix = target === defaultTarget ? '' : `_${target}`
   const indicatorKey = `${size}_${stdDev}${suffix}`
   let prefix // Will be computed during initialization
@@ -97,23 +98,40 @@ export const bollingerBands = (main, index, size, stdDev, options) => {
 
   // Process height if a height instance exists.
   if (height) {
-    const heightValue = ((upper - lower) / lower) * 100
+    let heightValue = ((upper - lower) / lower)
+
+    if(scale)
+    {
+      heightValue = calcMagnitude(heightValue, scale)
+    }
+
     main.pushToMain({index, key: `${subPrefix}_height`, value: heightValue})
   }
 
   // Process each range property.
   for (const rangeKey of range) {
-    const rangeValue = (verticalOhlcv[rangeKey][index] - lower) / (upper - lower)
+    let rangeValue = (verticalOhlcv[rangeKey][index] - lower) / (upper - lower)
+
+    if(scale)
+    {
+      rangeValue = calcMagnitude(rangeValue, scale)
+    }
+
     main.pushToMain({index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue})
   }
 
   // Process each zScore property.
   for (const zScoreKey of zScore) {
     const denominator = upper - lower
-    const zScoreValue = denominator !== 0
+    let zScoreValue = denominator !== 0
       ? (2 * stdDev * (verticalOhlcv[zScoreKey][index] - middle)) / denominator
       : 0
       
+    if(denominator !== 0 && scale)
+    {
+      zScoreValue = calcMagnitude(zScoreValue, scale)
+    }
+
     main.pushToMain({index, key: `${subPrefix}_zscore_${zScoreKey}`, value: zScoreValue})
   }
 

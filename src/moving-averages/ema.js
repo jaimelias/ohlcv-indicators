@@ -1,7 +1,7 @@
 
 import {FasterEMA} from 'trading-signals'
 
-export const ema = (main, index, size, target) => {
+export const ema = (main, index, size, {target}) => {
 
   const value = main.verticalOhlcv.close[index]
 

@@ -3,7 +3,10 @@ import { correlation } from './src/studies/correlation.js'
 import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
 import { validateDate } from './src/utilities/validators.js'
 import { isAlreadyComputed } from './src/utilities/validators.js'
-import { divideByMultiplier } from './src/utilities/precision.js'
+import { divideByMultiplier } from './src/utilities/numberUtilities.js'
+
+
+const validMagnitudeValues = [0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5]
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, precision = true}) {
@@ -239,7 +242,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number in ema.');
         }
 
-        this.inputParams.push({key: 'ema', params: [size, target]})
+        this.inputParams.push({key: 'ema', params: [size, {target}]})
         this.priceBased.push(`ema_${size}`)
 
         return this
@@ -260,7 +263,7 @@ export default class OHLCV_INDICATORS {
         }
 
 
-        this.inputParams.push({key: 'sma', params: [size, target]})
+        this.inputParams.push({key: 'sma', params: [size, {target}]})
         this.priceBased.push(`sma_${size}`)
 
         return this 
@@ -300,7 +303,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
         }
 
-        const {target = 'close', height = false, range = [], zScore = []} = options
+        const {target = 'close', height = false, range = [], zScore = [], scale = null} = options
 
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
@@ -317,9 +320,18 @@ export default class OHLCV_INDICATORS {
         }
         if (typeof height !== 'boolean') {
             throw new Error('"height" must be a boolean in bollingerBands.');
-        } 
+        }
+        else
+        {
+            if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
+
+                throw new Error('"scale" value in bollingerBands must be any of the following numbers: ');
+            }           
+        }
+
+
     
-        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, range, zScore}]});
+        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, zScore}]});
         this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower');
     
         return this;
@@ -338,60 +350,73 @@ export default class OHLCV_INDICATORS {
 
         return this
     }
-    donchianChannels(size = 20, offset = 0, options = {})
-    {
-        isAlreadyComputed(this)
-
+    donchianChannels(size = 20, offset = 0, options = {}) {
+        isAlreadyComputed(this);
+      
         if (typeof size !== 'number' || size <= 0) {
-            throw new Error('"size" must be a positive number or 0 in donchianChannels.');
+          throw new Error('"size" must be a positive number greater than 0 in donchianChannels.');
         }
-    
+      
         if (typeof offset !== 'number' || offset < 0) {
-            throw new Error('"offset" must be a positive number or 0 in donchianChannels.');
+          throw new Error('"offset" must be a number greater than or equal to 0 in donchianChannels.');
         }
-
-        const {height = false, range = []} = options
-
+      
+        const { height = false, range = [], scale = null } = options;
+      
         if (!Array.isArray(range)) {
-            throw new Error('If set, "range" must be a array of column names in donchianChannels.');
+          throw new Error('If set, "range" must be an array of column names in donchianChannels.');
         }
- 
+      
         if (typeof height !== 'boolean') {
-            throw new Error('"height" must be a boolean in donchianChannels.');
-        } 
-
-        this.inputParams.push({key: 'donchianChannels', params: [size, offset, {height, range}]})
-        this.priceBased.push('donchian_channel_upper', 'donchian_channel_lower', 'donchian_channel_basis')
-
-        return this       
-    }
-    candleStudies(size = 20, options = {})
-    {
-
-        isAlreadyComputed(this)
-
-        if (typeof size !== 'number' || size <= 0) {
-            throw new Error('"size" must be a positive number or 0 in candleStudies.');
+          throw new Error('"height" must be a boolean in donchianChannels.');
         }
-
-        const {stdDev = 2, lag = 0} = options
-
-        if(typeof stdDev !== 'number' || (typeof stdDev === 'number' && stdDev <= 0))
+        else
         {
-            throw new Error('"stdDev" must be a positive number greater than 0 in candleStudies.');
-        }
 
-        this.inputParams.push({key: 'candleStudies', params: [size, stdDev, lag]})
-        return this       
+            if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
+
+                throw new Error('"scale" value in donchianChannels must be any of the following numbers: ');
+            }        
+        }
+      
+        this.inputParams.push({ key: 'donchianChannels', params: [size, offset, { height, range, scale }] });
+        this.priceBased.push('donchian_channel_upper', 'donchian_channel_lower', 'donchian_channel_basis');
+      
+        return this;
     }
+      
+
+    candleStudies(size = 20, stdDev = 2, options = {}) {
+        isAlreadyComputed(this);
+      
+        if (typeof size !== 'number' || size <= 0) {
+          throw new Error('"size" must be a positive number greater than 0 in candleStudies.');
+        }
+      
+        if (typeof stdDev !== 'number' || stdDev <= 0) {
+          throw new Error('"stdDev" must be a positive number greater than 0 in candleStudies.');
+        }
+      
+        const { lag = 0, scale = 0.1 } = options;
+
+
+        if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
+
+            throw new Error('"scale" value in candleStudies must be any of the following numbers: ');
+        }
+      
+        this.inputParams.push({ key: 'candleStudies', params: [size, stdDev, {lag, scale}] });
+        return this;
+      }
+      
 
     volumeOscillator(fastSize = 5, slowSize = 10)
     {
 
         isAlreadyComputed(this)
 
-        if (typeof fastSize !== 'number' || fastSize <= 0) {
-            throw new Error('fastSize" must be a positive number in volumeOscillator.');
+        if (typeof fastSize !== 'number' || fastSize <= 1) {
+            throw new Error('fastSize" must be a positive number greater than 1 in volumeOscillator.');
         }
 
         if (typeof slowSize !== 'number' || slowSize <= fastSize) {

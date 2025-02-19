@@ -1,12 +1,9 @@
 import { FasterSMA, FasterBollingerBands } from 'trading-signals'
 import { classifyBoll } from '../utilities/classification.js'
 
-const diff = (a, b) => {
-    const value = a - b
-    return {value: Math.abs(value), positive: value >= 0}
-}
+const diff = (a, b) => a - b
 
-export const candleStudies = (main, index, size, stdDev, lag) => {
+export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
 
@@ -82,11 +79,11 @@ export const candleStudies = (main, index, size, stdDev, lag) => {
     } = instances.candleStudies
 
     // Update instances with current absolute values
-    bodyInstance.update(bodySize.value, lastIndexReplace)
-    closeInstance.update(closeChange.value, lastIndexReplace)
-    highInstance.update(highChange.value, lastIndexReplace)
-    lowInstance.update(lowChange.value, lastIndexReplace)
-    openInstance.update(openChange.value, lastIndexReplace)
+    bodyInstance.update(Math.abs(bodySize), lastIndexReplace)
+    closeInstance.update(Math.abs(closeChange), lastIndexReplace)
+    highInstance.update(Math.abs(highChange), lastIndexReplace)
+    lowInstance.update(Math.abs(lowChange), lastIndexReplace)
+    openInstance.update(Math.abs(openChange), lastIndexReplace)
 
     try {
         bodyBoll = bodyInstance.getResult()
@@ -99,15 +96,17 @@ export const candleStudies = (main, index, size, stdDev, lag) => {
     }
 
 
-    main.pushToMain({index, key: 'candle_close', value: classifyBoll(closeChange, closeBoll)})
-    main.pushToMain({index, key: 'candle_high', value: classifyBoll(highChange, highBoll)})
-    main.pushToMain({index, key: 'candle_low', value: classifyBoll(lowChange, lowBoll)})
-    main.pushToMain({index, key: 'candle_open', value: classifyBoll(openChange, openBoll)})
+    console.log(scale)
 
-    main.pushToMain({index, key: 'candle_body', value: classifyBoll(bodySize, bodyBoll)})
-    main.pushToMain({index, key: 'candle_gap', value: classifyBoll(gapSize, bodyBoll)})
-    main.pushToMain({index, key: 'candle_top', value: classifyBoll(topSize, bodyBoll)})
-    main.pushToMain({index, key: 'candle_bottom', value: classifyBoll(bottomSize, bodyBoll)})
+    main.pushToMain({index, key: 'candle_close', value: classifyBoll(closeChange, closeBoll, scale)})
+    main.pushToMain({index, key: 'candle_high', value: classifyBoll(highChange, highBoll, scale)})
+    main.pushToMain({index, key: 'candle_low', value: classifyBoll(lowChange, lowBoll, scale)})
+    main.pushToMain({index, key: 'candle_open', value: classifyBoll(openChange, openBoll, scale)})
+
+    main.pushToMain({index, key: 'candle_body', value: classifyBoll(bodySize, bodyBoll, scale)})
+    main.pushToMain({index, key: 'candle_gap', value: classifyBoll(gapSize, bodyBoll, scale)})
+    main.pushToMain({index, key: 'candle_top', value: classifyBoll(topSize, bodyBoll, scale)})
+    main.pushToMain({index, key: 'candle_bottom', value: classifyBoll(bottomSize, bodyBoll, scale)})
 
     return true
 }

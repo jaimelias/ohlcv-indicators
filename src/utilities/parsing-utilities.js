@@ -13,8 +13,7 @@ import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
 import { priceVariations } from "../studies/priceVariations.js";
 
-// Helper to clean non-numeric characters (except "-" at the start and decimal point)
-const cleanNumStr = str => str.replace(/(?!^-)[^0-9.]/g, '');
+import { cleanNumStr } from "./numberUtilities.js";
 
 // Map indicator keys to their respective functions
 const indicatorFunctions = {

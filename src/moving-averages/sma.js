@@ -1,7 +1,7 @@
 
 import {FasterSMA} from 'trading-signals';
 
-export const sma = (main, index, size, target) => {
+export const sma = (main, index, size, {target}) => {
 
   const value = main.verticalOhlcv.close[index]
 
