@@ -3,11 +3,10 @@ import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close'
 
-export const bollingerBands = (main, index, size, stdDev, options) => {
+export const bollingerBands = (main, index, size, stdDev, { height, range = [], zScore = [], target, scale }) => {
   // Destructure options ensure range and zScore default to empty arrays if not provided.
 
   const { verticalOhlcv, instances, lastIndexReplace } = main;
-  const { height, range = [], zScore = [], target, scale } = options
   const suffix = target === defaultTarget ? '' : `_${target}`
   const indicatorKey = `${size}_${stdDev}${suffix}`
   let prefix // Will be computed during initialization
@@ -48,10 +47,12 @@ export const bollingerBands = (main, index, size, stdDev, options) => {
       ...(height && { [`${prefix}_height`]: [...nullArray] })
     }
 
+    main.priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`)
+
     // Set up additional arrays for each range property.
     for (const rangeKey of range) {
       if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
-        throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(main.priceBased)}`)
+        throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
       }
       ohlcvSetup[`${prefix}_range_${rangeKey}`] = [...nullArray]
     }
@@ -59,7 +60,7 @@ export const bollingerBands = (main, index, size, stdDev, options) => {
     // Set up additional arrays for each zScore property.
     for (const zScoreKey of zScore) {
       if (!(zScoreKey in verticalOhlcv) || !priceBased.includes(zScoreKey)) {
-        throw new Error(`Invalid zScore item value "${zScoreKey}" for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(main.priceBased)}`)
+        throw new Error(`Invalid zScore item value "${zScoreKey}" for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
       }
       ohlcvSetup[`${prefix}_zscore_${zScoreKey}`] = [...nullArray]
     }

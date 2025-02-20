@@ -11,16 +11,12 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
     {
         const {nullArray} = main
 
-        Object.assign(verticalOhlcv, {
-            candle_gap: [...nullArray],
-            candle_body: [...nullArray],
-            candle_top: [...nullArray],
-            candle_bottom: [...nullArray],
-            candle_close: [...nullArray],
-            candle_high: [...nullArray],
-            candle_low: [...nullArray],
-            candle_open: [...nullArray],          
-        })
+        const candleParts = ['candle_body', 'candle_top', 'candle_bottom']
+        const candleGaps = ['candle_gap']
+        const candleChanges = ['candle_change_close', 'candle_change_high', 'candle_change_low', 'candle_change_open']
+        const keyNames = [...candleParts, ...candleGaps, ...candleChanges]
+
+        Object.assign(verticalOhlcv, Object.fromEntries(keyNames.map(k => [k, nullArray])))
 
         Object.assign(instances, {
             candleStudies: {
@@ -34,7 +30,6 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
 
         if(lag > 0)
         {
-            const keyNames = ['candle_body', 'candle_gap', 'candle_close', 'candle_high', 'candle_low', 'candle_open', 'candle_top', 'candle_bottom']
             main.lag(keyNames, lag)
         }
         
@@ -54,11 +49,15 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
     const currClose = verticalOhlcv.close[index]
 
 
-    //sizes
+    //parts
     const bodySize = diff(currClose, currOpen)
     const topSize = diff(currHigh, Math.max(currOpen, currClose))
     const bottomSize = diff(Math.min(currOpen, currClose), currLow)
-    const gapSize = diff(prevClose, currOpen)
+
+    //gaps
+    const gapOpenClose = diff(prevClose, currOpen)
+
+    //changes
     const closeChange = diff(currClose, prevClose)
     const highChange = diff(currHigh, prevHigh)
     const lowChange = diff(currLow, prevLow)
@@ -96,17 +95,20 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
     }
 
 
-    console.log(scale)
 
-    main.pushToMain({index, key: 'candle_close', value: classifyBoll(closeChange, closeBoll, scale)})
-    main.pushToMain({index, key: 'candle_high', value: classifyBoll(highChange, highBoll, scale)})
-    main.pushToMain({index, key: 'candle_low', value: classifyBoll(lowChange, lowBoll, scale)})
-    main.pushToMain({index, key: 'candle_open', value: classifyBoll(openChange, openBoll, scale)})
-
+    //parts
     main.pushToMain({index, key: 'candle_body', value: classifyBoll(bodySize, bodyBoll, scale)})
-    main.pushToMain({index, key: 'candle_gap', value: classifyBoll(gapSize, bodyBoll, scale)})
     main.pushToMain({index, key: 'candle_top', value: classifyBoll(topSize, bodyBoll, scale)})
     main.pushToMain({index, key: 'candle_bottom', value: classifyBoll(bottomSize, bodyBoll, scale)})
+
+    //gaps
+    main.pushToMain({index, key: 'candle_gap', value: classifyBoll(gapOpenClose, bodyBoll, scale)})
+
+    //changes
+    main.pushToMain({index, key: 'candle_change_close', value: classifyBoll(closeChange, closeBoll, scale)})
+    main.pushToMain({index, key: 'candle_change_high', value: classifyBoll(highChange, highBoll, scale)})
+    main.pushToMain({index, key: 'candle_change_low', value: classifyBoll(lowChange, lowBoll, scale)})
+    main.pushToMain({index, key: 'candle_change_open', value: classifyBoll(openChange, openBoll, scale)})
 
     return true
 }

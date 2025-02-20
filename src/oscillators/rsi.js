@@ -1,8 +1,9 @@
 import {FasterRSI} from 'trading-signals';
 import { FasterSMA } from 'trading-signals';
+import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 
-export const rsi = (main, index, size) => {
+export const rsi = (main, index, size, {scale}) => {
     
     const value = main.verticalOhlcv.close[index]
 
@@ -35,6 +36,11 @@ export const rsi = (main, index, size) => {
     
     if(currentRsi)
     {
+        if(scale)
+        {
+            currentRsi = calcMagnitude(currentRsi, scale)
+        }
+
         main.pushToMain({index, key: `rsi_${size}`, value: currentRsi})
         main.instances[`rsi_sma_${size}`].update(currentRsi, main.lastIndexReplace)
     }
@@ -49,6 +55,11 @@ export const rsi = (main, index, size) => {
 
     if(smoothedRsi)
     {
+        if(scale)
+        {
+            smoothedRsi = calcMagnitude(smoothedRsi, scale)
+        }
+
         main.pushToMain({index, key: `rsi_sma_${size}`, value: smoothedRsi})
     }
 

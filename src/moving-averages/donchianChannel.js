@@ -1,43 +1,47 @@
 import { calcMagnitude } from "../utilities/numberUtilities.js"
 
 
-export const donchianChannels = (main, index, size, offset, options) => {
-  const { height, range, scale } = options
+export const donchianChannels = (main, index, size, offset, { height, range, scale}) => {
+
   const indicatorKey = `${size}_${offset}`
+  const {verticalOhlcv, instances, len} = main
 
   // Initialization: create output arrays and indicator instance on the first call.
   if (index === 0) {
-    const numberOfIndicators = main.inputParams.filter(o => o.key === 'donchianChannels').length
+    const {inputParams, nullArray, priceBased} = main
+    const numberOfIndicators = inputParams.filter(o => o.key === 'donchianChannels').length
     const prefix = numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel'
 
-    Object.assign(main.verticalOhlcv, {
-      [`${prefix}_upper`]: [...main.nullArray],
-      [`${prefix}_basis`]: [...main.nullArray],
-      [`${prefix}_lower`]: [...main.nullArray],
-      ...(height && { [`${prefix}_height`]: [...main.nullArray] })
+    Object.assign(verticalOhlcv, {
+      [`${prefix}_upper`]: [...nullArray],
+      [`${prefix}_basis`]: [...nullArray],
+      [`${prefix}_lower`]: [...nullArray],
+      ...(height && { [`${prefix}_height`]: [...nullArray] })
     })
 
-    if (!main.instances.hasOwnProperty('donchian_channel')) {
-      main.instances.donchian_channel = { numberOfIndicators, settings: {} }
+    priceBased.push(`${prefix}_upper`, `${prefix}_basis`, `${prefix}_lower`);
+
+    if (!instances.hasOwnProperty('donchian_channel')) {
+      instances.donchian_channel = { numberOfIndicators, settings: {} }
     }
 
     // Set up additional arrays for each range property.
     for (const rangeKey of range) {
-      if (!(rangeKey in main.verticalOhlcv) || !main.priceBased.includes(rangeKey)) {
-        throw new Error(`Invalid range item value "${rangeKey}" property for donchianChannels. Only price based key names are accepted:\n${JSON.stringify(main.priceBased)}`)
+      if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
+        throw new Error(`Invalid range item value "${rangeKey}" property for donchianChannels. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
       }
-      main.verticalOhlcv[`${prefix}_range_${rangeKey}`] = [...main.nullArray]
+      verticalOhlcv[`${prefix}_range_${rangeKey}`] = [...nullArray]
     }
 
-    main.instances.donchian_channel.settings[indicatorKey] = {
+    instances.donchian_channel.settings[indicatorKey] = {
       maxDeque: [], // will hold indices for highs in descending order
       minDeque: []  // will hold indices for lows in ascending order
     }
   }
 
-  const numberOfIndicators = main.instances.donchian_channel.numberOfIndicators
+  const numberOfIndicators = instances.donchian_channel.numberOfIndicators
   const subPrefix = numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel'
-  const state = main.instances.donchian_channel.settings[indicatorKey]
+  const state = instances.donchian_channel.settings[indicatorKey]
   const { maxDeque, minDeque } = state
 
   // Compute the “current bar index” for the window.
@@ -47,10 +51,10 @@ export const donchianChannels = (main, index, size, offset, options) => {
   const startIdx = endIdx - size        // window: [startIdx, endIdx)
 
   // If the window is not fully available, exit early.
-  if (startIdx < 0 || endIdx > main.len) return true
+  if (startIdx < 0 || endIdx > len) return true
 
-  const highs = main.verticalOhlcv.high
-  const lows = main.verticalOhlcv.low
+  const highs = verticalOhlcv.high
+  const lows = verticalOhlcv.low
 
   // **Update the maximum deque:**
   // Remove indices that are out of the current window.
@@ -100,7 +104,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
 
   // Process each range property.
   for (const rangeKey of range) {
-    let rangeValue = (main.verticalOhlcv[rangeKey][index] - lower) / (upper - lower)
+    let rangeValue = (verticalOhlcv[rangeKey][index] - lower) / (upper - lower)
 
     if(scale)
     {

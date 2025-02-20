@@ -6,7 +6,7 @@ import { isAlreadyComputed } from './src/utilities/validators.js'
 import { divideByMultiplier } from './src/utilities/numberUtilities.js'
 
 
-const validMagnitudeValues = [0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5]
+const validMagnitudeValues = [0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1]
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, precision = true}) {
@@ -209,7 +209,7 @@ export default class OHLCV_INDICATORS {
         {
             const key = colKeys[x]
 
-            if(this.priceBased.find(v => key.startsWith(v)))
+            if(this.priceBased.find(v => key === v))
             {
                 this.priceBased.push(key)
             }
@@ -218,11 +218,18 @@ export default class OHLCV_INDICATORS {
         return this;
     }
     
-    relativeVolume(size) {
+    relativeVolume(size, options = {}) {
 
         isAlreadyComputed(this)
 
-        this.inputParams.push({key: 'relativeVolume', params: [size]})
+        const {scale = null} = options
+
+        if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
+
+            throw new Error(`"scale" value in relativeVolume must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
+        }
+
+        this.inputParams.push({key: 'relativeVolume', params: [size, {scale}]})
  
         return this
     }
@@ -243,7 +250,6 @@ export default class OHLCV_INDICATORS {
         }
 
         this.inputParams.push({key: 'ema', params: [size, {target}]})
-        this.priceBased.push(`ema_${size}`)
 
         return this
     }
@@ -264,7 +270,6 @@ export default class OHLCV_INDICATORS {
 
 
         this.inputParams.push({key: 'sma', params: [size, {target}]})
-        this.priceBased.push(`sma_${size}`)
 
         return this 
     }
@@ -325,19 +330,18 @@ export default class OHLCV_INDICATORS {
         {
             if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
 
-                throw new Error('"scale" value in bollingerBands must be any of the following numbers: ');
+                throw new Error(`"scale" value in bollingerBands must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
             }           
         }
 
 
     
         this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, zScore}]});
-        this.priceBased.push('bollinger_bands_middle', 'bollinger_bands_upper', 'bollinger_bands_lower');
     
         return this;
     }
     
-    rsi(size)
+    rsi(size, options = {})
     {
         isAlreadyComputed(this)
 
@@ -346,7 +350,14 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number in rsi.');
         }
 
-        this.inputParams.push({key: 'rsi', params: [size]})
+        const {scale = null} = options
+
+        if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
+
+            throw new Error(`"scale" value in rsi must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
+        }
+
+        this.inputParams.push({key: 'rsi', params: [size, {scale}]})
 
         return this
     }
@@ -375,12 +386,11 @@ export default class OHLCV_INDICATORS {
 
             if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
 
-                throw new Error('"scale" value in donchianChannels must be any of the following numbers: ');
+                throw new Error(`"scale" value in donchianChannels must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
             }        
         }
       
         this.inputParams.push({ key: 'donchianChannels', params: [size, offset, { height, range, scale }] });
-        this.priceBased.push('donchian_channel_upper', 'donchian_channel_lower', 'donchian_channel_basis');
       
         return this;
     }
@@ -397,12 +407,12 @@ export default class OHLCV_INDICATORS {
           throw new Error('"stdDev" must be a positive number greater than 0 in candleStudies.');
         }
       
-        const { lag = 0, scale = 0.1 } = options;
+        const { lag = 0, scale = 0.05 } = options;
 
 
         if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
 
-            throw new Error('"scale" value in candleStudies must be any of the following numbers: ');
+            throw new Error(`"scale" value in candleStudies must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
         }
       
         this.inputParams.push({ key: 'candleStudies', params: [size, stdDev, {lag, scale}] });
@@ -410,7 +420,7 @@ export default class OHLCV_INDICATORS {
       }
       
 
-    volumeOscillator(fastSize = 5, slowSize = 10)
+    volumeOscillator(fastSize = 5, slowSize = 10, options = {})
     {
 
         isAlreadyComputed(this)
@@ -423,7 +433,14 @@ export default class OHLCV_INDICATORS {
             throw new Error('"slowSize" must be a positive number greater than the "fastSize" in volumeOscillator.');
         }
 
-        this.inputParams.push({key: 'volumeOscillator', params: [fastSize, slowSize]})
+        const {scale = null} = options
+
+        if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
+
+            throw new Error(`"scale" value in volumeOscillator must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
+        }
+
+        this.inputParams.push({key: 'volumeOscillator', params: [fastSize, slowSize, {scale}]})
         return this           
     }
     dateTime()

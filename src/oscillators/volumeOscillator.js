@@ -1,6 +1,7 @@
 import { FasterEMA } from 'trading-signals';
+import { calcMagnitude } from '../utilities/numberUtilities.js';
 
-export const volumeOscillator = (main, index, fast, slow) => {
+export const volumeOscillator = (main, index, fast, slow, {scale}) => {
 
     const value = main.verticalOhlcv.volume[index]
     const key = 'volume_oscillator'
@@ -38,12 +39,19 @@ export const volumeOscillator = (main, index, fast, slow) => {
         slowValue = null;
     }
 
-    if (typeof fastValue === 'number' && typeof slowValue === 'number' && slowValue !== 0) {
+    let volumeOscValue = null
 
-        main.pushToMain({index, key, value:  100 * (fastValue - slowValue) / slowValue})
-    } else {
-        main.pushToMain({index, key, value:  null})
+    if(typeof fastValue === 'number' && typeof slowValue === 'number' && slowValue !== 0)
+    {
+        volumeOscValue = 100 * (fastValue - slowValue) / slowValue
+
+        if(scale)
+        {
+            volumeOscValue = calcMagnitude(volumeOscValue, scale)
+        }
     }
+
+    main.pushToMain({index, key, value:  volumeOscValue})
 
     return true;
 };

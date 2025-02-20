@@ -1,6 +1,7 @@
 import {FasterSMA} from 'trading-signals';
+import { calcMagnitude } from '../utilities/numberUtilities.js';
 
-export const relativeVolume = (main, index, size = 10) => {
+export const relativeVolume = (main, index, size = 10, {scale}) => {
 
     const key = `relative_volume_${size}`
 
@@ -32,10 +33,22 @@ export const relativeVolume = (main, index, size = 10) => {
 
     const {prevRelativeVolumeSma} = main.instances[key]
 
+    let currRelativeVolume = null
+
+    if(smaValue !== null && prevRelativeVolumeSma !== null)
+    {
+        currRelativeVolume = value / prevRelativeVolumeSma
+
+        if(scale)
+        {
+            currRelativeVolume = calcMagnitude(currRelativeVolume, scale)
+        }
+    }
+
     main.pushToMain({
         index, 
         key,
-        value: (smaValue !== null && prevRelativeVolumeSma !== null) ? value / prevRelativeVolumeSma : null
+        value: currRelativeVolume
     })
 
     main.instances[key].prevRelativeVolumeSma = smaValue
