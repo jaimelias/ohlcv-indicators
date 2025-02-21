@@ -2,34 +2,46 @@ import {FasterRSI} from 'trading-signals';
 import { FasterSMA } from 'trading-signals';
 import { calcMagnitude } from '../utilities/numberUtilities.js';
 
+const defaultTarget = 'close'
 
-export const rsi = (main, index, size, {scale}) => {
+export const rsi = (main, index, size, {scale, target}) => {
     
-    const value = main.verticalOhlcv.close[index]
+    const {verticalOhlcv, instances, lastIndexReplace} = main
+    const suffix = (target === defaultTarget) ? '' : `_${target}`
+    const rsiKey = `rsi_${size}${suffix}`
+    const rsiSmaKey = `rsi_sma_${size}${suffix}`
 
     if(index === 0)
     {
-        main.crossPairsList.push({fast: `rsi_${size}`, slow: `rsi_sma_${size}`, isDefault: true})
+        const {crossPairsList, nullArray} = main
 
-        Object.assign(main.instances, {
-            [`rsi_${size}`]: new FasterRSI(size),
-            [`rsi_sma_${size}`]: new FasterSMA(size)
+        if(!verticalOhlcv.hasOwnProperty(target))
+        {
+            throw new Error(`Target property ${target} not found in verticalOhlcv for rsi.`)
+        }
+
+        crossPairsList.push({fast: rsiKey, slow: rsiSmaKey, isDefault: true})
+
+        Object.assign(instances, {
+            [rsiKey]: new FasterRSI(size),
+            [rsiSmaKey]: new FasterSMA(size)
         })
 
-        Object.assign(main.verticalOhlcv, {
-            [`rsi_${size}`]: [...main.nullArray],
-            [`rsi_sma_${size}`]: [...main.nullArray]
+        Object.assign(verticalOhlcv, {
+            [rsiKey]: [...nullArray],
+            [rsiSmaKey]: [...nullArray]
         })
     }
-    
+
+    const value = verticalOhlcv[target][index]
     let currentRsi
     let smoothedRsi
 
-    main.instances[`rsi_${size}`].update(value, main.lastIndexReplace)
+    instances[rsiKey].update(value, lastIndexReplace)
 
     try
     {
-        currentRsi = main.instances[`rsi_${size}`].getResult()
+        currentRsi = instances[rsiKey].getResult()
     } catch(err) {
         currentRsi = null
     }
@@ -41,13 +53,13 @@ export const rsi = (main, index, size, {scale}) => {
             currentRsi = calcMagnitude(currentRsi, scale)
         }
 
-        main.pushToMain({index, key: `rsi_${size}`, value: currentRsi})
-        main.instances[`rsi_sma_${size}`].update(currentRsi, main.lastIndexReplace)
+        main.pushToMain({index, key: rsiKey, value: currentRsi})
+        instances[rsiSmaKey].update(currentRsi, lastIndexReplace)
     }
 
     try
     {
-        smoothedRsi = main.instances[`rsi_sma_${size}`].getResult()
+        smoothedRsi = instances[rsiSmaKey].getResult()
     } catch(err)
     {
         smoothedRsi = null
@@ -60,7 +72,7 @@ export const rsi = (main, index, size, {scale}) => {
             smoothedRsi = calcMagnitude(smoothedRsi, scale)
         }
 
-        main.pushToMain({index, key: `rsi_sma_${size}`, value: smoothedRsi})
+        main.pushToMain({index, key: rsiSmaKey, value: smoothedRsi})
     }
 
     return true

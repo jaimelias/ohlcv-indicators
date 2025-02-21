@@ -1,7 +1,6 @@
 import { validateInputParams } from "./validators.js";
 import { rsi } from "../oscillators/rsi.js";
-import { sma } from "../moving-averages/sma.js";
-import { ema } from "../moving-averages/ema.js";
+import { movingAverages } from "../moving-averages/movingAverages.js";
 import { macd } from "../moving-averages/macd.js";
 import { relativeVolume } from "../moving-averages/relativeVolume.js";
 import { donchianChannels } from "../moving-averages/donchianChannel.js";
@@ -20,8 +19,7 @@ const indicatorFunctions = {
   dateTime,
   priceVariations,
   rsi,
-  sma,
-  ema,
+  movingAverages,
   macd,
   relativeVolume,
   donchianChannels,

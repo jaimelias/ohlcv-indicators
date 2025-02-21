@@ -1,73 +1,77 @@
-import {FasterEMA, FasterMACD} from 'trading-signals';
+import { FasterEMA, FasterMACD } from 'trading-signals';
 
-const defaultTarget = 'close'
+const defaultTarget = 'close';
 
 export const macd = (main, index, fast, slow, signal, options) => {
+  const { target } = options;
+  const { verticalOhlcv, instances } = main;
 
-    const {target} = options
-    const suffix = target === defaultTarget ? '' : `_${target}`;
-    const indicatorKey = `${fast}_${slow}_${signal}${suffix}`;
+  // Instance key (for internal storage) includes target if not default.
+  const instanceKey = `${fast}_${slow}_${signal}${target === defaultTarget ? '' : `_${target}`}`;
 
-    if (index === 0) {
+  // On the first index, do the initialization.
+  if (index === 0) {
+    const { inputParams, crossPairsList, nullArray } = main;
 
-        if(!main.verticalOhlcv.hasOwnProperty(target))
-        {
-            throw new Error(`Target property ${target} not found in verticalOhlcv for macd.`)
-        }
-
-        const numberOfIndicators = main.inputParams.filter(o => o.key === 'macd').length;
-        const prefix =
-          numberOfIndicators > 1
-            ? `macd_${indicatorKey}`
-            : `macd${suffix}`;
-
-        main.crossPairsList.push({fast: `${prefix}_diff`, slow: `${prefix}_dea`, isDefault: true});
-
-        if(!main.instances.hasOwnProperty('macd'))
-        {
-            main.instances.macd = {
-                numberOfIndicators,
-                settings: {}
-              }
-        }
-
-        main.instances.macd.settings[indicatorKey] = new FasterMACD(
-            new FasterEMA(fast),
-            new FasterEMA(slow),
-            new FasterEMA(signal)
-        );
-
-        Object.assign(main.verticalOhlcv, {
-            [`${prefix}_diff`]: [...main.nullArray],
-            [`${prefix}_dea`]: [...main.nullArray],
-            [`${prefix}_histogram`]: [...main.nullArray],
-        })
+    if (!verticalOhlcv.hasOwnProperty(target)) {
+      throw new Error(`Target property ${target} not found in verticalOhlcv for macd.`);
     }
 
-    
-    const subPrefix = main.instances.macd.numberOfIndicators > 1
-        ? `macd_${indicatorKey}`
-        : `macd${suffix}`;
+    const numberOfIndicators = inputParams.filter(o => o.key === 'macd').length;
+    // For display keys: if there's more than one indicator, include the parameters in the prefix.
+    const displayPrefix = numberOfIndicators > 1 ? `macd_${fast}_${slow}_${signal}` : 'macd';
 
-    const macdInstance = main.instances.macd.settings[indicatorKey];
-    const value = main.verticalOhlcv[target][index]
-    macdInstance.update(value, main.lastIndexReplace);
+    // Build the keys: if target is not the default, append it at the end.
+    const diffKey = target === defaultTarget ? `${displayPrefix}_diff` : `${displayPrefix}_diff_${target}`;
+    const deaKey = target === defaultTarget ? `${displayPrefix}_dea` : `${displayPrefix}_dea_${target}`;
+    const histogramKey = target === defaultTarget ? `${displayPrefix}_histogram` : `${displayPrefix}_histogram_${target}`;
 
-    let macdResult;
-    
-    try {
-        macdResult = macdInstance.getResult();
-    } catch (err) {
-        //do nothing
+    crossPairsList.push({ fast: diffKey, slow: deaKey, isDefault: true });
+
+    if (!instances.hasOwnProperty('macd')) {
+      instances.macd = {
+        numberOfIndicators,
+        settings: {}
+      };
     }
 
+    instances.macd.settings[instanceKey] = new FasterMACD(
+      new FasterEMA(fast),
+      new FasterEMA(slow),
+      new FasterEMA(signal)
+    );
 
-    if (macdResult) {
+    Object.assign(verticalOhlcv, {
+      [diffKey]: [...nullArray],
+      [deaKey]: [...nullArray],
+      [histogramKey]: [...nullArray],
+    });
+  }
 
-        main.pushToMain({index, key: `${subPrefix}_diff`, value: macdResult.macd})
-        main.pushToMain({index, key: `${subPrefix}_dea`, value: macdResult.signal})
-        main.pushToMain({index, key: `${subPrefix}_histogram`, value: macdResult.histogram})
-    }
+  const {numberOfIndicators, settings} = instances.macd
 
-    return true;
+  // Determine display prefix for updating values.
+  const displayPrefix = numberOfIndicators > 1 ? `macd_${fast}_${slow}_${signal}` : 'macd';
+  const diffKey = target === defaultTarget ? `${displayPrefix}_diff` : `${displayPrefix}_diff_${target}`;
+  const deaKey = target === defaultTarget ? `${displayPrefix}_dea` : `${displayPrefix}_dea_${target}`;
+  const histogramKey = target === defaultTarget ? `${displayPrefix}_histogram` : `${displayPrefix}_histogram_${target}`;
+
+  const macdInstance = settings[instanceKey];
+  const value = verticalOhlcv[target][index];
+  macdInstance.update(value, main.lastIndexReplace);
+
+  let macdResult;
+  try {
+    macdResult = macdInstance.getResult();
+  } catch (err) {
+    // Do nothing if no result is available.
+  }
+
+  if (macdResult) {
+    main.pushToMain({ index, key: diffKey, value: macdResult.macd });
+    main.pushToMain({ index, key: deaKey, value: macdResult.signal });
+    main.pushToMain({ index, key: histogramKey, value: macdResult.histogram });
+  }
+
+  return true;
 };

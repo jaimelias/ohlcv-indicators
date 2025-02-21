@@ -4,7 +4,7 @@ import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromI
 import { validateDate } from './src/utilities/validators.js'
 import { isAlreadyComputed } from './src/utilities/validators.js'
 import { divideByMultiplier } from './src/utilities/numberUtilities.js'
-
+import { getMovingAveragesParams } from './src/moving-averages/movingAverages.js'
 
 const validMagnitudeValues = [0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1]
 
@@ -238,18 +238,9 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
 
-        if(!options || typeof options !== 'object')
-        {
-            throw new Error('"options" must be an object in ema. eg: {target, height, range}');
-        }
+        const optionArgs = getMovingAveragesParams('ema', size, options, validMagnitudeValues)
 
-        const {target = 'close'} = options
-
-        if (typeof size !== 'number' || size <= 0) {
-            throw new Error('"size" must be a positive number in ema.');
-        }
-
-        this.inputParams.push({key: 'ema', params: [size, {target}]})
+        this.inputParams.push({key: 'movingAverages', params: ['ema', size, optionArgs]})
 
         return this
     }
@@ -257,22 +248,14 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
 
-        if(!options || typeof options !== 'object')
-        {
-            throw new Error('"options" must be an object in sma. eg: {target, height, range}');
-        }
+        const optionArgs = getMovingAveragesParams('sma', size, options, validMagnitudeValues)
 
-        const {target = 'close'} = options
+        this.inputParams.push({key: 'movingAverages', params: ['sma', size, optionArgs]})
 
-        if (typeof size !== 'number' || size <= 0) {
-            throw new Error('"size" must be a positive number in sma.');
-        }
-
-
-        this.inputParams.push({key: 'sma', params: [size, {target}]})
-
-        return this 
+        return this
     }
+
+    
     macd(fast = 12, slow = 26, signal = 9, options = {}) {
 
         isAlreadyComputed(this)
@@ -350,14 +333,14 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number in rsi.');
         }
 
-        const {scale = null} = options
+        const {scale = null, target = 'close'} = options
 
         if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
 
             throw new Error(`"scale" value in rsi must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
         }
 
-        this.inputParams.push({key: 'rsi', params: [size, {scale}]})
+        this.inputParams.push({key: 'rsi', params: [size, {scale, target}]})
 
         return this
     }

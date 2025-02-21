@@ -18,7 +18,9 @@ import { calcMagnitude } from "./numberUtilities.js"
  * @param {number} bollingerBands.lower - The lower band threshold.
  * @returns {number|null} The classified value, or null if inputs are invalid or if upper equals lower.
  */
-export const classifyBoll = (value, bollingerBands, scale) => {
+
+
+export const classifyBoll = (value, bollingerBands, scale = 0.05) => {
   // Validate that value and bollingerBands are not null/undefined
   if (value == null || bollingerBands == null) return null
 
@@ -38,7 +40,9 @@ export const classifyBoll = (value, bollingerBands, scale) => {
   if (upper === lower) return null
 
   const rangeValue = (value - lower) / (upper - lower)
-  const magnitude = calcMagnitude(rangeValue, scale)
+  let magnitude = calcMagnitude(rangeValue, scale)
+
+  magnitude = Math.min(Math.max(magnitude, 0), 1)
 
   return positive ? magnitude : -magnitude
 }
