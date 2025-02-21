@@ -25,24 +25,25 @@ export const classifyBoll = (value, bollingerBands, scale = 0.05) => {
   if (value == null || bollingerBands == null) return null
 
   const positive = value >= 0
+  const absValue = Math.abs(value)
 
   const { upper, middle, lower } = bollingerBands
 
   // Handle values outside the Bollinger bands
-  if (value < lower) return 0
-  if (value > upper) return positive ? 1 : -1
+  if (absValue < lower) return 0
+  if (absValue > upper) return positive ? 1 : -1
 
   // Use a tolerance for floating point comparisons
-  const epsilon = Number.EPSILON * Math.max(Math.abs(value), Math.abs(middle))
-  if (Math.abs(value - middle) < epsilon) return positive ? 0.5 : -0.5
+  const epsilon = Number.EPSILON * Math.max(absValue, Math.abs(middle))
+  if (Math.abs(absValue - middle) < epsilon) return positive ? 0.5 : -0.5
 
   // Prevent division by zero if upper and lower are equal
   if (upper === lower) return null
 
-  const rangeValue = (value - lower) / (upper - lower)
+  const rangeValue = (absValue - lower) / (upper - lower)
   let magnitude = calcMagnitude(rangeValue, scale)
 
-  magnitude = Math.min(Math.max(magnitude, 0), 1)
+  //magnitude = Math.min(Math.max(magnitude, 0), 1)
 
   return positive ? magnitude : -magnitude
 }
