@@ -27,7 +27,10 @@ export const rsi = (main, index, size, {scale, target}) => {
             [rsiSmaKey]: new FasterSMA(size)
         })
 
-        main.fillNulls([rsiKey, rsiSmaKey])
+        Object.assign(verticalOhlcv, {
+            [rsiKey]: [...nullArray],
+            [rsiSmaKey]: [...nullArray],
+        })
     }
 
     const value = verticalOhlcv[target][index]

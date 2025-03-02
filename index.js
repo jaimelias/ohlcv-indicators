@@ -5,6 +5,7 @@ import { validateDate } from './src/utilities/validators.js'
 import { isAlreadyComputed } from './src/utilities/validators.js'
 import { divideByMultiplier } from './src/utilities/numberUtilities.js'
 import { getMovingAveragesParams } from './src/moving-averages/movingAverages.js'
+import { verticalToHorizontal } from './src/utilities/dataParsingUtilities.js'
 
 const validMagnitudeValues = [0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1]
 
@@ -25,7 +26,6 @@ export default class OHLCV_INDICATORS {
         this.instances = {}
         this.crossPairsList = []
         this.verticalOhlcv = {}
-        this.horizontalOhlcv = Array.from({ length: this.len }, () => ({}))
 
         this.inputParams = []
 
@@ -41,27 +41,9 @@ export default class OHLCV_INDICATORS {
         return this 
     }
 
-    fillNulls(keyNames = []){
-
-        const {nullArray} = this
-
-        for(let kIdx = 0; kIdx < keyNames.length; kIdx++)
-        {
-            const key = keyNames[kIdx]
-
-            this.verticalOhlcv[key] = [...nullArray]
-
-            for(let rowIdx = 0; rowIdx < this.len; rowIdx++)
-            {
-                this.horizontalOhlcv[rowIdx][key] = null
-            }
-        }
-    }
-
     pushToMain({index, key, value})
     {
         this.verticalOhlcv[key][index] = value
-        this.horizontalOhlcv[index][key] = value
     }
 
     getDataAsCols(){
@@ -94,24 +76,19 @@ export default class OHLCV_INDICATORS {
 
     }
 
-    getData() {
+    getData(skipNull = true) {
 
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
 
-        const {precisionMultiplier, priceBased, precision} = this
+        const {precisionMultiplier, priceBased, precision, verticalOhlcv} = this
 
-        if(precision)
-        {
-            return this.horizontalOhlcv
-                .filter(row => !Object.values(row).some(value => typeof value === 'undefined' || value === null))
-                .map(row => divideByMultiplier({row, precisionMultiplier, priceBased}))
-        }
-        else
-        {
-            return this.horizontalOhlcv.filter(row => !Object.values(row).some(value => typeof value === 'undefined' || value === null))           
+
+        const callBackFunction = (row, precision, precisionMultiplier, priceBased) => {
+            return (precision) ? divideByMultiplier({row, precisionMultiplier, priceBased}) : row
         }
 
+        return verticalToHorizontal(verticalOhlcv, skipNull, precision, precisionMultiplier, priceBased)
     }
     
     
@@ -119,20 +96,16 @@ export default class OHLCV_INDICATORS {
 
         this.compute()
 
-        const {precisionMultiplier, priceBased, precision} = this
+        const {precisionMultiplier, priceBased, precision, verticalOhlcv, len} = this
+        const keyNames = Object.keys(verticalOhlcv)
+        const row = {}
 
-        if(precision)
+        for(const key of keyNames)
         {
-            return divideByMultiplier({
-                row: this.horizontalOhlcv[this.horizontalOhlcv.length - 1],
-                precisionMultiplier,
-                priceBased
-            })
+            row[key] = verticalOhlcv[key][len - 1]
         }
-        else
-        {
-            return this.horizontalOhlcv[this.horizontalOhlcv.length - 1]
-        }
+     
+        return (precision) ? divideByMultiplier({row, precisionMultiplier, priceBased}) : row
     }
 
     compute(change) {

@@ -3,26 +3,28 @@ import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 export const volumeOscillator = (main, index, fast, slow, {scale}) => {
 
-    const value = main.verticalOhlcv.volume[index]
+    const {verticalOhlcv, instances, lastIndexReplace} = main
+    const value = verticalOhlcv.volume[index]
     const key = 'volume_oscillator'
 
     if (index === 0) {
 
-        Object.assign(main.instances, {
+        const {crossPairsList, nullArray} = main
+        Object.assign(instances, {
             volume_oscillator: {
                 fastEMA: new FasterEMA(fast),
                 slowEMA: new FasterEMA(slow)
             }
         })
 
-        main.verticalOhlcv[key] = [...main.nullArray];
-        main.crossPairsList.push({ fast: key, slow: 0, isDefault: true });
+        verticalOhlcv[key] = [...nullArray];
+        crossPairsList.push({ fast: key, slow: 0, isDefault: true });
     }
 
-    const { fastEMA, slowEMA } = main.instances[key];
+    const { fastEMA, slowEMA } = instances[key];
 
-    fastEMA.update(value, main.lastIndexReplace);
-    slowEMA.update(value, main.lastIndexReplace);
+    fastEMA.update(value, lastIndexReplace);
+    slowEMA.update(value, lastIndexReplace);
 
     let fastValue = null;
     let slowValue = null;

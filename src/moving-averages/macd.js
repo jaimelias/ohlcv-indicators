@@ -4,7 +4,7 @@ const defaultTarget = 'close';
 
 export const macd = (main, index, fast, slow, signal, options) => {
   const { target } = options;
-  const { verticalOhlcv, instances } = main;
+  const { verticalOhlcv, instances, lastIndexReplace } = main;
 
   // Instance key (for internal storage) includes target if not default.
   const instanceKey = `${fast}_${slow}_${signal}${target === defaultTarget ? '' : `_${target}`}`;
@@ -41,7 +41,11 @@ export const macd = (main, index, fast, slow, signal, options) => {
       new FasterEMA(signal)
     )
 
-    main.fillNulls([diffKey, deaKey, histogramKey])
+    Object.assign(main.verticalOhlcv, {
+      [diffKey]: [...nullArray],
+      [deaKey]: [...nullArray],
+      [histogramKey]: [...nullArray],
+    })
   }
 
   const {numberOfIndicators, settings} = instances.macd
@@ -54,7 +58,7 @@ export const macd = (main, index, fast, slow, signal, options) => {
 
   const macdInstance = settings[instanceKey];
   const value = verticalOhlcv[target][index];
-  macdInstance.update(value, main.lastIndexReplace);
+  macdInstance.update(value, lastIndexReplace);
 
   let macdResult;
   try {

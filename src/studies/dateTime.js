@@ -1,13 +1,15 @@
 export const dateTime = (main, index) => {
 
+    const {instances, verticalOhlcv} = main
+ 
     if(index === 0)
     {
+        const {nullArray, isValidDate} = main
+        if(!isValidDate) throw Error('dateTime method found and invalid "date" in input ohlcv')
 
-        if(!main.isValidDate) throw Error('dateTime method found and invalid "date" in input ohlcv')
+        const index0DateStr = verticalOhlcv.date[0].slice(0, 10)
 
-        const index0DateStr = main.verticalOhlcv.date[0].slice(0, 10)
-
-        Object.assign(main.instances, {
+        Object.assign(instances, {
             dateTime: {
                 prevDateStr: index0DateStr,
                 sessionDailyIndexCount: 0,
@@ -16,19 +18,19 @@ export const dateTime = (main, index) => {
             }
         })
 
-        Object.assign(main.verticalOhlcv, {
-            day_of_the_week: [...main.nullArray],
-            day_of_the_month: [...main.nullArray],
-            week_of_the_month: [...main.nullArray],
-            hour: [...main.nullArray],
-            month: [...main.nullArray],
-            year: [...main.nullArray],
-            session_daily_index: [...main.nullArray],
-            session_intraday_index: [...main.nullArray],
+        Object.assign(verticalOhlcv, {
+            day_of_the_week: [...nullArray],
+            day_of_the_month: [...nullArray],
+            week_of_the_month: [...nullArray],
+            hour: [...nullArray],
+            month: [...nullArray],
+            year: [...nullArray],
+            session_daily_index: [...nullArray],
+            session_intraday_index: [...nullArray],
         })
     }
 
-    const currDate = main.verticalOhlcv.date[index]
+    const currDate = verticalOhlcv.date[index]
     const {
         day_of_the_week,
         day_of_the_month,
@@ -41,15 +43,15 @@ export const dateTime = (main, index) => {
 
     const currDateStr = currDate.slice(0, 10)
 
-    if(currDateStr !== main.instances.dateTime.prevDateStr)
+    if(currDateStr !== instances.dateTime.prevDateStr)
     {
-        main.instances.dateTime.prevDateStr = currDateStr
-        main.instances.dateTime.sessionDailyIndexCount++
-        main.instances.dateTime.sessionIntradayIndexCount = 0
+        instances.dateTime.prevDateStr = currDateStr
+        instances.dateTime.sessionDailyIndexCount++
+        instances.dateTime.sessionIntradayIndexCount = 0
     }
 
-    main.pushToMain({index, key: 'session_daily_index', value:  main.instances.dateTime.sessionDailyIndexCount})
-    main.pushToMain({index, key: 'session_intraday_index', value: main.instances.dateTime.sessionIntradayIndexCount})
+    main.pushToMain({index, key: 'session_daily_index', value:  instances.dateTime.sessionDailyIndexCount})
+    main.pushToMain({index, key: 'session_intraday_index', value: instances.dateTime.sessionIntradayIndexCount})
     main.pushToMain({index, key: 'day_of_the_week', value: day_of_the_week})
     main.pushToMain({index, key: 'day_of_the_month', value: day_of_the_month})
     main.pushToMain({index, key: 'week_of_the_month', value: week_of_the_month})

@@ -1,8 +1,11 @@
 export const lag = (main, index) => {
 
+    const {instances, verticalOhlcv} = main
+
     if(index === 0)
     {
-        const findParams = main.inputParams.filter(o => o.key === 'lag')
+        const {inputParams, priceBased} = main
+        const findParams = inputParams.filter(o => o.key === 'lag')
 
         if(typeof findParams !== 'object') return
 
@@ -12,30 +15,32 @@ export const lag = (main, index) => {
         {
             for (const colKey of colKeys)
             {
-                if(main.priceBased.includes(colKey))
+                if(priceBased.includes(colKey))
                 {
                     for (let lag = 1; lag <= lags; lag++) {
-                        main.priceBased.push(`${colKey}_lag_${lag}`)
+                        priceBased.push(`${colKey}_lag_${lag}`)
                     }
                 }
             }
         }
 
-        main.instances.lag = {
+        instances.lag = {
             lagParams: params
         }
     }
     
-    for (const [colKeys, lags] of main.instances.lag.lagParams) {
+    const {lagParams} = instances.lag
+
+    for (const [colKeys, lags] of lagParams) {
     
         for (const colKey of colKeys) {
-            const currentColumn = main.verticalOhlcv[colKey];
+            const currentColumn = verticalOhlcv[colKey];
     
             // Initialize lagged arrays only on the first index
             if (index === 0) {
                 for (let lag = 1; lag <= lags; lag++) {
                     const key = `${colKey}_lag_${lag}`;
-                    main.verticalOhlcv[key] = [...main.nullArray];
+                    verticalOhlcv[key] = [...main.nullArray];
                 }
             }
 

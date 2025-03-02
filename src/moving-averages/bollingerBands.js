@@ -9,12 +9,12 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   const { verticalOhlcv, instances, lastIndexReplace } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`
   const indicatorKey = `${size}_${stdDev}${suffix}`
-  let prefix // Will be computed during initialization
+  let prefix
 
   // Initialize indicator instances and output arrays on the first call.
   if (index === 0) {
 
-    const {priceBased, inputParams} = main
+    const {priceBased, inputParams, nullArray, verticalOhlcv} = main
 
     if (!(target in verticalOhlcv)) {
       throw new Error(`bollingerBands could not find target "${target}"`)
@@ -22,33 +22,27 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
 
     const numberOfIndicators = inputParams.filter(o => o.key === 'bollingerBands').length
     // Choose a prefix based on the number of indicators.
-    prefix = numberOfIndicators > 1
+    const prefix = numberOfIndicators > 1
       ? `bollinger_bands_${indicatorKey}`
       : `bollinger_bands${suffix}`
 
     // Ensure the container exists.
-    if (!instances.bollinger_bands) {
-      instances.bollinger_bands = {
-        numberOfIndicators,
-        settings: {}
+    instances.bollinger_bands = {
+      numberOfIndicators,
+      settings: {
+        [indicatorKey]: new FasterBollingerBands(size, stdDev)
       }
     }
 
-    // Create the Bollinger Bands (and optional height) indicator instance.
-    instances.bollinger_bands.settings[indicatorKey] = {
-      instance: new FasterBollingerBands(size, stdDev)
-    }
-
-
-    const ohlcvSetup = [
-      `${prefix}_upper`,
-      `${prefix}_middle`,
-      `${prefix}_lower`
-    ]
+    Object.assign(verticalOhlcv, {
+      [`${prefix}_upper`]: [...nullArray],
+      [`${prefix}_middle`]: [...nullArray],
+      [`${prefix}_lower`]: [...nullArray]
+    })
 
     if(height)
     {
-      ohlcvSetup.push(`${prefix}_height`)
+      verticalOhlcv[`${prefix}_height`] = [...nullArray]
     }
 
     // Set up additional arrays for each range property.
@@ -57,7 +51,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
         throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
       }
 
-      ohlcvSetup.push(`${prefix}_range_${rangeKey}`)
+      verticalOhlcv[`${prefix}_range_${rangeKey}`] = [...nullArray]
     }
 
     // Set up additional arrays for each zScore property.
@@ -65,12 +59,10 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
       if (!(zScoreKey in verticalOhlcv) || !priceBased.includes(zScoreKey)) {
         throw new Error(`Invalid zScore item value "${zScoreKey}" for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
       }
-      ohlcvSetup.push(`${prefix}_zscore_${zScoreKey}`)
+      verticalOhlcv[`${prefix}_zscore_${zScoreKey}`] = [...nullArray]
     }
 
-    // Merge the new arrays into verticalOhlcv.
-    main.fillNulls(ohlcvSetup)
-    main.priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`)
+    priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`)
   }
 
   // For subsequent calls, if prefix wasn’t computed (i.e. index > 0), derive it.
@@ -82,7 +74,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   const subPrefix = prefix
 
   // Retrieve the indicator instance(s) and update with the current value.
-  const { instance } = instances.bollinger_bands.settings[indicatorKey]
+  const instance = instances.bollinger_bands.settings[indicatorKey]
   const value = verticalOhlcv[target][index]
   instance.update(value, lastIndexReplace)
 

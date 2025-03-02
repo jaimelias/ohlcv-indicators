@@ -134,17 +134,21 @@ class CrossInstance {
 
 export const crossPairs = (main, index) => {
 
+    const {nullArray, verticalOhlcv, instances, len} = main
 
     if(index === 0)
     {
-        const findParams = main.inputParams.filter(o => o.key === 'crossPairs')
+        const {inputParams} = main
+        const findParams = inputParams.filter(o => o.key === 'crossPairs')
 
         if(typeof findParams !== 'object') return
 
-        main.instances.crossPairs = {crossPairsList: findParams.flatMap(o => o.params.flat())}
+        instances.crossPairs = {crossPairsList: findParams.flatMap(o => o.params.flat())}
     }
 
-    for (const { fast, slow } of main.instances.crossPairs.crossPairsList)
+    const {crossPairsList} = instances.crossPairs
+
+    for (const { fast, slow } of crossPairsList)
     {
         if (!fast || !slow) continue
 
@@ -152,21 +156,18 @@ export const crossPairs = (main, index) => {
 
         if(index === 0)
         {
-            const ohlcvSetup = []
-
             if(typeof slow === 'number')
             {
-                //do not use fillNulls with this part as the intended use is to add it as a number and not null
-                main.verticalOhlcv[slow] = new Array(main.len).fill(slow)
+                verticalOhlcv[slow] = new Array(len).fill(slow)
             }
             
-            if(fast !== 'price' && !main.verticalOhlcv.hasOwnProperty(fast)) throw Error(`fast "${fast} not found in crossPairs"`)
-            if(!main.verticalOhlcv.hasOwnProperty(slow)) throw Error(`slow "${slow} not found in crossPairs"`)
+            if(fast !== 'price' && !verticalOhlcv.hasOwnProperty(fast)) throw Error(`fast "${fast} not found in crossPairs"`)
+            if(!verticalOhlcv.hasOwnProperty(slow)) throw Error(`slow "${slow} not found in crossPairs"`)
 
 
-            main.instances[crossName] = new CrossInstance()
+            instances[crossName] = new CrossInstance()
 
-            main.fillNulls([crossName])
+            verticalOhlcv[crossName] = [...nullArray]
         }
 
         let fastValue
@@ -177,22 +178,22 @@ export const crossPairs = (main, index) => {
 
         if(fast === 'price')
         {
-            closeValue = main.verticalOhlcv.close[index]
-            highValue = main.verticalOhlcv.high[index]
-            lowValue = main.verticalOhlcv.low[index]
-            slowValue = main.verticalOhlcv[slow][index]
+            closeValue = verticalOhlcv.close[index]
+            highValue = verticalOhlcv.high[index]
+            lowValue = verticalOhlcv.low[index]
+            slowValue = verticalOhlcv[slow][index]
 
-            main.instances[crossName].update({fast: closeValue, slow: slowValue, high: highValue, low: lowValue})
+            instances[crossName].update({fast: closeValue, slow: slowValue, high: highValue, low: lowValue})
 
         } else
         {
-            fastValue = main.verticalOhlcv[fast][index]
-            slowValue = main.verticalOhlcv[slow][index]
+            fastValue = verticalOhlcv[fast][index]
+            slowValue = verticalOhlcv[slow][index]
 
-            main.instances[crossName].update({fast: fastValue, slow: slowValue})
+            instances[crossName].update({fast: fastValue, slow: slowValue})
         }
 
-        main.pushToMain({index, key: crossName, value: main.instances[crossName].getResult()})
+        main.pushToMain({index, key: crossName, value: instances[crossName].getResult()})
     }
 
 }

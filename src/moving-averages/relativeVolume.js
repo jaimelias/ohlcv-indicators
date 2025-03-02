@@ -4,23 +4,27 @@ import { calcMagnitude } from '../utilities/numberUtilities.js';
 export const relativeVolume = (main, index, size = 10, {scale}) => {
 
     const key = `relative_volume_${size}`
+    const {instances, verticalOhlcv, lastIndexReplace} = main
 
     if (index === 0) {
-        main.instances[key] = {
+
+        const {nullArray} = main
+
+        instances[key] = {
             instance: new FasterSMA(size),
             prevRelativeVolumeSma: null
         }
 
-        Object.assign(main.verticalOhlcv, {
-            [key]: [...main.nullArray],
+        Object.assign(verticalOhlcv, {
+            [key]: [...nullArray],
         })
     }
 
 
-    const value = main.verticalOhlcv.volume[index]
+    const value = verticalOhlcv.volume[index]
     
-    const smaInstance = main.instances[key].instance
-    smaInstance.update(value, main.lastIndexReplace)
+    const smaInstance = instances[key].instance
+    smaInstance.update(value, lastIndexReplace)
 
     let smaValue;
     try {
@@ -31,7 +35,7 @@ export const relativeVolume = (main, index, size = 10, {scale}) => {
         //do nothing
     }
 
-    const {prevRelativeVolumeSma} = main.instances[key]
+    const {prevRelativeVolumeSma} = instances[key]
 
     let currRelativeVolume = null
 
@@ -51,7 +55,7 @@ export const relativeVolume = (main, index, size = 10, {scale}) => {
         value: currRelativeVolume
     })
 
-    main.instances[key].prevRelativeVolumeSma = smaValue
+    instances[key].prevRelativeVolumeSma = smaValue
 
     return true;
 };
