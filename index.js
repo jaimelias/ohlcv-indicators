@@ -286,7 +286,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
         }
 
-        const {target = 'close', height = false, range = [], zScore = [], scale = null} = options
+        const {target = 'close', height = false, range = [], zScore = [], scale = null, lag = 0} = options
 
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
@@ -301,6 +301,10 @@ export default class OHLCV_INDICATORS {
         if (!Array.isArray(zScore)) {
             throw new Error('If set, "zScore" must be a array of column names in bollingerBands.');
         }
+        if (typeof lag !== 'number') {
+
+            throw new Error(`"lag" value in rsi must be a number in bollingerBands.`);
+        }
         if (typeof height !== 'boolean') {
             throw new Error('"height" must be a boolean in bollingerBands.');
         }
@@ -311,10 +315,8 @@ export default class OHLCV_INDICATORS {
                 throw new Error(`"scale" value in bollingerBands must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
             }           
         }
-
-
     
-        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, zScore}]});
+        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, zScore, lag}]});
     
         return this;
     }
@@ -355,10 +357,14 @@ export default class OHLCV_INDICATORS {
           throw new Error('"offset" must be a number greater than or equal to 0 in donchianChannels.');
         }
       
-        const { height = false, range = [], scale = null } = options;
+        const { height = false, range = [], scale = null, lag = 0} = options;
       
         if (!Array.isArray(range)) {
           throw new Error('If set, "range" must be an array of column names in donchianChannels.');
+        }
+
+        if (typeof lag !== 'number') {
+            throw new Error(`"lag" value in rsi must be a number in donchianChannels.`);
         }
       
         if (typeof height !== 'boolean') {
@@ -373,7 +379,7 @@ export default class OHLCV_INDICATORS {
             }        
         }
       
-        this.inputParams.push({ key: 'donchianChannels', params: [size, offset, { height, range, scale }] });
+        this.inputParams.push({ key: 'donchianChannels', params: [size, offset, { height, range, scale, lag }] });
       
         return this;
     }

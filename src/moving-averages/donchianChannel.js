@@ -1,6 +1,6 @@
 import { calcMagnitude } from "../utilities/numberUtilities.js"
 
-export const donchianChannels = (main, index, size, offset, { height, range, scale }) => {
+export const donchianChannels = (main, index, size, offset, { height, range, scale, lag }) => {
   const indicatorKey = `${size}_${offset}`;
   const { verticalOhlcv, instances, len } = main;
 
@@ -10,18 +10,18 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
     const numberOfIndicators = inputParams.filter(o => o.key === 'donchianChannels').length;
     const prefix = numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
 
-    Object.assign(verticalOhlcv, {
-      [`${prefix}_upper`]: [...nullArray],
-      [`${prefix}_basis`]: [...nullArray],
-      [`${prefix}_lower`]: [...nullArray],
-    });
+    const keyNames = [
+      `${prefix}_upper`,
+      `${prefix}_basis`,
+      `${prefix}_lower`,
+    ]
+
 
     if (height) {
-      verticalOhlcv[`${prefix}_height`] = [...nullArray];
+      keyNames.push(`${prefix}_height`)
     }
 
-    priceBased.push(`${prefix}_upper`, `${prefix}_basis`, `${prefix}_lower`);
-
+   
     if (!instances.hasOwnProperty('donchian_channel')) {
       instances.donchian_channel = { numberOfIndicators, settings: {} };
     }
@@ -31,8 +31,18 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
       if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
         throw new Error(`Invalid range item value "${rangeKey}" property for donchianChannels. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
-      verticalOhlcv[`${prefix}_range_${rangeKey}`] = [...nullArray];
+      keyNames.push(`${prefix}_range_${rangeKey}`)
     }
+
+    const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, [...nullArray]]))
+    Object.assign(verticalOhlcv, {...verticalOhlcvSetup})
+
+    if(lag > 0)
+    {
+      main.lag(keyNames, lag)
+    }
+
+    priceBased.push(`${prefix}_upper`, `${prefix}_basis`, `${prefix}_lower`);
 
     instances.donchian_channel.settings[indicatorKey] = {
       maxDeque: [], // will hold indices for highs in descending order

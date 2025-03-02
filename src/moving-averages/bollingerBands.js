@@ -3,7 +3,7 @@ import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close'
 
-export const bollingerBands = (main, index, size, stdDev, { height, range = [], zScore = [], target, scale }) => {
+export const bollingerBands = (main, index, size, stdDev, { height, range = [], zScore = [], target, scale, lag }) => {
   const { verticalOhlcv, instances, lastIndexReplace } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const indicatorKey = `${size}_${stdDev}${suffix}`;
@@ -32,15 +32,15 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     // Add (or override) the indicator instance keyed by indicatorKey.
     instances.bollinger_bands.settings[indicatorKey] = new FasterBollingerBands(size, stdDev);
 
-    // Initialize output arrays.
-    Object.assign(verticalOhlcv, {
-      [`${prefix}_upper`]: [...nullArray],
-      [`${prefix}_middle`]: [...nullArray],
-      [`${prefix}_lower`]: [...nullArray]
-    });
+    const keyNames = [
+      `${prefix}_upper`,
+      `${prefix}_middle`,
+      `${prefix}_lower`,
+    ]
+
 
     if (height) {
-      verticalOhlcv[`${prefix}_height`] = [...nullArray];
+      keyNames.push(`${prefix}_height`)
     }
 
     // Set up additional arrays for each range property.
@@ -48,7 +48,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
       if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
         throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
-      verticalOhlcv[`${prefix}_range_${rangeKey}`] = [...nullArray];
+      keyNames.push(`${prefix}_range_${rangeKey}`)
     }
 
     // Set up additional arrays for each zScore property.
@@ -56,7 +56,15 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
       if (!(zScoreKey in verticalOhlcv) || !priceBased.includes(zScoreKey)) {
         throw new Error(`Invalid zScore item value "${zScoreKey}" for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
-      verticalOhlcv[`${prefix}_zscore_${zScoreKey}`] = [...nullArray];
+      keyNames.push(`${prefix}_zscore_${zScoreKey}`)
+    }
+
+    const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, [...nullArray]]))
+    Object.assign(verticalOhlcv, {...verticalOhlcvSetup})
+
+    if(lag > 0)
+    {
+      main.lag(keyNames, lag)
     }
 
     priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`);
