@@ -4,133 +4,137 @@ import { calcMagnitude } from '../utilities/numberUtilities.js';
 const defaultTarget = 'close'
 
 export const bollingerBands = (main, index, size, stdDev, { height, range = [], zScore = [], target, scale }) => {
-  // Destructure options ensure range and zScore default to empty arrays if not provided.
-
   const { verticalOhlcv, instances, lastIndexReplace } = main;
-  const suffix = target === defaultTarget ? '' : `_${target}`
-  const indicatorKey = `${size}_${stdDev}${suffix}`
-  let prefix
+  const suffix = target === defaultTarget ? '' : `_${target}`;
+  const indicatorKey = `${size}_${stdDev}${suffix}`;
+  let prefix;
 
-  // Initialize indicator instances and output arrays on the first call.
+  // Initialization on the first call.
   if (index === 0) {
-
-    const {priceBased, inputParams, nullArray, verticalOhlcv} = main
+    const { priceBased, inputParams, nullArray, verticalOhlcv } = main;
 
     if (!(target in verticalOhlcv)) {
-      throw new Error(`bollingerBands could not find target "${target}"`)
+      throw new Error(`bollingerBands could not find target "${target}"`);
     }
 
-    const numberOfIndicators = inputParams.filter(o => o.key === 'bollingerBands').length
-    // Choose a prefix based on the number of indicators.
-    const prefix = numberOfIndicators > 1
+    const numberOfIndicators = inputParams.filter(o => o.key === 'bollingerBands').length;
+    prefix = numberOfIndicators > 1
       ? `bollinger_bands_${indicatorKey}`
-      : `bollinger_bands${suffix}`
+      : `bollinger_bands${suffix}`;
 
-    // Ensure the container exists.
-    instances.bollinger_bands = {
-      numberOfIndicators,
-      settings: {
-        [indicatorKey]: new FasterBollingerBands(size, stdDev)
-      }
+    // Only create the container if it doesn't already exist.
+    if (!instances.bollinger_bands) {
+      instances.bollinger_bands = {
+        numberOfIndicators,
+        settings: {}
+      };
     }
+    // Add (or override) the indicator instance keyed by indicatorKey.
+    instances.bollinger_bands.settings[indicatorKey] = new FasterBollingerBands(size, stdDev);
 
+    // Initialize output arrays.
     Object.assign(verticalOhlcv, {
       [`${prefix}_upper`]: [...nullArray],
       [`${prefix}_middle`]: [...nullArray],
       [`${prefix}_lower`]: [...nullArray]
-    })
+    });
 
-    if(height)
-    {
-      verticalOhlcv[`${prefix}_height`] = [...nullArray]
+    if (height) {
+      verticalOhlcv[`${prefix}_height`] = [...nullArray];
     }
 
     // Set up additional arrays for each range property.
     for (const rangeKey of range) {
       if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
-        throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
+        throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
-
-      verticalOhlcv[`${prefix}_range_${rangeKey}`] = [...nullArray]
+      verticalOhlcv[`${prefix}_range_${rangeKey}`] = [...nullArray];
     }
 
     // Set up additional arrays for each zScore property.
     for (const zScoreKey of zScore) {
       if (!(zScoreKey in verticalOhlcv) || !priceBased.includes(zScoreKey)) {
-        throw new Error(`Invalid zScore item value "${zScoreKey}" for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
+        throw new Error(`Invalid zScore item value "${zScoreKey}" for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
-      verticalOhlcv[`${prefix}_zscore_${zScoreKey}`] = [...nullArray]
+      verticalOhlcv[`${prefix}_zscore_${zScoreKey}`] = [...nullArray];
     }
 
-    priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`)
+    priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`);
   }
 
-  // For subsequent calls, if prefix wasn’t computed (i.e. index > 0), derive it.
+  // Derive prefix for subsequent calls if not set.
   if (!prefix) {
-    const num = instances.bollinger_bands.numberOfIndicators
-    prefix = num > 1 ? `bollinger_bands_${indicatorKey}` : `bollinger_bands${suffix}`
+    const num = instances.bollinger_bands.numberOfIndicators;
+    prefix = num > 1 ? `bollinger_bands_${indicatorKey}` : `bollinger_bands${suffix}`;
   }
-  // Use the same prefix for output keys.
-  const subPrefix = prefix
+  const subPrefix = prefix;
 
-  // Retrieve the indicator instance(s) and update with the current value.
-  const instance = instances.bollinger_bands.settings[indicatorKey]
-  const value = verticalOhlcv[target][index]
-  instance.update(value, lastIndexReplace)
+  // Update the indicator with the current value.
+  const instance = instances.bollinger_bands.settings[indicatorKey];
+  const value = verticalOhlcv[target][index];
+  instance.update(value, lastIndexReplace);
 
-  let result
+  // Attempt to retrieve the result.
+  let result = null;
   try {
-    result = instance.getResult()
+    result = instance.getResult();
   } catch (err) {
-    // If the result is not available yet, simply exit.
+    // If not available, result stays null.
   }
-  if (!result) return true
 
-  const { upper, middle, lower } = result
-  
-  main.pushToMain({index, key: `${subPrefix}_upper`, value: upper})
-  main.pushToMain({index, key: `${subPrefix}_middle`, value: middle})
-  main.pushToMain({index, key: `${subPrefix}_lower`, value: lower})
+  // Use null fallbacks for the primary values.
+  const upper = result?.upper ?? null;
+  const middle = result?.middle ?? null;
+  const lower = result?.lower ?? null;
 
+  // Always push the indicator outputs.
+  main.pushToMain({ index, key: `${subPrefix}_upper`, value: upper });
+  main.pushToMain({ index, key: `${subPrefix}_middle`, value: middle });
+  main.pushToMain({ index, key: `${subPrefix}_lower`, value: lower });
 
-  // Process height if a height instance exists.
+  // Process height if requested.
   if (height) {
-    let heightValue = ((upper - lower) / lower)
-
-    if(scale)
-    {
-      heightValue = calcMagnitude(heightValue, scale)
+    let heightValue = null;
+    if (typeof upper === 'number' && typeof lower === 'number' && lower !== 0) {
+      heightValue = (upper - lower) / lower;
+      if (scale) {
+        heightValue = calcMagnitude(heightValue, scale);
+      }
     }
-
-    main.pushToMain({index, key: `${subPrefix}_height`, value: heightValue})
+    main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
   }
 
   // Process each range property.
   for (const rangeKey of range) {
-    let rangeValue = (verticalOhlcv[rangeKey][index] - lower) / (upper - lower)
-
-    if(scale)
-    {
-      rangeValue = calcMagnitude(rangeValue, scale)
+    let rangeValue = null;
+    const priceValue = verticalOhlcv[rangeKey][index];
+    if (typeof priceValue === 'number' && typeof lower === 'number' && typeof upper === 'number' && (upper - lower) !== 0) {
+      rangeValue = (priceValue - lower) / (upper - lower);
+      if (scale) {
+        rangeValue = calcMagnitude(rangeValue, scale);
+      }
     }
-
-    main.pushToMain({index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue})
+    main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue });
   }
 
   // Process each zScore property.
   for (const zScoreKey of zScore) {
-    const denominator = upper - lower
-    let zScoreValue = denominator !== 0
-      ? (2 * stdDev * (verticalOhlcv[zScoreKey][index] - middle)) / denominator
-      : 0
-      
-    if(denominator !== 0 && scale)
-    {
-      zScoreValue = calcMagnitude(zScoreValue, scale)
+    let zScoreValue = null;
+    const priceValue = verticalOhlcv[zScoreKey][index];
+    if (
+      typeof priceValue === 'number' &&
+      typeof middle === 'number' &&
+      typeof upper === 'number' &&
+      typeof lower === 'number' &&
+      (upper - lower) !== 0
+    ) {
+      zScoreValue = (2 * stdDev * (priceValue - middle)) / (upper - lower);
+      if (scale) {
+        zScoreValue = calcMagnitude(zScoreValue, scale);
+      }
     }
-
-    main.pushToMain({index, key: `${subPrefix}_zscore_${zScoreKey}`, value: zScoreValue})
+    main.pushToMain({ index, key: `${subPrefix}_zscore_${zScoreKey}`, value: zScoreValue });
   }
 
-  return true
+  return true;
 }

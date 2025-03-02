@@ -49,9 +49,11 @@ export const lag = (main, index) => {
                 const key = `${colKey}_lag_${lag}`;
                 const laggedIndex = index - lag;
 
-                if(laggedIndex <= 0) break
+                const value = (laggedIndex <= 0 || typeof currentColumn[laggedIndex] === 'undefined') 
+                    ? null 
+                    : currentColumn[laggedIndex]
 
-                main.pushToMain({index, key, value: currentColumn[laggedIndex]})
+                main.pushToMain({index, key, value})
             }
         }
     }

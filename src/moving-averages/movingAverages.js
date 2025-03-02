@@ -4,102 +4,106 @@ import { classifyBoll } from '../utilities/classification.js'
 
 const indicatorClasses = {ema: FasterEMA, sma: FasterSMA} 
 
-export const movingAverages = (main, index, indicatorName, size, {target, diff}) => {
+export const movingAverages = (main, index, indicatorName, size, { target, diff }) => {
+  const { verticalOhlcv, instances, priceBased, lastIndexReplace } = main;
+  let suffix =
+    typeof target === 'string' &&
+    verticalOhlcv.hasOwnProperty(target) &&
+    target !== 'close'
+      ? `_${target}`
+      : '';
+  const keyName = `${indicatorName}_${size}${suffix}`;
+  const diffKeyName = `${indicatorName}_${size}_diff${suffix}`;
 
-  const {verticalOhlcv, instances, priceBased, lastIndexReplace} = main
-  let suffix =  (typeof target === 'string' && verticalOhlcv.hasOwnProperty(target) && target !== 'close') ? `_${target}` : ''
-  const keyName = `${indicatorName}_${size}${suffix}`
-  const diffKeyName = `${indicatorName}_${size}_diff${suffix}`
+  if (index === 0) {
+    const { nullArray } = main;
 
-  if(index === 0)
-  {
-      const {nullArray} = main
-
-      if(!verticalOhlcv.hasOwnProperty(target))
-      {
-          throw new Error(`Target property ${target} not found in verticalOhlcv for ${indicatorName}.`)
-      }
-
-      instances[keyName] = {
-        maInstance: new indicatorClasses[indicatorName](size)
-      }
-
-      verticalOhlcv[keyName] = [...nullArray]
-
-      if(diff !== null)
-      {
-        instances[keyName].diffInstance = new FasterBollingerBands(diff.size, diff.stdDev)
-
-        const lagDiffArr = []
-
-        for(const targetKey of diff.targets)
-        {
-          verticalOhlcv[`${diffKeyName}_${targetKey}`] = [...nullArray]
-
-          if(diff.lag > 0)
-          {
-            lagDiffArr.push(`${diffKeyName}_${targetKey}`)
-          }
-        }
-
-        if(diff.lag > 0)
-        {
-          console.log(lagDiffArr, diff.lag)
-          main.lag(lagDiffArr, diff.lag)
-        }
-      }
-
-      priceBased.push(keyName)
-  }
-
-  const value = verticalOhlcv[target][index]
-  const {maInstance, diffInstance} = instances[keyName]
-  maInstance.update(value, lastIndexReplace)
-
-  let currMa
-
-  try{
-    currMa = maInstance.getResult()
-  } catch(err)
-  {
-    //do nothing
-  }
-
-  if(currMa)
-  {
-    main.pushToMain({index, key: keyName, value: currMa})
-
-    if(diff === null)
-    {
-      return true
+    if (!verticalOhlcv.hasOwnProperty(target)) {
+      throw new Error(
+        `Target property ${target} not found in verticalOhlcv for ${indicatorName}.`
+      );
     }
 
-    for(const targetKey of diff.targets)
-    {
+    // Create the main moving average instance.
+    instances[keyName] = {
+      maInstance: new indicatorClasses[indicatorName](size)
+    };
 
-      const diffValue = (target === targetKey) ? value - currMa : verticalOhlcv[targetKey][index]
+    verticalOhlcv[keyName] = [...nullArray];
 
-      diffInstance.update(Math.abs(diffValue), lastIndexReplace)
+    // If diff configuration is provided, create the diff indicator.
+    if (diff !== null) {
+      instances[keyName].diffInstance = new FasterBollingerBands(
+        diff.size,
+        diff.stdDev
+      );
 
-      let diffBoll
+      const lagDiffArr = [];
 
+      for (const targetKey of diff.targets) {
+        verticalOhlcv[`${diffKeyName}_${targetKey}`] = [...nullArray];
+
+        if (diff.lag > 0) {
+          lagDiffArr.push(`${diffKeyName}_${targetKey}`);
+        }
+      }
+
+      if (diff.lag > 0) {
+        main.lag(lagDiffArr, diff.lag);
+      }
+    }
+
+    priceBased.push(keyName);
+  }
+
+  // Retrieve the current price value.
+  const value = verticalOhlcv[target][index];
+  const { maInstance, diffInstance } = instances[keyName];
+
+  // Update the moving average instance.
+  maInstance.update(value, lastIndexReplace);
+  let currMa = null;
+  try {
+    currMa = maInstance.getResult();
+  } catch (err) {
+    currMa = null;
+  }
+
+  // Always push the MA value (even if null).
+  main.pushToMain({ index, key: keyName, value: currMa });
+
+  // Process the diff values if a diff is requested.
+  if (diff !== null) {
+    for (const targetKey of diff.targets) {
+      // Compute diffValue only if we have a valid MA value.
+      let diffValue = null;
+      if (currMa !== null && typeof currMa === 'number') {
+        diffValue = target === targetKey ? value - currMa : verticalOhlcv[targetKey][index];
+      }
+
+      // Update the diff indicator only if diffValue is a valid number.
+      if (diffValue !== null && typeof diffValue === 'number') {
+        diffInstance.update(Math.abs(diffValue), lastIndexReplace);
+      }
+
+      let diffBoll = null;
       try {
-        diffBoll = diffInstance.getResult()
-      } catch(err)
-      {
-        diffBoll = null
+        diffBoll = diffInstance.getResult();
+      } catch (err) {
+        diffBoll = null;
       }
 
-      main.pushToMain({index, key: `${diffKeyName}_${targetKey}`, value: classifyBoll(diffValue, diffBoll, diff.scale)})      
-
+      const classified = classifyBoll(diffValue, diffBoll, diff.scale);
+      main.pushToMain({
+        index,
+        key: `${diffKeyName}_${targetKey}`,
+        value: classified
+      });
     }
-
-
-
   }
 
-}
-
+  return true;
+};
 
 
 export const getMovingAveragesParams = (indicatorName, size, options, validMagnitudeValues) => {

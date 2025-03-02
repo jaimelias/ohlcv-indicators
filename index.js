@@ -45,46 +45,43 @@ export default class OHLCV_INDICATORS {
 
     pushToMain({index, key, value})
     {
-        if(value === null || value === NaN || typeof value === 'undefined')
+        if(value === null || typeof value === 'undefined')
         {
             this.invalidValueIndex = index
         }
-
+        
         this.verticalOhlcv[key][index] = value
     }
 
-    getDataAsCols(skipNull = true){
-
-        this.compute()
-
-        const {precisionMultiplier, precision, invalidValueIndex, len} = this
-        const verticalClone = {...this.verticalOhlcv}
-
-        if(precision)
-        {
-            for(const [key, arr] of Object.entries(verticalClone))
-            {
-                if(this.priceBased.includes(key) && this.precision)
-                {
-                    verticalClone[key] = (invalidValueIndex >= 0 && skipNull === true) 
-                        ? arr.slice(-(len - invalidValueIndex))
-                        : arr
-                    
-                    verticalClone[key] =   verticalClone[key]
-                        .map(v => (v === null || v === NaN || typeof v === 'undefined') ? null : v / precisionMultiplier)
-                }
-                else{
-                    verticalClone[key] = (invalidValueIndex >= 0 && skipNull === true)  
-                        ? arr.slice(-(len - invalidValueIndex))
-                        : arr
-                }
-            }
+    getDataAsCols(skipNull = true) {
+        this.compute();
+      
+        const {
+          precisionMultiplier,
+          precision,
+          invalidValueIndex,
+          len,
+          verticalOhlcv,
+          priceBased
+        } = this;
+        const result = {};
+        const shouldSlice = invalidValueIndex >= 0 && skipNull;
+        const sliceLength = len - invalidValueIndex;
+      
+        for (const [key, arr] of Object.entries(verticalOhlcv)) {
+          // If slicing is needed, create a sliced copy, otherwise re-use the array.
+          let newArr = shouldSlice ? arr.slice(-sliceLength) : arr;
+      
+          // If this key is price based and precision is enabled, map over the array.
+          if (precision && priceBased.includes(key)) {
+            newArr = newArr.map(v => (v == null ? null : v / precisionMultiplier));
+          }
+          result[key] = newArr;
         }
-
-
-        return verticalClone
-
-    }
+      
+        return result;
+      }
+      
 
     getData(skipNull = true) {
 

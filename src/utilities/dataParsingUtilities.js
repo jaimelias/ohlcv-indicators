@@ -14,6 +14,8 @@ export const verticalToHorizontal = (
   const len = endIndex - startIndex;
   
   const result = new Array(len);
+
+  console.log({skipNull, invalidValueIndex, len})
   
   for (let i = startIndex; i < endIndex; i++) {
     const row = {};
@@ -21,7 +23,7 @@ export const verticalToHorizontal = (
       const key = keys[j];
       const value = obj[key][i];
 
-      if(value === null || value === NaN || typeof value === 'undefined')
+      if(value === null || typeof value === 'undefined')
       {
         row[key] = null
       }
