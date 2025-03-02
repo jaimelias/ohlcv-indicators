@@ -9,7 +9,7 @@ export const verticalToHorizontal = (
   const keys = Object.keys(obj);
   if (keys.length === 0) return [];
   
-  const startIndex = skipNull ? invalidValueIndex : 0;
+  const startIndex = skipNull && invalidValueIndex >= 0 ? invalidValueIndex + 1 : 0;
   const endIndex = obj[keys[0]].length;
   const len = endIndex - startIndex;
   
