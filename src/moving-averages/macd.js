@@ -41,7 +41,7 @@ export const macd = (main, index, fast, slow, signal, options) => {
       new FasterEMA(signal)
     )
 
-    Object.assign(main.verticalOhlcv, {
+    Object.assign(verticalOhlcv, {
       [diffKey]: [...nullArray],
       [deaKey]: [...nullArray],
       [histogramKey]: [...nullArray],

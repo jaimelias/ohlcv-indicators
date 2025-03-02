@@ -39,7 +39,7 @@ export const relativeVolume = (main, index, size = 10, {scale}) => {
 
     let currRelativeVolume = null
 
-    if(smaValue !== null && prevRelativeVolumeSma !== null)
+    if(smaValue !== null && prevRelativeVolumeSma !== null && typeof smaValue !== 'undefined' && prevRelativeVolumeSma !== 'undefined')
     {
         currRelativeVolume = value / prevRelativeVolumeSma
 

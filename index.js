@@ -34,6 +34,8 @@ export default class OHLCV_INDICATORS {
             correlation
         }
 
+        this.invalidValueIndex = -1
+
         this.precision = precision
         this.precisionMultiplier = (this.precision === true) ? 0 : 1
         this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
@@ -43,30 +45,38 @@ export default class OHLCV_INDICATORS {
 
     pushToMain({index, key, value})
     {
+        if(value === null || value === NaN || typeof value === 'undefined')
+        {
+            this.invalidValueIndex = index
+        }
+
         this.verticalOhlcv[key][index] = value
     }
 
-    getDataAsCols(){
+    getDataAsCols(skipNull = true){
 
         this.compute()
 
-        const {precisionMultiplier, precision} = this
+        const {precisionMultiplier, precision, invalidValueIndex, len} = this
         const verticalClone = {...this.verticalOhlcv}
 
         if(precision)
         {
             for(const [key, arr] of Object.entries(verticalClone))
             {
-                if(this.priceBased.includes(key))
+                if(this.priceBased.includes(key) && this.precision)
                 {
-                    if(this.precision)
-                    {
-                        verticalClone[key] = arr.map(v => v / precisionMultiplier)
-                    }
-                    else
-                    {
-                        verticalClone[key] = arr
-                    }
+                    verticalClone[key] = (invalidValueIndex >= 0 && skipNull === true) 
+                        ? arr.slice(-(len - invalidValueIndex))
+                        : arr
+                    
+                    verticalClone[key] =   verticalClone[key]
+                        .map(v => (v === null || v === NaN || typeof v === 'undefined') ? null : v / precisionMultiplier)
+                }
+                else{
+                    verticalClone[key] = (invalidValueIndex >= 0 && skipNull === true)  
+                        ? arr.slice(-(len - invalidValueIndex))
+                        : arr
                 }
             }
         }
@@ -81,14 +91,10 @@ export default class OHLCV_INDICATORS {
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
 
-        const {precisionMultiplier, priceBased, precision, verticalOhlcv} = this
+        const {precisionMultiplier, priceBased, precision, verticalOhlcv, invalidValueIndex} = this
 
 
-        const callBackFunction = (row, precision, precisionMultiplier, priceBased) => {
-            return (precision) ? divideByMultiplier({row, precisionMultiplier, priceBased}) : row
-        }
-
-        return verticalToHorizontal(verticalOhlcv, skipNull, precision, precisionMultiplier, priceBased)
+        return verticalToHorizontal(verticalOhlcv, skipNull, precision, precisionMultiplier, priceBased, invalidValueIndex)
     }
     
     

@@ -1,6 +1,6 @@
 export const lag = (main, index) => {
 
-    const {instances, verticalOhlcv} = main
+    const {instances, verticalOhlcv, nullArray} = main
 
     if(index === 0)
     {
@@ -40,7 +40,7 @@ export const lag = (main, index) => {
             if (index === 0) {
                 for (let lag = 1; lag <= lags; lag++) {
                     const key = `${colKey}_lag_${lag}`;
-                    verticalOhlcv[key] = [...main.nullArray];
+                    verticalOhlcv[key] = [...nullArray];
                 }
             }
 
@@ -50,7 +50,7 @@ export const lag = (main, index) => {
                 const laggedIndex = index - lag;
 
                 if(laggedIndex <= 0) break
-    
+
                 main.pushToMain({index, key, value: currentColumn[laggedIndex]})
             }
         }

@@ -1,37 +1,37 @@
+export const verticalToHorizontal = (
+  obj, 
+  skipNull = false, 
+  precision, 
+  precisionMultiplier, 
+  priceBased, 
+  invalidValueIndex = 0
+) => {
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return [];
+  
+  const startIndex = skipNull ? invalidValueIndex : 0;
+  const endIndex = obj[keys[0]].length;
+  const len = endIndex - startIndex;
+  
+  const result = new Array(len);
+  
+  for (let i = startIndex; i < endIndex; i++) {
+    const row = {};
+    for (let j = 0; j < keys.length; j++) {
+      const key = keys[j];
+      const value = obj[key][i];
 
-export const verticalToHorizontal = (obj, skipNull = false, precision, precisionMultiplier, priceBased) => {
-    const keys = Object.keys(obj)
-    if (keys.length === 0) return []
-    
-    const len = obj[keys[0]].length
-    // If not skipping null values, preallocate the result array for maximum efficiency.
-    const result = skipNull ? [] : new Array(len)
-    
-    for (let i = 0; i < len; i++) {
-      let shouldSkip = false
-      const row = {}
-      
-      for (let j = 0; j < keys.length; j++) {
-        const key = keys[j]
-        const value = obj[key][i]
-        
-        if (skipNull && (value === null || value === undefined)) {
-          shouldSkip = true
-          break;
-        }
-
+      if(value === null || value === NaN || typeof value === 'undefined')
+      {
+        row[key] = null
+      }
+      else{
         row[key] = (precision && priceBased.includes(key)) ? value / precisionMultiplier : value
       }
       
-      if (!shouldSkip) {
-        // When skipping null rows, push valid rows dynamically.
-        if (skipNull) {
-          result.push(row)
-        } else {
-          result[i] = row
-        }
-      }
     }
-    
-    return result
+    result[i - startIndex] = row;
   }
+  
+  return result;
+};
