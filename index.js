@@ -7,7 +7,7 @@ import { divideByMultiplier } from './src/utilities/numberUtilities.js'
 import { getMovingAveragesParams } from './src/moving-averages/movingAverages.js'
 import { verticalToHorizontal } from './src/utilities/dataParsingUtilities.js'
 
-const validMagnitudeValues = [0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1]
+const validMagnitudeValues = [0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1, 2, 2.5, 5, 10]
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, precision = true}) {
