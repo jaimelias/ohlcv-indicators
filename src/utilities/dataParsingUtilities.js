@@ -14,8 +14,6 @@ export const verticalToHorizontal = (
   const len = endIndex - startIndex;
   
   const result = new Array(len);
-
-  console.log({skipNull, invalidValueIndex, len})
   
   for (let i = startIndex; i < endIndex; i++) {
     const row = {};
