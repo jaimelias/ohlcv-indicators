@@ -4,7 +4,7 @@ import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close';
 
-export const rsi = (main, index, size, { scale, target }) => {
+export const rsi = (main, index, size, { scale, target, lag }) => {
   const { verticalOhlcv, instances, lastIndexReplace } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const rsiKey = `rsi_${size}${suffix}`;
@@ -29,6 +29,11 @@ export const rsi = (main, index, size, { scale, target }) => {
       [rsiKey]: [...nullArray],
       [rsiSmaKey]: [...nullArray],
     });
+
+    if(lag > 0)
+    {
+      main.lag([rsiKey, rsiSmaKey], lag)
+    }
   }
 
   const value = verticalOhlcv[target][index];

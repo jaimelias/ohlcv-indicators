@@ -326,14 +326,19 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number in rsi.');
         }
 
-        const {scale = null, target = 'close'} = options
+        const {scale = null, target = 'close', lag = 0} = options
 
         if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
 
             throw new Error(`"scale" value in rsi must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
         }
 
-        this.inputParams.push({key: 'rsi', params: [size, {scale, target}]})
+        if (typeof lag !== 'number') {
+
+            throw new Error(`"lag" value in rsi must be a number in rsi.`);
+        }
+
+        this.inputParams.push({key: 'rsi', params: [size, {scale, target, lag}]})
 
         return this
     }
