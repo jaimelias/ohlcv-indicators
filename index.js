@@ -50,6 +50,8 @@ export default class OHLCV_INDICATORS {
             this.invalidValueIndex = index
         }
         
+
+        
         this.verticalOhlcv[key][index] = value
     }
 
@@ -66,8 +68,9 @@ export default class OHLCV_INDICATORS {
         } = this;
         const result = {};
         const shouldSlice = invalidValueIndex >= 0 && skipNull;
-        const sliceLength = len - invalidValueIndex;
+        const sliceLength = len - (invalidValueIndex + 1);
       
+
         for (const [key, arr] of Object.entries(verticalOhlcv)) {
           // If slicing is needed, create a sliced copy, otherwise re-use the array.
           let newArr = shouldSlice ? arr.slice(-sliceLength) : arr;
@@ -89,7 +92,6 @@ export default class OHLCV_INDICATORS {
         this.compute()
 
         const {precisionMultiplier, priceBased, precision, verticalOhlcv, invalidValueIndex} = this
-
 
         return verticalToHorizontal(verticalOhlcv, skipNull, precision, precisionMultiplier, priceBased, invalidValueIndex)
     }

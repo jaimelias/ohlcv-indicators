@@ -12,8 +12,8 @@ export const verticalToHorizontal = (
   const startIndex = skipNull && invalidValueIndex >= 0 ? invalidValueIndex + 1 : 0;
   const endIndex = obj[keys[0]].length;
   const len = endIndex - startIndex;
-  
   const result = new Array(len);
+
   
   for (let i = startIndex; i < endIndex; i++) {
     const row = {};
@@ -21,15 +21,10 @@ export const verticalToHorizontal = (
       const key = keys[j];
       const value = obj[key][i];
 
-      if(value === null || typeof value === 'undefined')
-      {
-        row[key] = null
-      }
-      else{
-        row[key] = (precision && priceBased.includes(key)) ? value / precisionMultiplier : value
-      }
+      row[key] = (precision && priceBased.includes(key)) ? value / precisionMultiplier : value
       
     }
+
     result[i - startIndex] = row;
   }
   

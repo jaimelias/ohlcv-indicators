@@ -21,6 +21,7 @@ import { calcMagnitude } from "./numberUtilities.js"
 
 
 export const classifyBoll = (value, bollingerBands, scale = 0.05) => {
+
   // Validate that value and bollingerBands are not null/undefined
   if (value == null || bollingerBands == null) return null
 

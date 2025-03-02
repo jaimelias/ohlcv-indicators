@@ -10,13 +10,17 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
     if(index === 0)
     {
         const {nullArray} = main
-
-        const candleParts = ['candle_body', 'candle_top', 'candle_bottom']
-        const candleGaps = ['candle_gap']
-        const candleChanges = ['candle_change_close', 'candle_change_high', 'candle_change_low', 'candle_change_open']
-        const keyNames = [...candleParts, ...candleGaps, ...candleChanges]
-
-        Object.assign(verticalOhlcv, Object.fromEntries(keyNames.map(k => [k, nullArray])))
+        
+        Object.assign(verticalOhlcv, {
+            candle_body: [...nullArray],
+            candle_top: [...nullArray],
+            candle_bottom: [...nullArray],
+            candle_gap: [...nullArray],
+            candle_change_close: [...nullArray],
+            candle_change_high: [...nullArray],
+            candle_change_low: [...nullArray],
+            candle_change_open: [...nullArray],
+        })
 
         Object.assign(instances, {
             candleStudies: {
