@@ -14,7 +14,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   // Initialize indicator instances and output arrays on the first call.
   if (index === 0) {
 
-    const {nullArray, priceBased, inputParams} = main
+    const {priceBased, inputParams} = main
 
     if (!(target in verticalOhlcv)) {
       throw new Error(`bollingerBands could not find target "${target}"`)
@@ -39,22 +39,25 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
       instance: new FasterBollingerBands(size, stdDev)
     }
 
-    // Build the base output arrays.
-    const ohlcvSetup = {
-      [`${prefix}_upper`]: [...nullArray],
-      [`${prefix}_middle`]: [...nullArray],
-      [`${prefix}_lower`]: [...nullArray],
-      ...(height && { [`${prefix}_height`]: [...nullArray] })
-    }
 
-    main.priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`)
+    const ohlcvSetup = [
+      `${prefix}_upper`,
+      `${prefix}_middle`,
+      `${prefix}_lower`
+    ]
+
+    if(height)
+    {
+      ohlcvSetup.push(`${prefix}_height`)
+    }
 
     // Set up additional arrays for each range property.
     for (const rangeKey of range) {
       if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
         throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
       }
-      ohlcvSetup[`${prefix}_range_${rangeKey}`] = [...nullArray]
+
+      ohlcvSetup.push(`${prefix}_range_${rangeKey}`)
     }
 
     // Set up additional arrays for each zScore property.
@@ -62,11 +65,12 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
       if (!(zScoreKey in verticalOhlcv) || !priceBased.includes(zScoreKey)) {
         throw new Error(`Invalid zScore item value "${zScoreKey}" for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
       }
-      ohlcvSetup[`${prefix}_zscore_${zScoreKey}`] = [...nullArray]
+      ohlcvSetup.push(`${prefix}_zscore_${zScoreKey}`)
     }
 
     // Merge the new arrays into verticalOhlcv.
-    Object.assign(verticalOhlcv, ohlcvSetup)
+    main.fillNulls(ohlcvSetup)
+    main.priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`)
   }
 
   // For subsequent calls, if prefix wasn’t computed (i.e. index > 0), derive it.

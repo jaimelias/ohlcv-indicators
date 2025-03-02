@@ -100,6 +100,8 @@ const parseVolume = (volume, type) => {
 
 export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
   const { len, inputParams } = main;
+
+  //do not move nullArray from here
   main.nullArray = new Array(len).fill(null);
 
   const BASE_KEYS = ['open', 'high', 'low', 'close', 'volume'];

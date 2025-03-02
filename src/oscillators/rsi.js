@@ -27,10 +27,7 @@ export const rsi = (main, index, size, {scale, target}) => {
             [rsiSmaKey]: new FasterSMA(size)
         })
 
-        Object.assign(verticalOhlcv, {
-            [rsiKey]: [...nullArray],
-            [rsiSmaKey]: [...nullArray]
-        })
+        main.fillNulls([rsiKey, rsiSmaKey])
     }
 
     const value = verticalOhlcv[target][index]
@@ -74,6 +71,4 @@ export const rsi = (main, index, size, {scale, target}) => {
 
         main.pushToMain({index, key: rsiSmaKey, value: smoothedRsi})
     }
-
-    return true
 }

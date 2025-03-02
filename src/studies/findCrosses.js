@@ -152,8 +152,11 @@ export const crossPairs = (main, index) => {
 
         if(index === 0)
         {
+            const ohlcvSetup = []
+
             if(typeof slow === 'number')
             {
+                //do not use fillNulls with this part as the intended use is to add it as a number and not null
                 main.verticalOhlcv[slow] = new Array(main.len).fill(slow)
             }
             
@@ -162,7 +165,8 @@ export const crossPairs = (main, index) => {
 
 
             main.instances[crossName] = new CrossInstance()
-            main.verticalOhlcv[crossName] = [...main.nullArray]
+
+            main.fillNulls([crossName])
         }
 
         let fastValue

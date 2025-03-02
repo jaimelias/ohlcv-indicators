@@ -41,6 +41,23 @@ export default class OHLCV_INDICATORS {
         return this 
     }
 
+    fillNulls(keyNames = []){
+
+        const {nullArray} = this
+
+        for(let kIdx = 0; kIdx < keyNames.length; kIdx++)
+        {
+            const key = keyNames[kIdx]
+
+            this.verticalOhlcv[key] = [...nullArray]
+
+            for(let rowIdx = 0; rowIdx < this.len; rowIdx++)
+            {
+                this.horizontalOhlcv[rowIdx][key] = null
+            }
+        }
+    }
+
     pushToMain({index, key, value})
     {
         this.verticalOhlcv[key][index] = value
@@ -87,12 +104,12 @@ export default class OHLCV_INDICATORS {
         if(precision)
         {
             return this.horizontalOhlcv
-                .filter(row => !Object.values(row).some(value => value === undefined || value === null))
+                .filter(row => !Object.values(row).some(value => typeof value === 'undefined' || value === null))
                 .map(row => divideByMultiplier({row, precisionMultiplier, priceBased}))
         }
         else
         {
-            return this.horizontalOhlcv.filter(row => !Object.values(row).some(value => value === undefined || value === null))           
+            return this.horizontalOhlcv.filter(row => !Object.values(row).some(value => typeof value === 'undefined' || value === null))           
         }
 
     }

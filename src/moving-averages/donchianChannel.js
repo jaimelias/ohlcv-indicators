@@ -8,16 +8,16 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
 
   // Initialization: create output arrays and indicator instance on the first call.
   if (index === 0) {
-    const {inputParams, nullArray, priceBased} = main
+    const {inputParams, priceBased} = main
     const numberOfIndicators = inputParams.filter(o => o.key === 'donchianChannels').length
     const prefix = numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel'
 
-    Object.assign(verticalOhlcv, {
-      [`${prefix}_upper`]: [...nullArray],
-      [`${prefix}_basis`]: [...nullArray],
-      [`${prefix}_lower`]: [...nullArray],
-      ...(height && { [`${prefix}_height`]: [...nullArray] })
-    })
+    const ohlcvSetup = [`${prefix}_upper`, `${prefix}_basis`, `${prefix}_lower`]
+
+    if(height)
+    {
+      ohlcvSetup.push(`${prefix}_height`)
+    }
 
     priceBased.push(`${prefix}_upper`, `${prefix}_basis`, `${prefix}_lower`);
 
@@ -30,13 +30,15 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
       if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
         throw new Error(`Invalid range item value "${rangeKey}" property for donchianChannels. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`)
       }
-      verticalOhlcv[`${prefix}_range_${rangeKey}`] = [...nullArray]
+      ohlcvSetup.push(`${prefix}_range_${rangeKey}`)
     }
 
     instances.donchian_channel.settings[indicatorKey] = {
       maxDeque: [], // will hold indices for highs in descending order
       minDeque: []  // will hold indices for lows in ascending order
     }
+
+    main.fillNulls(ohlcvSetup)
   }
 
   const numberOfIndicators = instances.donchian_channel.numberOfIndicators
