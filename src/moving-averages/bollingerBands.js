@@ -104,10 +104,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   if (height) {
     let heightValue = null;
     if (typeof upper === 'number' && typeof lower === 'number' && lower !== 0) {
-      heightValue = (upper - lower) / lower;
-      if (scale) {
-        heightValue = calcMagnitude(heightValue, scale);
-      }
+      heightValue = calcMagnitude( ((upper - lower) / lower), 0.005)
     }
     main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
   }
