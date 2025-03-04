@@ -150,7 +150,7 @@ export const crossPairs = (main, index) => {
 
     for (const { fast, slow } of crossPairsList)
     {
-        if (!fast || !slow) continue
+        if (fast == null || slow == null) continue;
 
         let crossName = `${fast}_x_${slow}`
 
