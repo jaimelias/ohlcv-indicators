@@ -78,7 +78,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff 
       // Compute diffValue only if we have a valid MA value.
       let diffValue = null;
       if (currMa !== null && typeof currMa === 'number') {
-        diffValue = target === targetKey ? value - currMa : verticalOhlcv[targetKey][index];
+        diffValue = verticalOhlcv[targetKey][index] - currMa;
       }
 
       // Update the diff indicator only if diffValue is a valid number.
