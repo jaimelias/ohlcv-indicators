@@ -39,6 +39,8 @@ export default class OHLCV_INDICATORS {
         this.precision = precision
         this.precisionMultiplier = (this.precision === true) ? 0 : 1
         this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
+
+        this.minMaxRanges = {}
     
         return this 
     }
@@ -50,9 +52,24 @@ export default class OHLCV_INDICATORS {
             this.invalidValueIndex = index
         }
         
-
-        
         this.verticalOhlcv[key][index] = value
+
+        if(typeof value === 'number' && !key.includes('_x_'))
+        {
+            if(!this.minMaxRanges.hasOwnProperty(key))
+            {
+                this.minMaxRanges[key] = { min: Infinity, max: -Infinity }
+            }
+
+            if(value < this.minMaxRanges[key].min)
+            {
+                this.minMaxRanges[key].min = value
+            }
+            if(value > this.minMaxRanges[key].min)
+            {
+                this.minMaxRanges[key].max = value
+            }
+        }
     }
 
     getDataAsCols(skipNull = true) {
