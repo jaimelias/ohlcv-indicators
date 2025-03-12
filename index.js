@@ -53,27 +53,48 @@ export default class OHLCV_INDICATORS {
 
             for(let k in this.minMaxRanges)
             {
-                this.minMaxRanges[k].min = Infinity
-                this.minMaxRanges[k].max = -Infinity
+                this.minMaxRanges[k] = {min: Infinity, max: -Infinity}
             }
         }
         
         this.verticalOhlcv[key][index] = value
 
-        if(typeof value === 'number' && !key.includes('_x_'))
+        if(typeof value === 'number')
         {
-            if(!this.minMaxRanges.hasOwnProperty(key))
+            if(key.includes('_diff_'))
             {
-                this.minMaxRanges[key] = { min: Infinity, max: -Infinity }
+                if(!this.minMaxRanges.hasOwnProperty(key) || (this.minMaxRanges[key].min === Infinity))
+                {
+                    this.minMaxRanges[key] = { min: -1, max: 1}
+                }
             }
+            else if(key.startsWith('candle'))
+            {
+                if(key.startsWith('candle_top') || key.startsWith('bottom'))
+                {
+                    this.minMaxRanges[key] = { min: 0, max: 1}
+                }
+                else
+                {
+                    this.minMaxRanges[key] = { min: -1, max: 1}
+                }
+            }
+            else if(!key.includes('_x_')) {
+                const newValue = (this.precision && this.priceBased.includes(key)) ? (value / this.precisionMultiplier) : value
 
-            if(value < this.minMaxRanges[key].min)
-            {
-                this.minMaxRanges[key].min = value
-            }
-            if(value > this.minMaxRanges[key].max)
-            {
-                this.minMaxRanges[key].max = value
+                if(!this.minMaxRanges.hasOwnProperty(key))
+                {
+                    this.minMaxRanges[key] = { min: Infinity, max: -Infinity }
+                }
+
+                if(newValue < this.minMaxRanges[key].min)
+                {
+                    this.minMaxRanges[key].min = newValue
+                }
+                if(newValue > this.minMaxRanges[key].max)
+                {
+                    this.minMaxRanges[key].max = newValue
+                }
             }
         }
     }
