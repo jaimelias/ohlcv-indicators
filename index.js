@@ -40,16 +40,22 @@ export default class OHLCV_INDICATORS {
         this.precisionMultiplier = (this.precision === true) ? 0 : 1
         this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
 
-        this.minMaxRanges = {}
-    
+        this.minMaxRanges = {}    
         return this 
     }
 
     pushToMain({index, key, value})
     {
+
         if(value === null || typeof value === 'undefined')
         {
             this.invalidValueIndex = index
+
+            for(let k in this.minMaxRanges)
+            {
+                this.minMaxRanges[k].min = Infinity
+                this.minMaxRanges[k].max = -Infinity
+            }
         }
         
         this.verticalOhlcv[key][index] = value
@@ -65,7 +71,7 @@ export default class OHLCV_INDICATORS {
             {
                 this.minMaxRanges[key].min = value
             }
-            if(value > this.minMaxRanges[key].min)
+            if(value > this.minMaxRanges[key].max)
             {
                 this.minMaxRanges[key].max = value
             }
