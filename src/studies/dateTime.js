@@ -50,6 +50,8 @@ export const dateTime = (main, index) => {
         instances.dateTime.sessionIntradayIndexCount = 0
     }
 
+    
+
     main.pushToMain({index, key: 'session_daily_index', value:  instances.dateTime.sessionDailyIndexCount})
     main.pushToMain({index, key: 'session_intraday_index', value: instances.dateTime.sessionIntradayIndexCount})
     main.pushToMain({index, key: 'day_of_the_week', value: day_of_the_week})
@@ -58,6 +60,9 @@ export const dateTime = (main, index) => {
     main.pushToMain({index, key: 'month', value: month})
     main.pushToMain({index, key: 'year', value: year})
     main.pushToMain({index, key: 'hour', value: hour})
+
+
+    instances.dateTime.sessionIntradayIndexCount++
 
 }
 

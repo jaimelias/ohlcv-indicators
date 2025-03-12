@@ -46,7 +46,6 @@ export default class OHLCV_INDICATORS {
 
     pushToMain({index, key, value})
     {
-
         if(value === null || typeof value === 'undefined')
         {
             this.invalidValueIndex = index
@@ -63,7 +62,7 @@ export default class OHLCV_INDICATORS {
         {
             if(key.includes('_diff_'))
             {
-                if(!this.minMaxRanges.hasOwnProperty(key) || (this.minMaxRanges[key].min === Infinity))
+                if(!this.minMaxRanges.hasOwnProperty(key) || (this.minMaxRanges[key].min === Infinity || this.minMaxRanges[key].max === -Infinity))
                 {
                     this.minMaxRanges[key] = { min: -1, max: 1}
                 }
