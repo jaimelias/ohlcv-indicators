@@ -38,10 +38,14 @@ export default class OHLCV_INDICATORS {
 
         this.precision = precision
         this.precisionMultiplier = (this.precision === true) ? 0 : 1
-        this.setIndicatorsFromInputParams = setIndicatorsFromInputParams
 
         this.minMaxRanges = {}    
         return this 
+    }
+
+    static setIndicatorsFromInputParams({input, inputParams, ticker, precision})
+    {
+        return setIndicatorsFromInputParams({input, inputParams, ticker, precision})
     }
 
     pushToMain({index, key, value})
