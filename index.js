@@ -1,6 +1,5 @@
 import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { correlation } from './src/studies/correlation.js'
-import { setIndicatorsFromInputParams } from './src/utilities/setIndicatorsFromInputParams.js'
 import { validateDate } from './src/utilities/validators.js'
 import { isAlreadyComputed } from './src/utilities/validators.js'
 import { divideByMultiplier } from './src/utilities/numberUtilities.js'
@@ -10,7 +9,7 @@ import { verticalToHorizontal } from './src/utilities/dataParsingUtilities.js'
 const validMagnitudeValues = [0.005, 0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1, 2, 2.5, 5, 10]
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, precision = true}) {
+    constructor({input, ticker = null, precision = true, inputParams = null}) {
 
         if(!Array.isArray(input)) throw Error('input OHLCV must be an array: ' + ticker)
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
@@ -27,7 +26,7 @@ export default class OHLCV_INDICATORS {
         this.crossPairsList = []
         this.verticalOhlcv = {}
 
-        this.inputParams = []
+
 
         this.studies = {}
         this.utilities = {
@@ -39,15 +38,21 @@ export default class OHLCV_INDICATORS {
         this.precision = precision
         this.precisionMultiplier = (this.precision === true) ? 0 : 1
 
-        this.minMaxRanges = {}    
+        this.minMaxRanges = {}   
+        
+        
+        if(Array.isArray(inputParams))
+        {
+            this.inputParams = inputParams
+            this.compute()
+        }
+        {
+            this.inputParams = []
+        }
+
         return this 
     }
-
-    static setIndicatorsFromInputParams({input, inputParams, ticker, precision, OHLCV_INDICATORS})
-    {
-        return setIndicatorsFromInputParams({input, inputParams, ticker, precision, OHLCV_INDICATORS})
-    }
-
+    
     pushToMain({index, key, value})
     {
         if(value === null || typeof value === 'undefined')
