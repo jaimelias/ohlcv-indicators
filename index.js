@@ -43,9 +43,9 @@ export default class OHLCV_INDICATORS {
         return this 
     }
 
-    static setIndicatorsFromInputParams({input, inputParams, ticker, precision})
+    static setIndicatorsFromInputParams({input, inputParams, ticker, precision, OHLCV_INDICATORS})
     {
-        return setIndicatorsFromInputParams({input, inputParams, ticker, precision})
+        return setIndicatorsFromInputParams({input, inputParams, ticker, precision, OHLCV_INDICATORS})
     }
 
     pushToMain({index, key, value})
