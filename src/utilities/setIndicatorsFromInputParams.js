@@ -1,7 +1,6 @@
-import OHLCV_INDICATORS from "../../index.js";
 
-export const setIndicatorsFromInputParams = ({ input, inputParams, ticker, precision }) => {
-    const indicators = new OHLCV_INDICATORS({ input, inputParams, ticker, precision })
+export const setIndicatorsFromInputParams = ({ input, inputParams, ticker, precision, OHLCV_INDICATORS }) => {
+    const indicators = new OHLCV_INDICATORS({ input, inputParams, ticker, precision, OHLCV_INDICATORS })
 
     for(let x = 0; x < inputParams.length; x++)
     {
