@@ -99,12 +99,18 @@ const parseVolume = (volume, type) => {
 }
 
 export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
-  const { len, inputParams } = main;
+  const { len, inputParams, hasVolume } = main;
 
   //do not move nullArray from here
   main.nullArray = new Array(len).fill(null);
 
-  const BASE_KEYS = ['open', 'high', 'low', 'close', 'volume'];
+  const BASE_KEYS = ['open', 'high', 'low', 'close'];
+
+  if(hasVolume)
+  {
+    BASE_KEYS.push('volume')
+  }
+
   const baseKeysSet = new Set(BASE_KEYS);
 
   if (startIndex === 0) {
@@ -137,20 +143,30 @@ export const parseOhlcvToVertical = (input, main, startIndex = 0) => {
   for (let x = startIndex; x < len; x++) {
     const current = input[x];
     // Destructure the base keys and use the rest for other properties
-    const { open, high, low, close, volume, ...rest } = current
+    //sets volume to 0
+    const { open, high, low, close, ...rest } = current
     const {precisionMultiplier} = main
 
     const parsedOpen = parseNumber(open, main.inputTypes.open, precisionMultiplier)
     const parsedHigh = parseNumber(high, main.inputTypes.high, precisionMultiplier)
     const parsedLow = parseNumber(low, main.inputTypes.low, precisionMultiplier)
     const parsedClose = parseNumber(close, main.inputTypes.close, precisionMultiplier)
-    const parsedVolume = parseVolume (volume, main.inputTypes.volume)
+    
 
     main.pushToMain({index: x, key: 'open', value: parsedOpen})
     main.pushToMain({index: x, key: 'high', value: parsedHigh})
     main.pushToMain({index: x, key: 'low', value: parsedLow})
     main.pushToMain({index: x, key: 'close', value: parsedClose})
-    main.pushToMain({index: x, key: 'volume', value: parsedVolume})
+
+    if(hasVolume)
+    {
+      const {volume} = current 
+      const parsedVolume = parseVolume (volume, main.inputTypes.volume)
+      main.pushToMain({index: x, key: 'volume', value: parsedVolume})
+    } else{
+      delete rest.volume
+    }
+
 
 
     // Populate any extra keys identified during initialization

@@ -14,11 +14,12 @@ export default class OHLCV_INDICATORS {
         if(!Array.isArray(input)) throw Error('input OHLCV must be an array: ' + ticker)
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input OHLCV array objects require at least close property: ' + ticker)
+        this.hasVolume = ((typeof input[0].volume === 'number' && input[0].volume > 0) || (typeof input[0].volume === 'string' && input[0].volume)) ? true : false
 
         this.isComputed = false
         this.lastComputedIndex = 0
         this.input = input
-        this.inputTypes = {open: '', high: '', low: '', close: '', volume: ''}
+        this.inputTypes = (this.hasVolume) ? {open: '', high: '', low: '', close: '', volume: ''} : {open: '', high: '', low: '', close: ''}
         this.priceBased = ['open', 'high', 'low', 'close']
         this.len = input.length
         this.lastIndexReplace = false 
@@ -26,7 +27,7 @@ export default class OHLCV_INDICATORS {
         this.crossPairsList = []
         this.verticalOhlcv = {}
 
-
+        
 
         this.studies = {}
         this.utilities = {
@@ -267,6 +268,10 @@ export default class OHLCV_INDICATORS {
     
     relativeVolume(size, options = {}) {
 
+        if(this.hasVolume === false) {
+            throw new Error('If "relativeVolume" is called the input ohlcv must contain valid volume properties.')
+        }
+
         isAlreadyComputed(this)
 
         const {scale = null} = options
@@ -463,6 +468,10 @@ export default class OHLCV_INDICATORS {
 
     volumeOscillator(fastSize = 5, slowSize = 10, options = {})
     {
+
+        if(this.hasVolume === false) {
+            throw new Error('If "volumeOscillator" is called the input ohlcv must contain valid volume properties.')
+        }
 
         isAlreadyComputed(this)
 
