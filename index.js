@@ -79,14 +79,7 @@ export default class OHLCV_INDICATORS {
             }
             else if(key.startsWith('candle'))
             {
-                if(key.startsWith('candle_top') || key.startsWith('bottom'))
-                {
-                    this.minMaxRanges[key] = { min: 0, max: 1}
-                }
-                else
-                {
-                    this.minMaxRanges[key] = { min: -1, max: 1}
-                }
+                this.minMaxRanges[key] = { min: -1, max: 1}
             }
             else if(!key.includes('_x_')) {
                 const newValue = (this.precision && this.priceBased.includes(key)) ? (value / this.precisionMultiplier) : value
