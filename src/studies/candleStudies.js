@@ -11,11 +11,13 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
 
+    const patternSize = 1
+
     if(index === 0)
     {
         const {nullArray} = main
 
-        const candleVectors = [
+        const bodyVectors = [
             ['open', 'high'], ['open', 'low'], ['open', 'close'], 
             ['high', 'low'], ['high', 'close'], 
             ['low', 'close']
@@ -25,16 +27,27 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
             ['open', 'open'],
             ['high', 'high'],
             ['low', 'low'],
-            ['close', 'close']
+            ['close', 'close'],
+            ...bodyVectors
         ]
 
-        const candleVectorsSetup = Object.fromEntries(candleVectors.map(arr => [`candle_${arr[0]}_${arr[1]}`, [...nullArray]]))
+        const gapVectorsSetup = {}
 
-        Object.assign(verticalOhlcv, {...candleVectorsSetup})
+        for(let x = 0; x < patternSize; x++)
+        {
+            for(const [currK, prevK] of gapVectors)
+            {
+                gapVectorsSetup[`candle_${x+1}_${currK}_${prevK}`] = [...nullArray]
+            }
+        }
+        
+        const bodyVectorSetup = Object.fromEntries(bodyVectors.map(arr => [`candle_${arr[0]}_${arr[1]}`, [...nullArray]]))
+
+        Object.assign(verticalOhlcv, {...bodyVectorSetup, ...gapVectorsSetup})
 
         Object.assign(instances, {
             candleStudies: {
-                candleVectors,
+                bodyVectors,
                 gapVectors,
                 bodyInstance: new FasterBollingerBands(size, stdDev),      
             }
@@ -50,7 +63,7 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
     if (index === 0) return true
 
 
-    const {candleVectors, gapVectors, bodyInstance} = instances.candleStudies
+    const {bodyVectors, gapVectors, bodyInstance} = instances.candleStudies
 
     let bodyBoll = null
     let heightValue = null
@@ -70,13 +83,32 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
     }
 
 
-    for(let x = 0; x < candleVectors.length; x++)
+    for(let x = 0; x < bodyVectors.length; x++)
     {
-        const [k2, k1] = candleVectors[x]
+        const [k2, k1] = bodyVectors[x]
         const v2 = verticalOhlcv[k2][index]
         const v1 = verticalOhlcv[k1][index]
-        console.log(v1, v2)
+
         main.pushToMain({index, key: `candle_${k2}_${k1}`, value: classifyBoll(diff(v2, v1), bodyBoll, scale)})
+    }
+
+    for(let x = 0; x < patternSize; x++)
+    {
+        for(const [currK, prevK] of gapVectors)
+        {
+           
+            const currV = verticalOhlcv[currK][index]
+            const prevV = verticalOhlcv[prevK][index-(x+1)]
+
+            if(typeof prevV === 'undefined')
+            {
+                main.pushToMain({index, key: `candle_${x+1}_${currK}_${prevK}`, value: null})
+            } 
+            else
+            {
+                main.pushToMain({index, key: `candle_${x+1}_${currK}_${prevK}`, value: classifyBoll(diff(currV, prevV), bodyBoll, scale)})
+            }
+        }
     }
 
     return true
