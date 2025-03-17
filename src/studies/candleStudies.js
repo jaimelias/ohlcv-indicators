@@ -38,8 +38,8 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
         {
             for(const [currK, prevK] of gapVectors)
             {
-                gapVectorKeyNames.push(`candle_${x+1}_${currK}_${prevK}`)
-                gapVectorsSetup[`candle_${x+1}_${currK}_${prevK}`] = [...nullArray]
+                gapVectorKeyNames.push(`candle_change_${x+1}_${currK}_${prevK}`)
+                gapVectorsSetup[`candle_change_${x+1}_${currK}_${prevK}`] = [...nullArray]
             }
         }
         
@@ -49,8 +49,8 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
 
         for(const [a, b] of bodyVectors)
         {
-            bodyVectorKeyNames.push(`candle_${a}_${b}`)
-            bodyVectorSetup[`candle_${a}_${b}`] = [...nullArray]
+            bodyVectorKeyNames.push(`candle_body_${a}_${b}`)
+            bodyVectorSetup[`candle_body_${a}_${b}`] = [...nullArray]
         }
 
         const keyNames = [...bodyVectorKeyNames, ...gapVectorKeyNames]
@@ -99,7 +99,7 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
         const v2 = verticalOhlcv[k2][index]
         const v1 = verticalOhlcv[k1][index]
 
-        main.pushToMain({index, key: `candle_${k2}_${k1}`, value: classifyBoll(diff(v2, v1), bodyBoll, scale)})
+        main.pushToMain({index, key: `candle_body_${k2}_${k1}`, value: classifyBoll(diff(v2, v1), bodyBoll, scale)})
     }
 
     for(let x = 0; x < patternSize; x++)
@@ -110,14 +110,11 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
             const currV = verticalOhlcv[currK][index]
             const prevV = verticalOhlcv[prevK][index-(x+1)]
 
-            if(typeof prevV === 'undefined')
-            {
-                main.pushToMain({index, key: `candle_${x+1}_${currK}_${prevK}`, value: null})
-            } 
-            else
-            {
-                main.pushToMain({index, key: `candle_${x+1}_${currK}_${prevK}`, value: classifyBoll(diff(currV, prevV), bodyBoll, scale)})
-            }
+            main.pushToMain({
+                index, 
+                key: `candle_change_${x+1}_${currK}_${prevK}`, 
+                value: (typeof prevV === 'undefined') ? null : classifyBoll(diff(currV, prevV), bodyBoll, scale)
+            })
         }
     }
 
