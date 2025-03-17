@@ -7,14 +7,14 @@ const diff = (a, b) => (a - b) / b
 // Las diferencias estarán basadas en (objetivo - lower) / (upper - lower). Esto arrojará un valor entre -1 y 1
 
 
-export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
+export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scale}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
 
-    const patternSize = 1
-
     if(index === 0)
     {
+        console.log({size, stdDev, patternSize, lag, scale})
+
         const {nullArray} = main
 
         const bodyVectors = [
@@ -31,17 +31,29 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
             ...bodyVectors
         ]
 
+        const gapVectorKeyNames = []
         const gapVectorsSetup = {}
 
         for(let x = 0; x < patternSize; x++)
         {
             for(const [currK, prevK] of gapVectors)
             {
+                gapVectorKeyNames.push(`candle_${x+1}_${currK}_${prevK}`)
                 gapVectorsSetup[`candle_${x+1}_${currK}_${prevK}`] = [...nullArray]
             }
         }
         
-        const bodyVectorSetup = Object.fromEntries(bodyVectors.map(arr => [`candle_${arr[0]}_${arr[1]}`, [...nullArray]]))
+
+        const bodyVectorKeyNames = []
+        const bodyVectorSetup = {}
+
+        for(const [a, b] of bodyVectors)
+        {
+            bodyVectorKeyNames.push(`candle_${a}_${b}`)
+            bodyVectorSetup[`candle_${a}_${b}`] = [...nullArray]
+        }
+
+        const keyNames = [...bodyVectorKeyNames, ...gapVectorKeyNames]
 
         Object.assign(verticalOhlcv, {...bodyVectorSetup, ...gapVectorsSetup})
 
@@ -49,6 +61,7 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
             candleStudies: {
                 bodyVectors,
                 gapVectors,
+                keyNames,
                 bodyInstance: new FasterBollingerBands(size, stdDev),      
             }
         })
@@ -66,8 +79,6 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
     const {bodyVectors, gapVectors, bodyInstance} = instances.candleStudies
 
     let bodyBoll = null
-    let heightValue = null
-
     const currOpen = verticalOhlcv.open[index]
     const currClose = verticalOhlcv.close[index]
     const bodySize = diff(currClose, currOpen)
@@ -77,7 +88,6 @@ export const candleStudies = (main, index, size, stdDev, {lag, scale}) => {
 
     try {
         bodyBoll = bodyInstance.getResult()
-        heightValue = diff(bodyBoll.upper, bodyBoll.lower)
     } catch (err) {
         // If there's not enough data, means remain null
     }

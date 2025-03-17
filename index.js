@@ -244,6 +244,16 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
 
+        if(!Array.isArray(colKeys))
+        {
+            throw new Error('Param "colKeys" must be a valid array of keyNames in lag.')
+        }
+        if(typeof lags !== 'number' || !Number.isInteger(lags) || lags < 0)
+        {
+            throw new Error(`Param "lags" must be a integer greater or equal to 0: ${JSON.stringify(colKeys)}`)
+        }
+
+
         this.inputParams.push({key: 'lag', params: [colKeys, lags]})
 
         for(let x = 0; x < colKeys.length; x++)
@@ -435,26 +445,31 @@ export default class OHLCV_INDICATORS {
     }
       
 
-    candleStudies(size = 20, stdDev = 2, options = {}) {
+    candleStudies(size = 20, options = {}) {
         isAlreadyComputed(this);
       
         if (typeof size !== 'number' || size <= 0) {
           throw new Error('"size" must be a positive number greater than 0 in candleStudies.');
         }
       
-        if (typeof stdDev !== 'number' || stdDev <= 0) {
-          throw new Error('"stdDev" must be a positive number greater than 0 in candleStudies.');
-        }
-      
-        const { lag = 0, scale = 0.05 } = options;
+        const { stdDev = 0.5, lag = 0, scale = 0.05, patternSize = 1 } = options;
 
+
+        if (typeof stdDev !== 'number' || stdDev <= 0) {
+            throw new Error('"stdDev" must be a positive number greater than 0 in candleStudies.');
+        }
 
         if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
 
             throw new Error(`"scale" value in candleStudies must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
         }
+
+        if (typeof patternSize !== 'number' || !Number.isInteger(patternSize) || patternSize < 1 ) {
+
+            throw new Error(`"patternSize" value in candleStudies must be an integer greater than 0.}`);
+        }
       
-        this.inputParams.push({ key: 'candleStudies', params: [size, stdDev, {lag, scale}] });
+        this.inputParams.push({ key: 'candleStudies', params: [size, {stdDev, patternSize, lag, scale}] });
         return this;
       }
       
