@@ -1,4 +1,4 @@
-import { FasterSMA, FasterBollingerBands } from 'trading-signals'
+import { FasterBollingerBands } from 'trading-signals'
 import { classifyBoll } from '../utilities/classification.js'
 
 const diff = (a, b) => (a - b) / b
@@ -17,12 +17,15 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
         const {nullArray} = main
 
         const bodyVectors = [
-            ['open', 'high'], ['open', 'low'], ['open', 'close'], 
-            ['high', 'low'], ['high', 'close'], 
-            ['low', 'close']
+
+            ['close', 'open'], ['close', 'high'], ['close', 'low'],
+            ['open', 'high'], ['open', 'low'], 
+            ['high', 'low']
+            
         ]
 
-        const gapVectors = [
+        //curr vs prev
+        const lookBackVectors = [
             ['open', 'open'],
             ['high', 'high'],
             ['low', 'low'],
@@ -30,15 +33,15 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
             ...bodyVectors
         ]
 
-        const gapVectorKeyNames = []
-        const gapVectorsSetup = {}
+        const lookBackVectorKeyNames = []
+        const lookBackVectorsSetup = {}
 
         for(let x = 0; x < patternSize; x++)
         {
-            for(const [currK, prevK] of gapVectors)
+            for(const [currK, prevK] of lookBackVectors)
             {
-                gapVectorKeyNames.push(`candle_change_${x+1}_${currK}_${prevK}`)
-                gapVectorsSetup[`candle_change_${x+1}_${currK}_${prevK}`] = [...nullArray]
+                lookBackVectorKeyNames.push(`candle_change_${x+1}_${currK}_${prevK}`)
+                lookBackVectorsSetup[`candle_change_${x+1}_${currK}_${prevK}`] = [...nullArray]
             }
         }
         
@@ -52,14 +55,14 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
             bodyVectorSetup[`candle_body_${a}_${b}`] = [...nullArray]
         }
 
-        const keyNames = [...bodyVectorKeyNames, ...gapVectorKeyNames]
+        const keyNames = [...bodyVectorKeyNames, ...lookBackVectorKeyNames]
 
-        Object.assign(verticalOhlcv, {...bodyVectorSetup, ...gapVectorsSetup})
+        Object.assign(verticalOhlcv, {...bodyVectorSetup, ...lookBackVectorsSetup})
 
         Object.assign(instances, {
             candleStudies: {
                 bodyVectors,
-                gapVectors,
+                lookBackVectors,
                 keyNames,
                 bodyInstance: new FasterBollingerBands(size, stdDev),      
             }
@@ -75,7 +78,7 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
     if (index === 0) return true
 
 
-    const {bodyVectors, gapVectors, bodyInstance} = instances.candleStudies
+    const {bodyVectors, lookBackVectors, bodyInstance} = instances.candleStudies
 
     let bodyBoll = null
     const currOpen = verticalOhlcv.open[index]
@@ -103,9 +106,8 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
 
     for(let x = 0; x < patternSize; x++)
     {
-        for(const [currK, prevK] of gapVectors)
+        for(const [currK, prevK] of lookBackVectors)
         {
-           
             const currV = verticalOhlcv[currK][index]
             const prevV = verticalOhlcv[prevK][index-(x+1)]
 
