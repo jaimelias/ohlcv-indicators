@@ -10,11 +10,10 @@ const diff = (a, b) => (a - b) / b
 export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scale}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
+    const calcSize = (di, bo) => classifyBoll(di, bo, scale)
 
     if(index === 0)
     {
-        console.log({size, stdDev, patternSize, lag, scale})
-
         const {nullArray} = main
 
         const bodyVectors = [
@@ -99,7 +98,7 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
         const v2 = verticalOhlcv[k2][index]
         const v1 = verticalOhlcv[k1][index]
 
-        main.pushToMain({index, key: `candle_body_${k2}_${k1}`, value: classifyBoll(diff(v2, v1), bodyBoll, scale)})
+        main.pushToMain({index, key: `candle_body_${k2}_${k1}`, value: calcSize(diff(v2, v1), bodyBoll)})
     }
 
     for(let x = 0; x < patternSize; x++)
@@ -113,7 +112,7 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
             main.pushToMain({
                 index, 
                 key: `candle_change_${x+1}_${currK}_${prevK}`, 
-                value: (typeof prevV === 'undefined') ? null : classifyBoll(diff(currV, prevV), bodyBoll, scale)
+                value: (typeof prevV === 'undefined') ? null : calcSize(diff(currV, prevV), bodyBoll)
             })
         }
     }
