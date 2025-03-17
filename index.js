@@ -77,9 +77,13 @@ export default class OHLCV_INDICATORS {
                     this.minMaxRanges[key] = { min: -1, max: 1}
                 }
             }
-            else if(key.startsWith('candle'))
+            else if(key.startsWith('candle_'))
             {
                 this.minMaxRanges[key] = { min: -1, max: 1}
+            }
+            else if(key.includes('_range_') && (key.startsWith('bollinger_bands_') || key.startsWith('donchian_channel_')))
+            {
+                this.minMaxRanges[key] = { min: 0, max: 100 }
             }
             else if(!key.includes('_x_')) {
                 const newValue = (this.precision && this.priceBased.includes(key)) ? (value / this.precisionMultiplier) : value
