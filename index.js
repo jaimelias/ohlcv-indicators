@@ -6,7 +6,7 @@ import { divideByMultiplier } from './src/utilities/numberUtilities.js'
 import { getMovingAveragesParams } from './src/moving-averages/movingAverages.js'
 import { verticalToHorizontal } from './src/utilities/dataParsingUtilities.js'
 
-const validMagnitudeValues = [0.005, 0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1, 2, 2.5, 5, 10]
+const validMagnitudeValues = [0.001, 0.002, 0.0025, 0.005, 0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1, 2, 2.5, 5, 10]
 
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, precision = true, inputParams = null}) {
@@ -83,7 +83,7 @@ export default class OHLCV_INDICATORS {
             }
             else if(key.includes('_range_') && (key.startsWith('bollinger_bands_') || key.startsWith('donchian_channel_')))
             {
-                this.minMaxRanges[key] = { min: 0, max: 100 }
+                this.minMaxRanges[key] = { min: 0, max: 1 }
             }
             else if(!key.includes('_x_')) {
                 const newValue = (this.precision && this.priceBased.includes(key)) ? (value / this.precisionMultiplier) : value
