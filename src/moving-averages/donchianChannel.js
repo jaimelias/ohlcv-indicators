@@ -110,7 +110,7 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
   if (height) {
     let heightValue = null;
     if (typeof upper === 'number' && typeof lower === 'number' && lower !== 0) {
-      heightValue = calcMagnitude( ((upper - lower) / lower), 0.005)
+      heightValue = calcMagnitude( ((upper - lower) / lower), 0.001)
     }
     main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
   }
@@ -125,7 +125,7 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
       typeof lower === 'number' &&
       (upper - lower) !== 0
     ) {
-      rangeValue = (priceValue - lower) / (upper - lower);
+      rangeValue = Math.max(Math.min((priceValue - lower) / (upper - lower), 1), 0);
       if (scale) {
         rangeValue = calcMagnitude(rangeValue, scale);
       }

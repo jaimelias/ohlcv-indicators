@@ -350,7 +350,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
         }
 
-        const {target = 'close', height = false, range = [], zScore = [], scale = null, lag = 0} = options
+        const {target = 'close', height = false, range = [],  scale = null, lag = 0} = options
 
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
@@ -361,9 +361,6 @@ export default class OHLCV_INDICATORS {
         }
         if (!Array.isArray(range)) {
             throw new Error('If set, "range" must be a array of column names in bollingerBands.');
-        }
-        if (!Array.isArray(zScore)) {
-            throw new Error('If set, "zScore" must be a array of column names in bollingerBands.');
         }
         if (typeof lag !== 'number') {
 
@@ -380,7 +377,7 @@ export default class OHLCV_INDICATORS {
             }           
         }
     
-        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, zScore, lag}]});
+        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, lag}]});
     
         return this;
     }

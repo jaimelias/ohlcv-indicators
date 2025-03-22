@@ -3,7 +3,7 @@ import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close'
 
-export const bollingerBands = (main, index, size, stdDev, { height, range = [], zScore = [], target, scale, lag }) => {
+export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, scale, lag }) => {
   const { verticalOhlcv, instances, lastIndexReplace } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const indicatorKey = `${size}_${stdDev}${suffix}`;
@@ -51,14 +51,6 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
       keyNames.push(`${prefix}_range_${rangeKey}`)
     }
 
-    // Set up additional arrays for each zScore property.
-    for (const zScoreKey of zScore) {
-      if (!(zScoreKey in verticalOhlcv) || !priceBased.includes(zScoreKey)) {
-        throw new Error(`Invalid zScore item value "${zScoreKey}" for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
-      }
-      keyNames.push(`${prefix}_zscore_${zScoreKey}`)
-    }
-
     const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, [...nullArray]]))
     Object.assign(verticalOhlcv, {...verticalOhlcvSetup})
 
@@ -104,7 +96,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   if (height) {
     let heightValue = null;
     if (typeof upper === 'number' && typeof lower === 'number' && lower !== 0) {
-      heightValue = calcMagnitude( ((upper - lower) / lower), 0.005)
+      heightValue = calcMagnitude( ((upper - lower) / lower), 0.001)
     }
     main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
   }
@@ -114,31 +106,12 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     let rangeValue = null;
     const priceValue = verticalOhlcv[rangeKey][index];
     if (typeof priceValue === 'number' && typeof lower === 'number' && typeof upper === 'number' && (upper - lower) !== 0) {
-      rangeValue = (priceValue - lower) / (upper - lower);
+      rangeValue = Math.max(Math.min((priceValue - lower) / (upper - lower), 1), 0);
       if (scale) {
         rangeValue = calcMagnitude(rangeValue, scale);
       }
     }
     main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue });
-  }
-
-  // Process each zScore property.
-  for (const zScoreKey of zScore) {
-    let zScoreValue = null;
-    const priceValue = verticalOhlcv[zScoreKey][index];
-    if (
-      typeof priceValue === 'number' &&
-      typeof middle === 'number' &&
-      typeof upper === 'number' &&
-      typeof lower === 'number' &&
-      (upper - lower) !== 0
-    ) {
-      zScoreValue = (2 * stdDev * (priceValue - middle)) / (upper - lower);
-      if (scale) {
-        zScoreValue = calcMagnitude(zScoreValue, scale);
-      }
-    }
-    main.pushToMain({ index, key: `${subPrefix}_zscore_${zScoreKey}`, value: zScoreValue });
   }
 
   return true;
