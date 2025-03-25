@@ -14,8 +14,6 @@ export const candleVectors = (main, index, size, {stdDev, patternSize, lag, scal
 
     if(index === 0)
     {
-
-        console.log({autoMinMax})
         const {nullArray} = main
 
         const bodyVectors = [
