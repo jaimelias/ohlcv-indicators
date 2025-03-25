@@ -4,7 +4,7 @@ import { classifyBoll } from '../utilities/classification.js'
 
 const indicatorClasses = {ema: FasterEMA, sma: FasterSMA} 
 
-export const movingAverages = (main, index, indicatorName, size, { target, diff }) => {
+export const movingAverages = (main, index, indicatorName, size, { target, diff, autoMinMax }) => {
   const { verticalOhlcv, instances, priceBased, lastIndexReplace } = main;
   let suffix =
     typeof target === 'string' &&
@@ -42,6 +42,11 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff 
 
       for (const targetKey of diff.targets) {
         verticalOhlcv[`${diffKeyName}_${targetKey}`] = [...nullArray];
+
+        if(diff.autoMinMax)
+        {
+          main.autoMinMaxKeys.push(`${diffKeyName}_${targetKey}`)
+        }
 
         if (diff.lag > 0) {
           lagDiffArr.push(`${diffKeyName}_${targetKey}`);
@@ -93,7 +98,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff 
         diffBoll = null;
       }
 
-      const classified = classifyBoll(diffValue, diffBoll, diff.scale);
+      const classified = classifyBoll(diffValue, diffBoll, diff.scale, diff.autoMinMax);
       main.pushToMain({
         index,
         key: `${diffKeyName}_${targetKey}`,
@@ -134,7 +139,8 @@ export const getMovingAveragesParams = (indicatorName, size, options, validMagni
       scale = 0.05,
       targets = ['close'],
       size: diffSize = size,
-      lag = 0
+      lag = 0,
+      autoMinMax = false
     } = diff;
 
     if (typeof stdDev !== 'number' || stdDev <= 0) {
@@ -157,7 +163,11 @@ export const getMovingAveragesParams = (indicatorName, size, options, validMagni
       throw new Error(`"diff.lag" must be an integer greater than 0 in ${indicatorName}.`);
     }
 
-    optionArgs.diff = { stdDev, scale, size: diffSize, targets, lag };
+    if (typeof autoMinMax !== 'boolean') {
+      throw new Error(`"diff.autoMinMax" must be an boolean in ${indicatorName}.`);
+    }
+
+    optionArgs.diff = { stdDev, scale, size: diffSize, targets, lag, autoMinMax};
   }
 
   return optionArgs;

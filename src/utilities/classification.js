@@ -20,7 +20,7 @@ import { calcMagnitude } from "./numberUtilities.js"
  */
 
 
-export const classifyBoll = (value, bollingerBands, scale = 0.05) => {
+export const classifyBoll = (value, bollingerBands, scale = 0.05, autoMinMax = false) => {
 
   // Validate that value and bollingerBands are not null/undefined
   if (value == null || bollingerBands == null) return null
@@ -28,23 +28,17 @@ export const classifyBoll = (value, bollingerBands, scale = 0.05) => {
   const positive = value >= 0
   const absValue = Math.abs(value)
 
-  const { upper, middle, lower } = bollingerBands
-
-  // Handle values outside the Bollinger bands
-  if (absValue < lower) return 0
-  if (absValue > upper) return positive ? 1 : -1
-
-  // Use a tolerance for floating point comparisons
-  const epsilon = Number.EPSILON * Math.max(absValue, Math.abs(middle))
-  if (Math.abs(absValue - middle) < epsilon) return positive ? 0.5 : -0.5
-
-  // Prevent division by zero if upper and lower are equal
-  if (upper === lower) return null
+  const { upper, lower } = bollingerBands
 
   const rangeValue = (absValue - lower) / (upper - lower)
   let magnitude = calcMagnitude(rangeValue, scale)
 
-  //magnitude = Math.min(Math.max(magnitude, 0), 1)
+  if(autoMinMax)
+  {
+    return positive ? Math.min(magnitude, 1) : Math.max(-magnitude, -1)
+  }
+  else {
+    return positive ? magnitude : -magnitude
+  }
 
-  return positive ? magnitude : -magnitude
 }

@@ -3,7 +3,7 @@ import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close'
 
-export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, scale, lag }) => {
+export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, scale, lag, autoMinMax }) => {
   const { verticalOhlcv, instances, lastIndexReplace } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const indicatorKey = `${size}_${stdDev}${suffix}`;
@@ -11,6 +11,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
 
   // Initialization on the first call.
   if (index === 0) {
+
     const { priceBased, inputParams, nullArray, verticalOhlcv } = main;
 
     if (!(target in verticalOhlcv)) {
@@ -49,6 +50,12 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
         throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
       keyNames.push(`${prefix}_range_${rangeKey}`)
+
+      if(autoMinMax)
+      {
+        main.autoMinMaxKeys.push(`${prefix}_range_${rangeKey}`)
+      }
+
     }
 
     const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, [...nullArray]]))
@@ -106,7 +113,11 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     let rangeValue = null;
     const priceValue = verticalOhlcv[rangeKey][index];
     if (typeof priceValue === 'number' && typeof lower === 'number' && typeof upper === 'number' && (upper - lower) !== 0) {
-      rangeValue = Math.max(Math.min((priceValue - lower) / (upper - lower), 1), 0);
+      rangeValue = (autoMinMax) 
+        ? Math.max(Math.min((priceValue - lower) / (upper - lower), 1), 0)
+        : (priceValue - lower) / (upper - lower)
+
+
       if (scale) {
         rangeValue = calcMagnitude(rangeValue, scale);
       }

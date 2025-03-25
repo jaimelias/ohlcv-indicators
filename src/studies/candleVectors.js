@@ -7,13 +7,15 @@ const diff = (a, b) => (a - b) / b
 // Las diferencias estarán basadas en (objetivo - lower) / (upper - lower). Esto arrojará un valor entre -1 y 1
 
 
-export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scale}) => {
+export const candleVectors = (main, index, size, {stdDev, patternSize, lag, scale, autoMinMax}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
-    const calcSize = (di, bo) => classifyBoll(di, bo, scale)
+    const calcSize = (di, bo) => classifyBoll(di, bo, scale, autoMinMax)
 
     if(index === 0)
     {
+
+        console.log({autoMinMax})
         const {nullArray} = main
 
         const bodyVectors = [
@@ -42,6 +44,11 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
             {
                 lookBackVectorKeyNames.push(`candle_change_${x+1}_${currK}_${prevK}`)
                 lookBackVectorsSetup[`candle_change_${x+1}_${currK}_${prevK}`] = [...nullArray]
+
+                if(autoMinMax)
+                {
+                    main.autoMinMaxKeys.push(`candle_change_${x+1}_${currK}_${prevK}`)
+                }
             }
         }
         
@@ -53,6 +60,11 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
         {
             bodyVectorKeyNames.push(`candle_body_${a}_${b}`)
             bodyVectorSetup[`candle_body_${a}_${b}`] = [...nullArray]
+
+            if(autoMinMax)
+            {
+                main.autoMinMaxKeys.push(`candle_body_${a}_${b}`)
+            }
         }
 
         const keyNames = [...bodyVectorKeyNames, ...lookBackVectorKeyNames]
@@ -60,7 +72,7 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
         Object.assign(verticalOhlcv, {...bodyVectorSetup, ...lookBackVectorsSetup})
 
         Object.assign(instances, {
-            candleStudies: {
+            candleVectors: {
                 bodyVectors,
                 lookBackVectors,
                 keyNames,
@@ -78,7 +90,7 @@ export const candleStudies = (main, index, size, {stdDev, patternSize, lag, scal
     if (index === 0) return true
 
 
-    const {bodyVectors, lookBackVectors, bodyInstance} = instances.candleStudies
+    const {bodyVectors, lookBackVectors, bodyInstance} = instances.candleVectors
 
     let bodyBoll = null
     const currOpen = verticalOhlcv.open[index]

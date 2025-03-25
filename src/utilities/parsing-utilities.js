@@ -6,7 +6,7 @@ import { relativeVolume } from "../moving-averages/relativeVolume.js";
 import { donchianChannels } from "../moving-averages/donchianChannel.js";
 import { bollingerBands } from "../moving-averages/bollingerBands.js";
 import { volumeOscillator } from "../oscillators/volumeOscillator.js";
-import { candleStudies } from "../studies/candleStudies.js";
+import { candleVectors } from "../studies/candleVectors.js";
 import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
@@ -25,7 +25,7 @@ const indicatorFunctions = {
   donchianChannels,
   bollingerBands,
   volumeOscillator,
-  candleStudies
+  candleVectors
 };
 
 // Processes the inputParams into a list of indicator calls
