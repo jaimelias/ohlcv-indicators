@@ -312,7 +312,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
         }
 
-        const {target = 'close', height = false, range = [],  scale = null, lag = 0, autoMinMax} = options
+        const {target = 'close', height = false, range = [],  scale = null, lag = 0, autoMinMax = false} = options
 
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
@@ -326,7 +326,7 @@ export default class OHLCV_INDICATORS {
         }
         if (typeof lag !== 'number') {
 
-            throw new Error(`"lag" value in rsi must be a number in bollingerBands.`);
+            throw new Error(`"lag" value must be a number in bollingerBands.`);
         }
 
         if (typeof autoMinMax !== 'boolean') {
