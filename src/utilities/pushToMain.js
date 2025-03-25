@@ -1,6 +1,6 @@
 export const pushToMain = ({main, index, key, value}) => {
 
-    const {precision, priceBased, minMaxRanges, verticalOhlcv, autoMinMaxKeys} = main
+    const {precision, priceBased, minMaxRanges, verticalOhlcv, autoMinMaxKeys, precisionMultiplier} = main
     let {invalidValueIndex } = main
 
     if(value === null || typeof value === 'undefined')
