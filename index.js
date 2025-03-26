@@ -424,14 +424,14 @@ export default class OHLCV_INDICATORS {
     }
       
 
-    candleVectors(size = 20, options = {}) {
+    candleVectors(size = 200, options = {}) {
         isAlreadyComputed(this);
       
         if (typeof size !== 'number' || size <= 0) {
           throw new Error('"size" must be a positive number greater than 0 in candleVectors.');
         }
       
-        const { stdDev = 0.5, lag = 0, scale = 0.05, patternSize = 1, autoMinMax = false } = options;
+        const { stdDev = 1, lag = 0, scale = 0.05, patternSize = 1, autoMinMax = false } = options;
 
 
         if (typeof stdDev !== 'number' || stdDev <= 0) {

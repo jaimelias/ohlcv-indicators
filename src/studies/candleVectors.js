@@ -96,7 +96,7 @@ export const candleVectors = (main, index, size, {stdDev, patternSize, lag, scal
     const bodySize = diff(currClose, currOpen)
 
     // Update instances with current absolute values
-    bodyInstance.update(bodySize, lastIndexReplace)
+    bodyInstance.update(Math.abs(bodySize), lastIndexReplace)
 
     try {
         bodyBoll = bodyInstance.getResult()
