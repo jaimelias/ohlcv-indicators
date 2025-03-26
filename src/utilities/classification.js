@@ -35,7 +35,7 @@ export const classifyBoll = (value, bollingerBands, scale = 0.05, autoMinMax = f
 
   if(magnitude === 0)
   {
-    magnitude = (positive) ? 0.01 : -0.01
+    return (positive) ? 0.01 : -0.01
   }
 
   if(autoMinMax)
