@@ -33,6 +33,11 @@ export const classifyBoll = (value, bollingerBands, scale = 0.05, autoMinMax = f
   const rangeValue = (absValue - lower) / (upper - lower)
   let magnitude = calcMagnitude(rangeValue, scale)
 
+  if(magnitude === 0)
+  {
+    magnitude = (positive) ? 0.01 : -0.01
+  }
+
   if(autoMinMax)
   {
     return positive ? Math.min(magnitude, 1) : Math.max(-magnitude, -1)
