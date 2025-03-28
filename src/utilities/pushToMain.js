@@ -1,19 +1,21 @@
 export const pushToMain = ({main, index, key, value}) => {
 
     const {precision, priceBased, minMaxRanges, verticalOhlcv, autoMinMaxKeys, precisionMultiplier} = main
-    let {invalidValueIndex } = main
 
     if(value === null || typeof value === 'undefined')
     {
-        invalidValueIndex = index
+        main.invalidValueIndex = index //do not use let for main.invalidValueIndex
 
-        for(let k in minMaxRanges)
+        for(const k of Object.keys(minMaxRanges))
         {
             minMaxRanges[k] = {min: Infinity, max: -Infinity}
         }
+
+        verticalOhlcv[key][index] = null
+        return false
     }
-    
-    verticalOhlcv[key][index] = value
+
+    verticalOhlcv[key][index] = value    
 
     if(typeof value === 'number' && !key.includes('_x_'))
     {
