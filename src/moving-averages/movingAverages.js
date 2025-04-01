@@ -4,7 +4,7 @@ import { classifyBoll, calcZScore } from '../utilities/classification.js'
 
 const indicatorClasses = {ema: FasterEMA, sma: FasterSMA} 
 
-export const movingAverages = (main, index, indicatorName, size, { target, diff, autoMinMax }) => {
+export const movingAverages = (main, index, indicatorName, size, { target, diff }) => {
   const { verticalOhlcv, instances, priceBased, lastIndexReplace } = main;
   let suffix =
     typeof target === 'string' &&
@@ -26,8 +26,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
 
     // Create the main moving average instance.
     instances[keyName] = {
-      maInstance: new indicatorClasses[indicatorName](size),
-      arrayChunk: {[diffKeyName]: []}
+      maInstance: new indicatorClasses[indicatorName](size)
     };
 
     verticalOhlcv[keyName] = [...nullArray];
@@ -64,7 +63,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
 
   // Retrieve the current price value.
   const value = verticalOhlcv[target][index];
-  const { maInstance, diffInstance, arrayChunk } = instances[keyName];
+  const { maInstance, diffInstance } = instances[keyName];
 
   // Update the moving average instance.
   maInstance.update(value, lastIndexReplace);
@@ -83,7 +82,6 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
     for (const targetKey of diff.targets) {
       // Compute diffValue only if we have a valid MA value.
       let diffValue = null;
-      let zScore = null
       if (currMa !== null && typeof currMa === 'number') {
         diffValue = verticalOhlcv[targetKey][index] - currMa;
       }
@@ -92,7 +90,6 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
       if (diffValue !== null && typeof diffValue === 'number') {
         diffInstance.update(Math.abs(diffValue), lastIndexReplace);
 
-        zScore = calcZScore(arrayChunk, diffKeyName, diff.size, diffValue, lastIndexReplace)
       }
 
       let diffBoll = null;
@@ -106,7 +103,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
       main.pushToMain({
         index,
         key: `${diffKeyName}_${targetKey}`,
-        value: zScore
+        value: classified
       });
     }
   }
