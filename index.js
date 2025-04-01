@@ -431,7 +431,7 @@ export default class OHLCV_INDICATORS {
           throw new Error('"size" must be a positive number greater than 0 in candleVectors.');
         }
       
-        const { stdDev = 1, lag = 0, scale = 0.05, patternSize = 1, autoMinMax = false } = options;
+        const { stdDev = 1, lag = 0, scale = 0.001, patternSize = 0, autoMinMax = false } = options;
 
 
         if (typeof stdDev !== 'number' || stdDev <= 0) {
@@ -443,9 +443,9 @@ export default class OHLCV_INDICATORS {
             throw new Error(`"scale" value in candleVectors must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
         }
 
-        if (typeof patternSize !== 'number' || !Number.isInteger(patternSize) || patternSize < 1 ) {
+        if (typeof patternSize !== 'number' || !Number.isInteger(patternSize) || patternSize < 0 ) {
 
-            throw new Error(`"patternSize" value in candleVectors must be an integer greater than 0.`);
+            throw new Error(`"patternSize" value in candleVectors must be a positive integer.`);
         }
         if (typeof autoMinMax !== 'boolean') {
 

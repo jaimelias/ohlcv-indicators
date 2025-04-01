@@ -1,16 +1,8 @@
-import { FasterBollingerBands } from 'trading-signals'
-import { classifyBoll } from '../utilities/classification.js'
+const diff = (a, b) => (a - b)
 
-const diff = (a, b) => (a - b) / b
-
-// crear una nueva instancia con la altura porcentual utilizando Bollinger Bands con una desviación estándar de 1.5
-// Las diferencias estarán basadas en (objetivo - lower) / (upper - lower). Esto arrojará un valor entre -1 y 1
-
-
-export const candleVectors = (main, index, size, {stdDev, patternSize, lag, scale, autoMinMax}) => {
+export const candleVectors = (main, index, size, {patternSize, lag, autoMinMax}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
-    const calcSize = (di, bo) => classifyBoll(di, bo, scale, autoMinMax)
 
     if(index === 0)
     {
@@ -74,7 +66,7 @@ export const candleVectors = (main, index, size, {stdDev, patternSize, lag, scal
                 bodyVectors,
                 lookBackVectors,
                 keyNames,
-                bodyInstance: new FasterBollingerBands(size, stdDev),      
+                arrayChunk: {...Object.fromEntries(keyNames.map(v => [v, []]))}  
             }
         })
 
@@ -85,33 +77,19 @@ export const candleVectors = (main, index, size, {stdDev, patternSize, lag, scal
         
     }
 
-    if (index === 0) return true
-
-
-    const {bodyVectors, lookBackVectors, bodyInstance} = instances.candleVectors
-
-    let bodyBoll = null
-    const currOpen = verticalOhlcv.open[index]
-    const currClose = verticalOhlcv.close[index]
-    const bodySize = diff(currClose, currOpen)
-
-    // Update instances with current absolute values
-    bodyInstance.update(Math.abs(bodySize), lastIndexReplace)
-
-    try {
-        bodyBoll = bodyInstance.getResult()
-    } catch (err) {
-        // If there's not enough data, means remain null
-    }
-
+    const {bodyVectors, lookBackVectors, arrayChunk} = instances.candleVectors
 
     for(let x = 0; x < bodyVectors.length; x++)
     {
         const [k2, k1] = bodyVectors[x]
         const v2 = verticalOhlcv[k2][index]
         const v1 = verticalOhlcv[k1][index]
+        const key = `candle_body_${k2}_${k1}`
+        const difference = diff(v2, v1)
 
-        main.pushToMain({index, key: `candle_body_${k2}_${k1}`, value: calcSize(diff(v2, v1), bodyBoll)})
+        const zScore = calcZScore(arrayChunk, key, size, difference, lastIndexReplace)
+    
+        main.pushToMain({index, key, value: zScore})
     }
 
     for(let x = 0; x < patternSize; x++)
@@ -120,12 +98,18 @@ export const candleVectors = (main, index, size, {stdDev, patternSize, lag, scal
         {
             const currV = verticalOhlcv[currK][index]
             const prevV = verticalOhlcv[prevK][index-(x+1)]
+            const key = `candle_change_${x+1}_${currK}_${prevK}`
 
-            main.pushToMain({
-                index, 
-                key: `candle_change_${x+1}_${currK}_${prevK}`, 
-                value: (typeof prevV === 'undefined') ? null : calcSize(diff(currV, prevV), bodyBoll)
-            })
+            if(typeof prevV === 'undefined')
+            {
+                main.pushToMain({index, key, value: null})
+                continue
+            }
+
+            const difference = diff(currV, prevV)
+            const zScore = calcZScore(arrayChunk, key, size, difference, lastIndexReplace)
+    
+            main.pushToMain({index, key, value: zScore})
         }
     }
 
@@ -133,3 +117,29 @@ export const candleVectors = (main, index, size, {stdDev, patternSize, lag, scal
 }
 
 
+const calcZScore = (arrayChunk, key, size, difference, lastIndexReplace) => {
+
+    if(lastIndexReplace)
+    {
+        arrayChunk[key][arrayChunk[key].length - 1] = difference
+    }
+    else
+    {
+        arrayChunk[key].push(difference)
+    }
+    
+
+    if (arrayChunk[key].length > size) {
+        arrayChunk[key].shift();  // Removes the first element to maintain array size
+    }
+
+    if(arrayChunk.length < size) return null
+
+    const mean = arrayChunk[key].reduce((sum, value) => sum + value, 0) / size
+
+    const stdDev = Math.sqrt(
+        arrayChunk[key].reduce((sum, value) => sum + (value - mean) ** 2, 0) / size
+    )
+
+    return  (difference - mean) / stdDev
+}

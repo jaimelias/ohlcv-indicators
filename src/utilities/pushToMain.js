@@ -30,7 +30,7 @@ export const pushToMain = ({main, index, key, value}) => {
         }
         else if(key.startsWith('candle_') && keyInAutoMinMax)
         {
-            minMaxRanges[key] = { min: -1, max: 1}
+            minMaxRanges[key] = { min: -3, max: 3}
         }
         else if(key.includes('_range_') && keyInAutoMinMax)
         {
