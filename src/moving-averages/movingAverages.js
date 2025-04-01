@@ -89,7 +89,6 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff 
       // Update the diff indicator only if diffValue is a valid number.
       if (diffValue !== null && typeof diffValue === 'number') {
         diffInstance.update(Math.abs(diffValue), lastIndexReplace);
-
       }
 
       let diffBoll = null;
