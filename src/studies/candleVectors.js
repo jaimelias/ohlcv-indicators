@@ -1,5 +1,7 @@
 const diff = (a, b) => (a - b)
 
+import { calcZScore } from "../utilities/classification.js"
+
 export const candleVectors = (main, index, size, {patternSize, lag, autoMinMax}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
@@ -117,29 +119,3 @@ export const candleVectors = (main, index, size, {patternSize, lag, autoMinMax})
 }
 
 
-const calcZScore = (arrayChunk, key, size, difference, lastIndexReplace) => {
-
-    if(lastIndexReplace)
-    {
-        arrayChunk[key][arrayChunk[key].length - 1] = difference
-    }
-    else
-    {
-        arrayChunk[key].push(difference)
-    }
-    
-
-    if (arrayChunk[key].length > size) {
-        arrayChunk[key].shift();  // Removes the first element to maintain array size
-    }
-
-    if(arrayChunk.length < size) return null
-
-    const mean = arrayChunk[key].reduce((sum, value) => sum + value, 0) / size
-
-    const stdDev = Math.sqrt(
-        arrayChunk[key].reduce((sum, value) => sum + (value - mean) ** 2, 0) / size
-    )
-
-    return  (difference - mean) / stdDev
-}

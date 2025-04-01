@@ -1,6 +1,6 @@
 
 import {FasterEMA, FasterSMA, FasterBollingerBands} from 'trading-signals';
-import { classifyBoll } from '../utilities/classification.js'
+import { classifyBoll, calcZScore } from '../utilities/classification.js'
 
 const indicatorClasses = {ema: FasterEMA, sma: FasterSMA} 
 
@@ -26,7 +26,8 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
 
     // Create the main moving average instance.
     instances[keyName] = {
-      maInstance: new indicatorClasses[indicatorName](size)
+      maInstance: new indicatorClasses[indicatorName](size),
+      arrayChunk: {[diffKeyName]: []}
     };
 
     verticalOhlcv[keyName] = [...nullArray];
@@ -63,7 +64,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
 
   // Retrieve the current price value.
   const value = verticalOhlcv[target][index];
-  const { maInstance, diffInstance } = instances[keyName];
+  const { maInstance, diffInstance, arrayChunk } = instances[keyName];
 
   // Update the moving average instance.
   maInstance.update(value, lastIndexReplace);
@@ -82,6 +83,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
     for (const targetKey of diff.targets) {
       // Compute diffValue only if we have a valid MA value.
       let diffValue = null;
+      let zScore = null
       if (currMa !== null && typeof currMa === 'number') {
         diffValue = verticalOhlcv[targetKey][index] - currMa;
       }
@@ -89,6 +91,8 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
       // Update the diff indicator only if diffValue is a valid number.
       if (diffValue !== null && typeof diffValue === 'number') {
         diffInstance.update(Math.abs(diffValue), lastIndexReplace);
+
+        zScore = calcZScore(arrayChunk, diffKeyName, diff.size, diffValue, lastIndexReplace)
       }
 
       let diffBoll = null;
@@ -102,7 +106,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff,
       main.pushToMain({
         index,
         key: `${diffKeyName}_${targetKey}`,
-        value: classified
+        value: zScore
       });
     }
   }

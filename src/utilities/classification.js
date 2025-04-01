@@ -47,3 +47,31 @@ export const classifyBoll = (value, bollingerBands, scale = 0.05, autoMinMax = f
   }
 
 }
+
+
+export const calcZScore = (arrayChunk, key, size, difference, lastIndexReplace) => {
+
+  if(lastIndexReplace)
+  {
+      arrayChunk[key][arrayChunk[key].length - 1] = difference
+  }
+  else
+  {
+      arrayChunk[key].push(difference)
+  }
+  
+
+  if (arrayChunk[key].length > size) {
+      arrayChunk[key].shift();  // Removes the first element to maintain array size
+  }
+
+  if(arrayChunk.length < size) return null
+
+  const mean = arrayChunk[key].reduce((sum, value) => sum + value, 0) / size
+
+  const stdDev = Math.sqrt(
+      arrayChunk[key].reduce((sum, value) => sum + (value - mean) ** 2, 0) / size
+  )
+
+  return  (difference - mean) / stdDev
+}
