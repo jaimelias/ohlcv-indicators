@@ -10,14 +10,12 @@ import { candleVectors } from "../studies/candleVectors.js";
 import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
-import { priceVariations } from "../studies/priceVariations.js";
 
 import { cleanNumStr } from "./numberUtilities.js";
 
 // Map indicator keys to their respective functions
 const indicatorFunctions = {
   dateTime,
-  priceVariations,
   rsi,
   movingAverages,
   macd,

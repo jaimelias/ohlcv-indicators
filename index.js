@@ -46,8 +46,6 @@ export default class OHLCV_INDICATORS {
 
         this.precision = precision
         this.precisionMultiplier = (this.precision === true) ? 0 : 1
-
-        this.autoMinMaxKeys = []
         this.minMaxRanges = {}   
         
         
@@ -312,7 +310,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
         }
 
-        const {target = 'close', height = false, range = [],  scale = null, lag = 0, autoMinMax = false} = options
+        const {target = 'close', height = false, range = [],  scale = null, lag = 0} = options
 
         // Validate size and times
         if (typeof size !== 'number' || size <= 0) {
@@ -328,11 +326,6 @@ export default class OHLCV_INDICATORS {
 
             throw new Error(`"lag" value must be a number in bollingerBands.`);
         }
-
-        if (typeof autoMinMax !== 'boolean') {
-
-            throw new Error(`"autoMinMax" value in rsi must be a number in bollingerBands.`);
-        }
     
         if (typeof height !== 'boolean') {
             throw new Error('"height" must be a boolean in bollingerBands.');
@@ -345,7 +338,7 @@ export default class OHLCV_INDICATORS {
             }           
         }
     
-        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, lag, autoMinMax}]});
+        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, lag}]});
     
         return this;
     }
@@ -359,7 +352,7 @@ export default class OHLCV_INDICATORS {
             throw new Error('"size" must be a positive number in rsi.');
         }
 
-        const {scale = null, target = 'close', lag = 0, autoMinMax = false} = options
+        const {scale = null, target = 'close', lag = 0} = options
 
         if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
 
@@ -371,12 +364,7 @@ export default class OHLCV_INDICATORS {
             throw new Error(`"lag" value in rsi must be a number in rsi.`);
         }
 
-        if (typeof autoMinMax !== 'boolean') {
-
-            throw new Error(`"autoMinMax" value in rsi must be a number in rsi.`);
-        }
-
-        this.inputParams.push({key: 'rsi', params: [size, {scale, target, lag, autoMinMax}]})
+        this.inputParams.push({key: 'rsi', params: [size, {scale, target, lag}]})
 
         return this
     }
@@ -391,7 +379,7 @@ export default class OHLCV_INDICATORS {
           throw new Error('"offset" must be a number greater than or equal to 0 in donchianChannels.');
         }
       
-        const { height = false, range = [], scale = null, lag = 0, autoMinMax = false} = options;
+        const { height = false, range = [], scale = null, lag = 0} = options;
       
         if (!Array.isArray(range)) {
           throw new Error('If set, "range" must be an array of column names in donchianChannels.');
@@ -399,11 +387,6 @@ export default class OHLCV_INDICATORS {
 
         if (typeof lag !== 'number') {
             throw new Error(`"lag" value in rsi must be a number in donchianChannels.`);
-        }
-
-        if (typeof autoMinMax !== 'boolean') {
-
-            throw new Error(`"autoMinMax" value in rsi must be a number in donchianChannels.`);
         }
       
         if (typeof height !== 'boolean') {
@@ -418,7 +401,7 @@ export default class OHLCV_INDICATORS {
             }        
         }
       
-        this.inputParams.push({ key: 'donchianChannels', params: [size, offset, { height, range, scale, lag, autoMinMax }] });
+        this.inputParams.push({ key: 'donchianChannels', params: [size, offset, { height, range, scale, lag }] });
       
         return this;
     }
@@ -431,7 +414,7 @@ export default class OHLCV_INDICATORS {
           throw new Error('"size" must be a positive number greater than 0 in candleVectors.');
         }
       
-        const { stdDev = 1, lag = 0, scale = 0.001, patternSize = 0, autoMinMax = false } = options;
+        const { stdDev = 1, lag = 0, scale = 0.001, patternSize = 0} = options;
 
 
         if (typeof stdDev !== 'number' || stdDev <= 0) {
@@ -447,12 +430,8 @@ export default class OHLCV_INDICATORS {
 
             throw new Error(`"patternSize" value in candleVectors must be a positive integer.`);
         }
-        if (typeof autoMinMax !== 'boolean') {
 
-            throw new Error(`"autoMinMax" value in candleVectors must be boolean`);
-        }
-      
-        this.inputParams.push({ key: 'candleVectors', params: [size, {stdDev, patternSize, lag, scale, autoMinMax}] });
+        this.inputParams.push({ key: 'candleVectors', params: [size, {stdDev, patternSize, lag, scale}] });
         return this;
       }
       
@@ -489,13 +468,6 @@ export default class OHLCV_INDICATORS {
         isAlreadyComputed(this)
 
         this.inputParams.push({key: 'dateTime', params: []})
-        return this           
-    }
-    priceVariations()
-    {
-        isAlreadyComputed(this)
-
-        this.inputParams.push({key: 'priceVariations', params: []})
         return this           
     }
 }

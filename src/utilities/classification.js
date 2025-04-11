@@ -20,7 +20,7 @@ import { calcMagnitude } from "./numberUtilities.js"
  */
 
 
-export const classifyBoll = (value, bollingerBands, scale = 0.05, autoMinMax = false) => {
+export const classifyBoll = (value, bollingerBands, scale = 0.001) => {
 
   // Validate that value and bollingerBands are not null/undefined
   if (value == null || bollingerBands == null) return null
@@ -30,33 +30,28 @@ export const classifyBoll = (value, bollingerBands, scale = 0.05, autoMinMax = f
 
   const { upper, lower } = bollingerBands
 
-  const rangeValue = (absValue - lower) / (upper - lower)
-  let magnitude = calcMagnitude(rangeValue, scale)
+  let deviation = (absValue - lower) / (upper - lower)
+  deviation = calcMagnitude(deviation, scale)
 
-  if(magnitude === 0)
+  if(deviation === 0)
   {
     return (positive) ? 0.01 : -0.01
   }
 
-  if(autoMinMax)
-  {
-    return positive ? Math.min(magnitude, 1) : Math.max(-magnitude, -1)
-  }
-  else {
-    return positive ? magnitude : -magnitude
-  }
+  return positive ? deviation : -deviation
 
 }
 
 
-export const calcZScore = (arrayChunk, key, size, difference, lastIndexReplace) => {
-  const positive = difference > 0
-  const absValue = Math.abs(difference)
+export const calcZScore = (arrayChunk, key, size, value, lastIndexReplace) => {
 
+  
   if (lastIndexReplace) {
-    arrayChunk[key][arrayChunk[key].length - 1] = absValue
+    //if lastIndexReplace is true it modifies the last datapoint
+    arrayChunk[key][arrayChunk[key].length - 1] = value
   } else {
-    arrayChunk[key].push(absValue)
+    //if lastIndexReplace is false it adds a new datapoint
+    arrayChunk[key].push(value)
   }
 
   if (arrayChunk[key].length > size) {
@@ -70,6 +65,5 @@ export const calcZScore = (arrayChunk, key, size, difference, lastIndexReplace) 
     arrayChunk[key].reduce((sum, value) => sum + (value - mean) ** 2, 0) / size
   )
 
-  const zScore = (absValue - mean) / stdDev
-  return (positive) ?  zScore : -zScore
+  return (value - mean) / stdDev
 }

@@ -1,6 +1,6 @@
 import { calcMagnitude } from "../utilities/numberUtilities.js"
 
-export const donchianChannels = (main, index, size, offset, { height, range, scale, lag, autoMinMax }) => {
+export const donchianChannels = (main, index, size, offset, { height, range, scale, lag }) => {
   const indicatorKey = `${size}_${offset}`;
   const { verticalOhlcv, instances, len } = main;
 
@@ -32,11 +32,6 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
         throw new Error(`Invalid range item value "${rangeKey}" property for donchianChannels. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
       keyNames.push(`${prefix}_range_${rangeKey}`)
-
-      if(autoMinMax)
-      {
-        main.autoMinMaxKeys.push(`${prefix}_range_${rangeKey}`)
-      }
 
     }
 
@@ -131,9 +126,7 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
       typeof lower === 'number' &&
       (upper - lower) !== 0
     ) {
-      rangeValue = (autoMinMax) 
-        ? Math.max(Math.min((priceValue - lower) / (upper - lower), 1), 0)
-        : (priceValue - lower) / (upper - lower)
+      rangeValue = (priceValue - lower) / (upper - lower)
 
       if (scale) {
         rangeValue = calcMagnitude(rangeValue, scale);

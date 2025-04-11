@@ -2,7 +2,7 @@ const diff = (a, b) => (a - b)
 
 import { calcZScore } from "../utilities/classification.js"
 
-export const candleVectors = (main, index, size, {patternSize, lag, autoMinMax}) => {
+export const candleVectors = (main, index, size, {patternSize, lag}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
 
@@ -36,11 +36,6 @@ export const candleVectors = (main, index, size, {patternSize, lag, autoMinMax})
             {
                 lookBackVectorKeyNames.push(`candle_change_${x+1}_${currK}_${prevK}`)
                 lookBackVectorsSetup[`candle_change_${x+1}_${currK}_${prevK}`] = [...nullArray]
-
-                if(autoMinMax)
-                {
-                    main.autoMinMaxKeys.push(`candle_change_${x+1}_${currK}_${prevK}`)
-                }
             }
         }
         
@@ -52,11 +47,6 @@ export const candleVectors = (main, index, size, {patternSize, lag, autoMinMax})
         {
             bodyVectorKeyNames.push(`candle_body_${a}_${b}`)
             bodyVectorSetup[`candle_body_${a}_${b}`] = [...nullArray]
-
-            if(autoMinMax)
-            {
-                main.autoMinMaxKeys.push(`candle_body_${a}_${b}`)
-            }
         }
 
         const keyNames = [...bodyVectorKeyNames, ...lookBackVectorKeyNames]

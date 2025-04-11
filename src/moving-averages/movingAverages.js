@@ -43,11 +43,6 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff 
       for (const targetKey of diff.targets) {
         verticalOhlcv[`${diffKeyName}_${targetKey}`] = [...nullArray];
 
-        if(diff.autoMinMax)
-        {
-          main.autoMinMaxKeys.push(`${diffKeyName}_${targetKey}`)
-        }
-
         if (diff.lag > 0) {
           lagDiffArr.push(`${diffKeyName}_${targetKey}`);
         }
@@ -80,30 +75,26 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff 
   // Process the diff values if a diff is requested.
   if (diff !== null) {
     for (const targetKey of diff.targets) {
-      // Compute diffValue only if we have a valid MA value.
+     
       let diffValue = null;
-      if (currMa !== null && typeof currMa === 'number') {
-        diffValue = verticalOhlcv[targetKey][index] - currMa;
-      }
+      let diffBoll = null
 
-      // Update the diff indicator only if diffValue is a valid number.
-      if (diffValue !== null && typeof diffValue === 'number') {
+      if (typeof currMa === 'number' && typeof verticalOhlcv[targetKey][index] === 'number') {
+        diffValue = verticalOhlcv[targetKey][index] - currMa;
         diffInstance.update(Math.abs(diffValue), lastIndexReplace);
       }
 
-      let diffBoll = null;
       try {
-        diffBoll = diffInstance.getResult();
+        diffBoll = diffInstance.getResult()
       } catch (err) {
-        diffBoll = null;
+        diffBoll = null
       }
 
-      const classified = classifyBoll(diffValue, diffBoll, diff.scale, diff.autoMinMax);
       main.pushToMain({
         index,
         key: `${diffKeyName}_${targetKey}`,
-        value: classified
-      });
+        value: classifyBoll(diffValue, diffBoll, diff.scale)
+      })
     }
   }
 
@@ -140,7 +131,6 @@ export const getMovingAveragesParams = (indicatorName, size, options, validMagni
       targets = ['close'],
       size: diffSize = size,
       lag = 0,
-      autoMinMax = false
     } = diff;
 
     if (typeof stdDev !== 'number' || stdDev <= 0) {
@@ -163,11 +153,7 @@ export const getMovingAveragesParams = (indicatorName, size, options, validMagni
       throw new Error(`"diff.lag" must be an integer greater than 0 in ${indicatorName}.`);
     }
 
-    if (typeof autoMinMax !== 'boolean') {
-      throw new Error(`"diff.autoMinMax" must be an boolean in ${indicatorName}.`);
-    }
-
-    optionArgs.diff = { stdDev, scale, size: diffSize, targets, lag, autoMinMax};
+    optionArgs.diff = { stdDev, scale, size: diffSize, targets, lag};
   }
 
   return optionArgs;
