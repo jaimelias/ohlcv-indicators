@@ -1,6 +1,6 @@
 
 import {FasterEMA, FasterSMA, FasterBollingerBands} from 'trading-signals';
-import { classifyBoll, calcZScore } from '../utilities/classification.js'
+import { classifyDeviation } from '../utilities/classification.js'
 
 const indicatorClasses = {ema: FasterEMA, sma: FasterSMA} 
 
@@ -93,7 +93,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, diff 
       main.pushToMain({
         index,
         key: `${diffKeyName}_${targetKey}`,
-        value: classifyBoll(diffValue, diffBoll, diff.scale)
+        value: classifyDeviation(diffValue, diffBoll, diff.scale)
       })
     }
   }
@@ -127,9 +127,10 @@ export const getMovingAveragesParams = (indicatorName, size, options, validMagni
 
     const {
       stdDev = 2,
-      scale = 0.05,
+      scale = 0.005,
       targets = ['close'],
       size: diffSize = size,
+      center = 'lower',
       lag = 0,
     } = diff;
 
@@ -151,6 +152,11 @@ export const getMovingAveragesParams = (indicatorName, size, options, validMagni
 
     if (typeof lag !== 'number' || !Number.isInteger(lag) || lag < 0) {
       throw new Error(`"diff.lag" must be an integer greater than 0 in ${indicatorName}.`);
+    }
+
+    if(typeof center !== 'string' || !['lower', 'middle'].includes(center))
+    {
+      throw new Error(`"diff.center" value must be "lower" or "middle".`);
     }
 
     optionArgs.diff = { stdDev, scale, size: diffSize, targets, lag};

@@ -16,21 +16,37 @@ import { calcMagnitude } from "./numberUtilities.js"
  * @param {number} bollingerBands.upper - The upper band threshold.
  * @param {number} bollingerBands.middle - The middle band value.
  * @param {number} bollingerBands.lower - The lower band threshold.
+ * @param {string} center - Available options "lower", "middle".
  * @returns {number|null} The classified value, or null if inputs are invalid or if upper equals lower.
  */
 
 
-export const classifyBoll = (value, bollingerBands, scale = 0.001) => {
+const calcDeviation = (value, bollingerBands, center) => {
 
-  // Validate that value and bollingerBands are not null/undefined
-  if (value == null || bollingerBands == null) return null
+  const { upper, lower, middle } = bollingerBands
 
-  const positive = value >= 0
-  const absValue = Math.abs(value)
+  if(center === 'lower')
+  {
+      return (value - lower) / (upper - lower)
+  }
+  else if(center === 'middle')
+  {
+    return (value >= middle) ? (value - middle) / (upper - middle) : (value - middle) / (middle - lower)
+  }
+  else
+  {
+    throw new Error(`Invalid "center" param (center) in calcDeviation`)
+  }
+}
 
-  const { upper, lower } = bollingerBands
+export const classifyDeviation = (difference, bollingerBands, scale = 0.001, center) => {
 
-  let deviation = (absValue - lower) / (upper - lower)
+  // Validate that value and bollingerBands are not null
+  if (difference === null || bollingerBands === null) return null
+
+  const positive = difference >= 0
+
+  let deviation = calcDeviation(Math.abs(difference), bollingerBands, center)
   deviation = calcMagnitude(deviation, scale)
 
   if(deviation === 0)
@@ -40,30 +56,4 @@ export const classifyBoll = (value, bollingerBands, scale = 0.001) => {
 
   return positive ? deviation : -deviation
 
-}
-
-
-export const calcZScore = (arrayChunk, key, size, value, lastIndexReplace) => {
-
-  
-  if (lastIndexReplace) {
-    //if lastIndexReplace is true it modifies the last datapoint
-    arrayChunk[key][arrayChunk[key].length - 1] = value
-  } else {
-    //if lastIndexReplace is false it adds a new datapoint
-    arrayChunk[key].push(value)
-  }
-
-  if (arrayChunk[key].length > size) {
-    arrayChunk[key].shift()  // Maintain array size
-  }
-
-  if (arrayChunk[key].length < size) return null
-
-  const mean = arrayChunk[key].reduce((sum, value) => sum + value, 0) / size
-  const stdDev = Math.sqrt(
-    arrayChunk[key].reduce((sum, value) => sum + (value - mean) ** 2, 0) / size
-  )
-
-  return (value - mean) / stdDev
 }

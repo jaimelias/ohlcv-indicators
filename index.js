@@ -414,7 +414,7 @@ export default class OHLCV_INDICATORS {
           throw new Error('"size" must be a positive number greater than 0 in candleVectors.');
         }
       
-        const { stdDev = 1, lag = 0, scale = 0.001, patternSize = 0} = options;
+        const { stdDev = 1, lag = 0, scale = 0.001, patternSize = 0, center = 'lower'} = options;
 
 
         if (typeof stdDev !== 'number' || stdDev <= 0) {
@@ -431,7 +431,12 @@ export default class OHLCV_INDICATORS {
             throw new Error(`"patternSize" value in candleVectors must be a positive integer.`);
         }
 
-        this.inputParams.push({ key: 'candleVectors', params: [size, {stdDev, patternSize, lag, scale}] });
+        if(typeof center !== 'string' || !['lower', 'middle'].includes(center))
+        {
+            throw new Error(`"center" value must be "lower" or "middle" in candleVectors`);
+        }
+
+        this.inputParams.push({ key: 'candleVectors', params: [size, {stdDev, patternSize, lag, scale, center}] });
         return this;
       }
       
@@ -469,5 +474,15 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.push({key: 'dateTime', params: []})
         return this           
+    }
+
+    minMaxScaler(size, colKeys, options)
+    {
+        isAlreadyComputed(this)
+
+        const {group = false, range = {min: 0, max: 1}, lag = 0} = options
+
+        this.inputParams.push({key: 'minMaxScaler', params: [size, colKeys, group, range, lag]})
+        return this
     }
 }

@@ -1,14 +1,18 @@
+import {FasterBollingerBands} from 'trading-signals';
+
+import { classifyDeviation } from "../utilities/classification.js"
 const diff = (a, b) => (a - b)
 
-import { calcZScore } from "../utilities/classification.js"
 
-export const candleVectors = (main, index, size, {patternSize, lag}) => {
+export const candleVectors = (main, index, size, {patternSize, lag, scale, center}) => {
 
     const { verticalOhlcv, instances, lastIndexReplace } = main
 
     if(index === 0)
     {
         const {nullArray} = main
+
+        console.log({center})
 
         const bodyVectors = [
 
@@ -49,7 +53,13 @@ export const candleVectors = (main, index, size, {patternSize, lag}) => {
             bodyVectorSetup[`candle_body_${a}_${b}`] = [...nullArray]
         }
 
+        const bollingerBands = {}
         const keyNames = [...bodyVectorKeyNames, ...lookBackVectorKeyNames]
+
+        for(const key of keyNames)
+        {
+            bollingerBands[key] = new FasterBollingerBands(size, 2)
+        }
 
         Object.assign(verticalOhlcv, {...bodyVectorSetup, ...lookBackVectorsSetup})
 
@@ -58,7 +68,7 @@ export const candleVectors = (main, index, size, {patternSize, lag}) => {
                 bodyVectors,
                 lookBackVectors,
                 keyNames,
-                arrayChunk: {...Object.fromEntries(keyNames.map(v => [v, []]))}  
+                bollingerBands
             }
         })
 
@@ -69,7 +79,7 @@ export const candleVectors = (main, index, size, {patternSize, lag}) => {
         
     }
 
-    const {bodyVectors, lookBackVectors, arrayChunk} = instances.candleVectors
+    const {bodyVectors, lookBackVectors, bollingerBands} = instances.candleVectors
 
     for(let x = 0; x < bodyVectors.length; x++)
     {
@@ -78,10 +88,21 @@ export const candleVectors = (main, index, size, {patternSize, lag}) => {
         const v1 = verticalOhlcv[k1][index]
         const key = `candle_body_${k2}_${k1}`
         const difference = diff(v2, v1)
+        let boll
 
-        const zScore = calcZScore(arrayChunk, key, size, difference, lastIndexReplace)
+        bollingerBands[key].update(Math.abs(difference), lastIndexReplace)
+
+        try{
+            boll = bollingerBands[key].getResult()
+        } catch(err)
+        {
+            boll = null
+        }
+
+        const deviation = (boll === null) ? null : classifyDeviation(difference, boll, scale, center)
+
     
-        main.pushToMain({index, key, value: zScore})
+        main.pushToMain({index, key, value: deviation})
     }
 
     for(let x = 0; x < patternSize; x++)
@@ -99,9 +120,21 @@ export const candleVectors = (main, index, size, {patternSize, lag}) => {
             }
 
             const difference = diff(currV, prevV)
-            const zScore = calcZScore(arrayChunk, key, size, difference, lastIndexReplace)
+            
+            let boll
+
+            bollingerBands[key].update(Math.abs(difference), lastIndexReplace)
     
-            main.pushToMain({index, key, value: zScore})
+            try{
+                boll = bollingerBands[key].getResult()
+            } catch(err)
+            {
+                boll = null
+            }
+    
+            const deviation = (boll === null) ? null : classifyDeviation(difference, boll, scale, center)
+
+            main.pushToMain({index, key, value: deviation})
         }
     }
 

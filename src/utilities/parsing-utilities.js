@@ -10,6 +10,7 @@ import { candleVectors } from "../studies/candleVectors.js";
 import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
+import { minMaxScaler } from "../studies/minMaxScaler.js";
 
 import { cleanNumStr } from "./numberUtilities.js";
 
@@ -23,7 +24,8 @@ const indicatorFunctions = {
   donchianChannels,
   bollingerBands,
   volumeOscillator,
-  candleVectors
+  candleVectors,
+  minMaxScaler
 };
 
 // Processes the inputParams into a list of indicator calls
