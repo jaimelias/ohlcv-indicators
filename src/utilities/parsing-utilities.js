@@ -6,11 +6,10 @@ import { relativeVolume } from "../moving-averages/relativeVolume.js";
 import { donchianChannels } from "../moving-averages/donchianChannel.js";
 import { bollingerBands } from "../moving-averages/bollingerBands.js";
 import { volumeOscillator } from "../oscillators/volumeOscillator.js";
-import { candleVectors } from "../studies/candleVectors.js";
 import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
-import { minMaxScaler } from "../studies/minMaxScaler.js";
+import { Scaler } from "../studies/scaler.js";
 
 import { cleanNumStr } from "./numberUtilities.js";
 
@@ -18,14 +17,14 @@ import { cleanNumStr } from "./numberUtilities.js";
 const indicatorFunctions = {
   dateTime,
   rsi,
-  movingAverages,
+  ema: movingAverages,
+  sma: movingAverages,
   macd,
   relativeVolume,
   donchianChannels,
   bollingerBands,
   volumeOscillator,
-  candleVectors,
-  minMaxScaler
+  Scaler
 };
 
 // Processes the inputParams into a list of indicator calls

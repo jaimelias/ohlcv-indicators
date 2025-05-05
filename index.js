@@ -1,9 +1,8 @@
 import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
 import { correlation } from './src/studies/correlation.js'
 import { validateDate } from './src/utilities/validators.js'
-import { isAlreadyComputed } from './src/utilities/validators.js'
+import { isAlreadyComputed, validateArray, validateObject, validateArrayOptions, validateBoolean, validateNumber } from './src/utilities/validators.js'
 import { divideByMultiplier } from './src/utilities/numberUtilities.js'
-import { getMovingAveragesParams } from './src/moving-averages/movingAverages.js'
 import { verticalToHorizontal } from './src/utilities/dataParsingUtilities.js'
 import { pushToMain } from './src/utilities/pushToMain.js'
 
@@ -16,12 +15,12 @@ import { pushToMain } from './src/utilities/pushToMain.js'
  * OHLCV datasets.
  */
 
-const validMagnitudeValues = [0.001, 0.002, 0.0025, 0.005, 0.01, 0.02, 0.025, 0.05, 0.1, 0.20, 0.25, 0.5, 1, 2, 2.5, 5, 10]
-
 export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, precision = true, inputParams = null}) {
 
-        if(!Array.isArray(input)) throw Error('input OHLCV must be an array: ' + ticker)
+        validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
+        validateBoolean(precision, 'precision', 'constructor')
+
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
         if(!input[0].hasOwnProperty('close')) throw Error('input OHLCV array objects require at least close property: ' + ticker)
         this.hasVolume = ((typeof input[0].volume === 'number' && input[0].volume > 0) || (typeof input[0].volume === 'string' && input[0].volume)) ? true : false
@@ -46,11 +45,13 @@ export default class OHLCV_INDICATORS {
 
         this.precision = precision
         this.precisionMultiplier = (this.precision === true) ? 0 : 1
-        this.minMaxRanges = {}   
+        this.minMaxRanges = {}
+        this.ScaledGroups = {}
         
         
-        if(Array.isArray(inputParams))
+        if(inputParams !== null)
         {
+            validateArray(inputParams, 'inputParams', 'constructor')
             this.inputParams = inputParams
             this.compute()
         }
@@ -193,32 +194,32 @@ export default class OHLCV_INDICATORS {
     
     
 
-    crossPairs(arr)
+    crossPairs(arr = [])
     {
+
+        const methodName = 'crossPairs'
+
         isAlreadyComputed(this)
 
+        validateArray(arr, 'arr', methodName)
+
         this.crossPairsList = [...this.crossPairsList, ...arr]
-        this.inputParams.push({key: 'crossPairs', params: [this.crossPairsList]})
+        this.inputParams.push({key: methodName, params: [this.crossPairsList]})
         
         return this
     }
 
 
-    lag(colKeys = ['close'], lags = 1) {
+    lag(colKeys = ['close'], lookback = 1) {
+
+        const methodName = 'lag'
 
         isAlreadyComputed(this)
 
-        if(!Array.isArray(colKeys))
-        {
-            throw new Error('Param "colKeys" must be a valid array of keyNames in lag.')
-        }
-        if(typeof lags !== 'number' || !Number.isInteger(lags) || lags < 0)
-        {
-            throw new Error(`Param "lags" must be a integer greater or equal to 0: ${JSON.stringify(colKeys)}`)
-        }
+        validateArray(colKeys, 'colKeys', methodName)
+        validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
 
-
-        this.inputParams.push({key: 'lag', params: [colKeys, lags]})
+        this.inputParams.push({key: methodName, params: [colKeys, lookback]})
 
         for(let x = 0; x < colKeys.length; x++)
         {
@@ -233,7 +234,9 @@ export default class OHLCV_INDICATORS {
         return this;
     }
     
-    relativeVolume(size, options = {}) {
+    relativeVolume(size = 10, options = {}) {
+
+        const methodName = 'relativeVolume'
 
         if(this.hasVolume === false) {
             throw new Error('If "relativeVolume" is called the input ohlcv must contain valid volume properties.')
@@ -241,35 +244,49 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
 
-        const {scale = null} = options
+        validateNumber(size, {min:1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
 
-        if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
+        const { lag = 0} = options;
 
-            throw new Error(`"scale" value in relativeVolume must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
-        }
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
 
-        this.inputParams.push({key: 'relativeVolume', params: [size, {scale}]})
+        this.inputParams.push({key: methodName, params: [size, {lag}]})
  
         return this
     }
 
-    ema(size, options = {}) {
+    ema(size = 5, options = {}) {
+
+        const methodName = 'ema'
 
         isAlreadyComputed(this)
 
-        const optionArgs = getMovingAveragesParams('ema', size, options, validMagnitudeValues)
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
 
-        this.inputParams.push({key: 'movingAverages', params: ['ema', size, optionArgs]})
+        const {target = 'close', lag = 0} = options
+
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+
+        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
 
         return this
     }
-    sma(size, options = {}) {
+    sma(size = 5, options = {}) {
+
+        const methodName = 'sma'
 
         isAlreadyComputed(this)
 
-        const optionArgs = getMovingAveragesParams('sma', size, options, validMagnitudeValues)
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
 
-        this.inputParams.push({key: 'movingAverages', params: ['sma', size, optionArgs]})
+        const {target = 'close', lag = 0} = options
+
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+
+        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -277,172 +294,89 @@ export default class OHLCV_INDICATORS {
     
     macd(fast = 12, slow = 26, signal = 9, options = {}) {
 
+        const methodName = 'macd'
+
         isAlreadyComputed(this)
 
-        if (typeof fast !== 'number' || fast <= 0) {
-            throw new Error('"fast" must be a positive number in macd.');
-        }
-        if (typeof slow !== 'number' || slow <= fast) {
-            throw new Error('"slow" must be a positive number greater than "fast" in macd.');
-        }
-        if (typeof signal !== 'number' || signal <= 0) {
-            throw new Error('"signal" must be a positive number in macd.');
-        }
+        validateNumber(fast, {min: 1, max: this.len, allowDecimals: false}, 'fast', methodName)
+        validateNumber(slow, {min: 1, max: this.len, allowDecimals: false}, 'slow', methodName)
+        validateNumber(signal, {min: 1, max: this.len, allowDecimals: false}, 'signal', methodName)
+        validateObject(options, 'options', methodName)
 
-        if(typeof options !== 'object')
-        {
-            throw new Error('"options" must be an object in macd. eg: {target}');
-        }
+        const {target = 'close', lag = 0} = options
+        
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
 
-        const {target = 'close'} = options
-
-        this.inputParams.push({key: 'macd', params: [fast, slow, signal, {target}]})
+        this.inputParams.push({key: methodName, params: [fast, slow, signal, {target, lag}]})
         
         return this
 
     }
     bollingerBands(size = 20, stdDev = 2, options = {}) {
 
+        const methodName = 'bollingerBands'
+
         isAlreadyComputed(this)
+        
+        validateNumber(size, {min:1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateNumber(stdDev, {min: 0.01, max: 50, allowDecimals: true}, 'stdDev', methodName)
+        validateObject(options, 'options', methodName)
 
-        if(!options || typeof options !== 'object')
-        {
-            throw new Error('"options" must be an object in bollingerBands. eg: {target, height, range}');
-        }
+        const {target = 'close', height = false, range = [],  lag = 0} = options
 
-        const {target = 'close', height = false, range = [],  scale = null, lag = 0} = options
 
-        // Validate size and times
-        if (typeof size !== 'number' || size <= 0) {
-            throw new Error('"size" must be a positive number in bollingerBands.');
-        }
-        if (typeof stdDev !== 'number' || stdDev <= 0) {
-            throw new Error('"stdDev" must be a positive number in bollingerBands.');
-        }
-        if (!Array.isArray(range)) {
-            throw new Error('If set, "range" must be a array of column names in bollingerBands.');
-        }
-        if (typeof lag !== 'number') {
-
-            throw new Error(`"lag" value must be a number in bollingerBands.`);
-        }
+        validateArray(range, 'range', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateBoolean(height, 'height', methodName)
     
-        if (typeof height !== 'boolean') {
-            throw new Error('"height" must be a boolean in bollingerBands.');
-        }
-        else
-        {
-            if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
-
-                throw new Error(`"scale" value in bollingerBands must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
-            }           
-        }
-    
-        this.inputParams.push({key: 'bollingerBands', params: [size, stdDev, {target, height, scale, range, lag}]});
+        this.inputParams.push({key: methodName, params: [size, stdDev, {target, height, range, lag}]});
     
         return this;
     }
     
-    rsi(size, options = {})
+    rsi(size = 14, options = {})
     {
+        const methodName = 'rsi'
+
         isAlreadyComputed(this)
 
-        // Validate size and times
-        if (typeof size !== 'number' || size <= 0) {
-            throw new Error('"size" must be a positive number in rsi.');
-        }
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
+        
+        const {target = 'close', lag = 0} = options
 
-        const {scale = null, target = 'close', lag = 0} = options
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
 
-        if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
-
-            throw new Error(`"scale" value in rsi must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
-        }
-
-        if (typeof lag !== 'number') {
-
-            throw new Error(`"lag" value in rsi must be a number in rsi.`);
-        }
-
-        this.inputParams.push({key: 'rsi', params: [size, {scale, target, lag}]})
+        this.inputParams.push({key: methodName, params: [size, {target, lag}]})
 
         return this
     }
     donchianChannels(size = 20, offset = 0, options = {}) {
-        isAlreadyComputed(this);
-      
-        if (typeof size !== 'number' || size <= 0) {
-          throw new Error('"size" must be a positive number greater than 0 in donchianChannels.');
-        }
-      
-        if (typeof offset !== 'number' || offset < 0) {
-          throw new Error('"offset" must be a number greater than or equal to 0 in donchianChannels.');
-        }
-      
-        const { height = false, range = [], scale = null, lag = 0} = options;
-      
-        if (!Array.isArray(range)) {
-          throw new Error('If set, "range" must be an array of column names in donchianChannels.');
-        }
 
-        if (typeof lag !== 'number') {
-            throw new Error(`"lag" value in rsi must be a number in donchianChannels.`);
-        }
-      
-        if (typeof height !== 'boolean') {
-          throw new Error('"height" must be a boolean in donchianChannels.');
-        }
-        else
-        {
+        const methodName = 'donchianChannels'
 
-            if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
+        isAlreadyComputed(this)
 
-                throw new Error(`"scale" value in donchianChannels must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
-            }        
-        }
+        
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateNumber(offset, {min: 0, max: this.len, allowDecimals: false}, 'offset', methodName)
       
-        this.inputParams.push({ key: 'donchianChannels', params: [size, offset, { height, range, scale, lag }] });
+        validateObject(options, 'options', methodName)
+        const { height = false, range = [], lag = 0} = options;
+      
+        validateArray(range, 'range', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateBoolean(height, 'height', methodName)
+      
+        this.inputParams.push({ key: methodName, params: [size, offset, { height, range, lag }] });
       
         return this;
     }
       
 
-    candleVectors(size = 200, options = {}) {
-        isAlreadyComputed(this);
-      
-        if (typeof size !== 'number' || size <= 0) {
-          throw new Error('"size" must be a positive number greater than 0 in candleVectors.');
-        }
-      
-        const { stdDev = 1, lag = 0, scale = 0.001, patternSize = 0, center = 'lower'} = options;
-
-
-        if (typeof stdDev !== 'number' || stdDev <= 0) {
-            throw new Error('"stdDev" must be a positive number greater than 0 in candleVectors.');
-        }
-
-        if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
-
-            throw new Error(`"scale" value in candleVectors must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
-        }
-
-        if (typeof patternSize !== 'number' || !Number.isInteger(patternSize) || patternSize < 0 ) {
-
-            throw new Error(`"patternSize" value in candleVectors must be a positive integer.`);
-        }
-
-        if(typeof center !== 'string' || !['lower', 'middle'].includes(center))
-        {
-            throw new Error(`"center" value must be "lower" or "middle" in candleVectors`);
-        }
-
-        this.inputParams.push({ key: 'candleVectors', params: [size, {stdDev, patternSize, lag, scale, center}] });
-        return this;
-      }
-      
-
     volumeOscillator(fastSize = 5, slowSize = 10, options = {})
     {
+        const methodName = 'volumeOscillator'
 
         if(this.hasVolume === false) {
             throw new Error('If "volumeOscillator" is called the input ohlcv must contain valid volume properties.')
@@ -450,39 +384,50 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
 
-        if (typeof fastSize !== 'number' || fastSize <= 1) {
-            throw new Error('fastSize" must be a positive number greater than 1 in volumeOscillator.');
-        }
+        validateNumber(fastSize, {min: 1, max: this.len, allowDecimals: false}, 'fastSize', methodName)
+        validateNumber(slowSize, {min: fastSize, max: this.len, allowDecimals: false}, 'slowSize', methodName)
+        validateObject(options, 'options', methodName)
 
-        if (typeof slowSize !== 'number' || slowSize <= fastSize) {
-            throw new Error('"slowSize" must be a positive number greater than the "fastSize" in volumeOscillator.');
-        }
+        const {lag = 0} = options
 
-        const {scale = null} = options
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
 
-        if (typeof scale === 'number' && !validMagnitudeValues.includes(scale)) {
-
-            throw new Error(`"scale" value in volumeOscillator must be any of the following numbers: ${validMagnitudeValues.join(', ')}`);
-        }
-
-        this.inputParams.push({key: 'volumeOscillator', params: [fastSize, slowSize, {scale}]})
+        this.inputParams.push({key: methodName, params: [fastSize, slowSize, {lag}]})
         return this           
     }
-    dateTime()
+    dateTime(options = {})
     {
+
+        const methodName = 'dateTime'
+
         isAlreadyComputed(this)
 
-        this.inputParams.push({key: 'dateTime', params: []})
+        validateObject(options, 'options', methodName)
+
+        const {lag = 0} = options
+
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+
+        this.inputParams.push({key: methodName, params: [{lag}]})
         return this           
     }
 
-    minMaxScaler(size, colKeys, options)
+    Scaler(size, colKeys, options)
     {
+        const methodName = 'Scaler'
+
         isAlreadyComputed(this)
 
-        const {group = false, range = {min: 0, max: 1}, lag = 0} = options
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateArray(colKeys, 'colKeys', methodName)
 
-        this.inputParams.push({key: 'minMaxScaler', params: [size, colKeys, group, range, lag]})
+        const {group = false, range = [0, 1], lag = 0, type = 'minmax'} = options
+
+        validateBoolean(group, 'group', methodName)
+        validateArray(range, 'range', methodName)
+        validateArrayOptions(['minmax', 'zscore'], type, 'type', methodName)
+
+        this.inputParams.push({key: methodName, params: [size, colKeys, type, group, range, lag]})
         return this
     }
 }

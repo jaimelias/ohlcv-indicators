@@ -1,4 +1,4 @@
-export const dateTime = (main, index) => {
+export const dateTime = (main, index, {lag}) => {
 
     const {instances, verticalOhlcv} = main
  
@@ -18,16 +18,14 @@ export const dateTime = (main, index) => {
             }
         })
 
-        Object.assign(verticalOhlcv, {
-            day_of_the_week: [...nullArray],
-            day_of_the_month: [...nullArray],
-            week_of_the_month: [...nullArray],
-            hour: [...nullArray],
-            month: [...nullArray],
-            year: [...nullArray],
-            session_daily_index: [...nullArray],
-            session_intraday_index: [...nullArray],
-        })
+        const colKeys = ['day_of_the_week', 'day_of_the_month', 'week_of_the_month', 'hour', 'month', 'year', 'session_daily_index', 'session_intraday_index']
+
+        Object.assign(verticalOhlcv, {...Object.fromEntries(colKeys.map(k => [k, [...nullArray]]))})
+
+        if(lag > 0)
+        {
+            main.lag(colKeys, lag)
+        }
     }
 
     const currDate = verticalOhlcv.date[index]

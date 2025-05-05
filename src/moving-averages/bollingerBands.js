@@ -1,9 +1,8 @@
 import { FasterBollingerBands } from 'trading-signals'
-import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close'
 
-export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, scale, lag }) => {
+export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, lag }) => {
   const { verticalOhlcv, instances, lastIndexReplace } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const indicatorKey = `${size}_${stdDev}${suffix}`;
@@ -98,7 +97,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   if (height) {
     let heightValue = null;
     if (typeof upper === 'number' && typeof lower === 'number' && lower !== 0) {
-      heightValue = calcMagnitude( ((upper - lower) / lower), 0.001)
+      heightValue = ((upper - lower) / lower)
     }
     main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
   }
@@ -109,11 +108,6 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     const priceValue = verticalOhlcv[rangeKey][index];
     if (typeof priceValue === 'number' && typeof lower === 'number' && typeof upper === 'number' && (upper - lower) !== 0) {
       rangeValue = (priceValue - lower) / (upper - lower)
-
-
-      if (scale) {
-        rangeValue = calcMagnitude(rangeValue, scale);
-      }
     }
     main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue });
   }

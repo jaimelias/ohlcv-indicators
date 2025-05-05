@@ -1,8 +1,7 @@
-import { calcMagnitude } from "../utilities/numberUtilities.js"
 
-export const donchianChannels = (main, index, size, offset, { height, range, scale, lag }) => {
+export const donchianChannels = (main, index, size, offset, { height, range, lag }) => {
   const indicatorKey = `${size}_${offset}`;
-  const { verticalOhlcv, instances, len } = main;
+  const { verticalOhlcv, instances, len, lastIndexReplace } = main;
 
   // Initialization: create output arrays and indicator instance on the first call.
   if (index === 0) {
@@ -111,7 +110,7 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
   if (height) {
     let heightValue = null;
     if (typeof upper === 'number' && typeof lower === 'number' && lower !== 0) {
-      heightValue = calcMagnitude( ((upper - lower) / lower), 0.001)
+      heightValue = ((upper - lower) / lower)
     }
     main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
   }
@@ -127,10 +126,6 @@ export const donchianChannels = (main, index, size, offset, { height, range, sca
       (upper - lower) !== 0
     ) {
       rangeValue = (priceValue - lower) / (upper - lower)
-
-      if (scale) {
-        rangeValue = calcMagnitude(rangeValue, scale);
-      }
     }
     main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue });
   }

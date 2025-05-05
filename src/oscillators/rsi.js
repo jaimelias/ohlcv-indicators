@@ -1,10 +1,9 @@
 import { FasterRSI } from 'trading-signals';
 import { FasterSMA } from 'trading-signals';
-import { calcMagnitude } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close';
 
-export const rsi = (main, index, size, { scale, target, lag }) => {
+export const rsi = (main, index, size, { target, lag }) => {
   const { verticalOhlcv, instances, lastIndexReplace } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const rsiKey = `rsi_${size}${suffix}`;
@@ -51,9 +50,6 @@ export const rsi = (main, index, size, { scale, target, lag }) => {
     currentRsi = null;
   }
 
-  if (currentRsi !== null && typeof currentRsi === 'number' && scale) {
-    currentRsi = calcMagnitude(currentRsi, scale);
-  }
 
   // Always push the RSI value, using null as a fallback.
   main.pushToMain({ index, key: rsiKey, value: currentRsi });
@@ -67,10 +63,6 @@ export const rsi = (main, index, size, { scale, target, lag }) => {
     smoothedRsi = instances[rsiSmaKey].getResult();
   } catch (err) {
     smoothedRsi = null;
-  }
-
-  if (smoothedRsi !== null && typeof smoothedRsi === 'number' && scale) {
-    smoothedRsi = calcMagnitude(smoothedRsi, scale);
   }
 
   // Always push the smoothed RSI value.

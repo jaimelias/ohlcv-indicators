@@ -2,8 +2,8 @@ import { FasterEMA, FasterMACD } from 'trading-signals';
 
 const defaultTarget = 'close';
 
-export const macd = (main, index, fast, slow, signal, options) => {
-  const { target } = options;
+export const macd = (main, index, fast, slow, signal, {target, lag}) => {
+
   const { verticalOhlcv, instances, lastIndexReplace } = main;
 
   // Create an instance key that includes the target if it isn't the default.
@@ -48,6 +48,12 @@ export const macd = (main, index, fast, slow, signal, options) => {
     });
 
     priceBased.push(diffKey, deaKey, histogramKey)
+
+    if(lag > 0)
+    {
+      main.lag([diffKey, deaKey, histogramKey], lag)
+    }
+
   }
 
   const { numberOfIndicators, settings } = instances.macd;

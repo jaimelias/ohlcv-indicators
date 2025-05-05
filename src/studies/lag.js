@@ -11,14 +11,14 @@ export const lag = (main, index) => {
 
         const params = findParams.map(o => o.params)
 
-        for (const [colKeys, lags] of params)
+        for (const [colKeys, lookback] of params)
         {
             for (const colKey of colKeys)
             {
                 if(priceBased.includes(colKey))
                 {
-                    for (let lag = 1; lag <= lags; lag++) {
-                        priceBased.push(`${colKey}_lag_${lag}`)
+                    for (let step = 1; step <= lookback; step++) {
+                        priceBased.push(`${colKey}_lag_${step}`)
                     }
                 }
             }
@@ -31,23 +31,23 @@ export const lag = (main, index) => {
     
     const {lagParams} = instances.lag
 
-    for (const [colKeys, lags] of lagParams) {
+    for (const [colKeys, lookback] of lagParams) {
     
         for (const colKey of colKeys) {
             const currentColumn = verticalOhlcv[colKey];
     
             // Initialize lagged arrays only on the first index
             if (index === 0) {
-                for (let lag = 1; lag <= lags; lag++) {
-                    const key = `${colKey}_lag_${lag}`;
+                for (let step = 1; step <= lookback; step++) {
+                    const key = `${colKey}_lag_${step}`;
                     verticalOhlcv[key] = [...nullArray];
                 }
             }
 
             // Populate lagged values
-            for (let lag = 1; lag <= lags; lag++) {
-                const key = `${colKey}_lag_${lag}`;
-                const laggedIndex = index - lag;
+            for (let step = 1; step <= lookback; step++) {
+                const key = `${colKey}_lag_${step}`;
+                const laggedIndex = index - step;
 
                 const value = (laggedIndex <= 0 || typeof currentColumn[laggedIndex] === 'undefined') 
                     ? null 
