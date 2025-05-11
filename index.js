@@ -45,6 +45,7 @@ export default class OHLCV_INDICATORS {
         this.instances = {}
         this.crossPairsList = []
         this.verticalOhlcv = {}
+        this.verticalOhlcvKeyNames = []
 
         this.studies = {}
         this.utilities = {
@@ -110,9 +111,7 @@ export default class OHLCV_INDICATORS {
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
 
-        const {precisionMultiplier, priceBased, precision, verticalOhlcv, invalidValueIndex} = this
-
-        return verticalToHorizontal(verticalOhlcv, skipNull, precision, precisionMultiplier, priceBased, invalidValueIndex)
+        return verticalToHorizontal(skipNull, this)
     }
     
     
@@ -120,11 +119,10 @@ export default class OHLCV_INDICATORS {
 
         this.compute()
 
-        const {precisionMultiplier, priceBased, precision, verticalOhlcv, len} = this
-        const keyNames = Object.keys(verticalOhlcv)
+        const {precisionMultiplier, priceBased, precision, verticalOhlcv, len, verticalOhlcvKeyNames} = this
         const row = {}
 
-        for(const key of keyNames)
+        for(const key of verticalOhlcvKeyNames)
         {
             row[key] = verticalOhlcv[key][len - 1]
         }
@@ -150,6 +148,10 @@ export default class OHLCV_INDICATORS {
         if (this.len > 0) {
           mainLoop(this.input, this);
           this.isComputed = true;
+
+          //flushing after mainLoop
+          this.input = []
+          this.instances = {}
         }
       
         return this;

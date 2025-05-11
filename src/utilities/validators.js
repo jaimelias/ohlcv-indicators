@@ -1,6 +1,4 @@
-export const validateInputParams = main => {
-
-    const {inputParams, len} = main
+export const validateInputParams = ({inputParams, len}) => {
 
     for (const { params } of inputParams) {
         for (const v of params) {

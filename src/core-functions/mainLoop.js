@@ -29,41 +29,22 @@ const indicatorFunctions = {
   Scaler
 };
 
-// Processes the inputParams into a list of indicator calls
-const processIndicatorCalls = inputParams =>
-  Array.isArray(inputParams)
-    ? inputParams.map(({ key, params }) => ({
-        key,
-        fn: indicatorFunctions[key],
-        args: params
-      }))
-    : [];
 
 export const mainLoop = (input, main) => {
-  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes } = main;
+  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes } = main;
 
-  validateInputParams(main)
+  validateInputParams({inputParams, len})
 
-  for(const key of Object.keys(main.inputTypes))
+  for(const key of Object.keys(inputTypes))
   {
-    main.verticalOhlcv[key] = buildArray(arrayTypes[key], len)
+    verticalOhlcv[key] = buildArray(arrayTypes[key], len)
   }
-
-  // Prepare the list of indicator function calls
-  const indicatorCalls = processIndicatorCalls(inputParams);
 
   // Process each row in the input
-  for (let x = 0; x < len; x++) {
-    const curr = input[x]
-
-    processThisRow({x, main, curr, indicatorCalls, priceBased, precisionMultiplier})
-  }
-}
-
-const processThisRow = ({x, main, curr, indicatorCalls, priceBased, precisionMultiplier}) => {
-
-
-  for(const [key, formaterKey] of Object.entries(main.inputTypes))
+  for (let index = 0; index < len; index++) {
+    const curr = input[index]
+    
+    for(const [key, formaterKey] of Object.entries(inputTypes))
     {
       const value = curr[key]
 
@@ -76,25 +57,29 @@ const processThisRow = ({x, main, curr, indicatorCalls, priceBased, precisionMul
           formatedValue = formatedValue * precisionMultiplier
         }
 
-        main.pushToMain({index: x, key, value: formatedValue})
+        main.pushToMain({index, key, value: formatedValue})
       }
       else if(dateFormaters.hasOwnProperty(formaterKey))
       {
-        main.pushToMain({index: x, key, value: dateFormaters[formaterKey](value)})
+        main.pushToMain({index, key, value: dateFormaters[formaterKey](value)})
       }
       else
       {
-        main.pushToMain({index: x, key, value})
+        main.pushToMain({index, key, value})
       }
     }
+  
+      // Run all indicator functions except for the ones processed later
+      for (const { key, params } of inputParams) {
+        if (key === 'lag' || key === 'crossPairs') continue;
+        // resolve fn on-demand, no per-item object allocation here
+        indicatorFunctions[key](main, index, ...params)
+      }
+  
+      // Process these indicators separately (ensuring their execution order)
+      lag(main, index)
+      crossPairs(main, index)
+  }
 
-    // Run all indicator functions except for the ones processed later
-    for (const { key, fn, args } of indicatorCalls) {
-      if (['crossPairs', 'lag'].includes(key)) continue;
-      fn(main, x, ...args)
-    }
-
-    // Process these indicators separately (ensuring their execution order)
-    lag(main, x)
-    crossPairs(main, x)
+  verticalOhlcvKeyNames.push(...Object.keys(verticalOhlcv))
 }

@@ -1,25 +1,22 @@
 export const verticalToHorizontal = (
-  obj, 
   skipNull = false, 
-  precision, 
-  precisionMultiplier, 
-  priceBased, 
-  invalidValueIndex = 0
+  main
 ) => {
-  const keys = Object.keys(obj);
-  if (keys.length === 0) return [];
+
+  const {precisionMultiplier, priceBased, precision, verticalOhlcv, invalidValueIndex, len, verticalOhlcvKeyNames} = main
+
+  if (verticalOhlcvKeyNames.length === 0) return []
   
   const startIndex = skipNull && invalidValueIndex >= 0 ? invalidValueIndex + 1 : 0
-  const endIndex = obj[keys[0]].length
-  const len = endIndex - startIndex
-  const result = new Array(len)
+  const diffLen = len - startIndex
+  const result = new Array(diffLen)
 
   
-  for (let i = startIndex; i < endIndex; i++) {
+  for (let i = startIndex; i < len; i++) {
     const row = {};
-    for (let j = 0; j < keys.length; j++) {
-      const key = keys[j]
-      const value = obj[key][i]
+    for (let j = 0; j < verticalOhlcvKeyNames.length; j++) {
+      const key = verticalOhlcvKeyNames[j]
+      const value = verticalOhlcv[key][i]
 
       row[key] = (precision && priceBased.includes(key)) ? value / precisionMultiplier : value
       
