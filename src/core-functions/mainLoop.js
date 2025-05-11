@@ -39,28 +39,31 @@ const processIndicatorCalls = inputParams =>
       }))
     : [];
 
-export const mainLoop = (input, main, startIndex = 0) => {
+export const mainLoop = (input, main) => {
   const { len, inputParams, priceBased, precisionMultiplier, arrayTypes } = main;
 
-  if (startIndex === 0) {
-    // Validate parameters and initialize base keys in verticalOhlcv
-    validateInputParams(main)
+  validateInputParams(main)
 
-    for(const key of Object.keys(main.inputTypes))
-    {
-      main.verticalOhlcv[key] = buildArray(arrayTypes[key], len)
-    }
+  for(const key of Object.keys(main.inputTypes))
+  {
+    main.verticalOhlcv[key] = buildArray(arrayTypes[key], len)
   }
-
 
   // Prepare the list of indicator function calls
   const indicatorCalls = processIndicatorCalls(inputParams);
 
   // Process each row in the input
-  for (let x = startIndex; x < len; x++) {
+  for (let x = 0; x < len; x++) {
     const curr = input[x]
 
-    for(const [key, formaterKey] of Object.entries(main.inputTypes))
+    processThisRow({x, main, curr, indicatorCalls, priceBased, precisionMultiplier})
+  }
+}
+
+const processThisRow = ({x, main, curr, indicatorCalls, priceBased, precisionMultiplier}) => {
+
+
+  for(const [key, formaterKey] of Object.entries(main.inputTypes))
     {
       const value = curr[key]
 
@@ -94,6 +97,6 @@ export const mainLoop = (input, main, startIndex = 0) => {
     // Process these indicators separately (ensuring their execution order)
     lag(main, x)
     crossPairs(main, x)
+
     main.lastComputedIndex++
-  }
-};
+}

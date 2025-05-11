@@ -3,7 +3,7 @@ import { FasterBollingerBands } from 'trading-signals'
 const defaultTarget = 'close'
 
 export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, lag }) => {
-  const { verticalOhlcv, instances, lastIndexReplace } = main;
+  const { verticalOhlcv, instances } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const indicatorKey = `${size}_${stdDev}${suffix}`;
   let prefix;
@@ -78,7 +78,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   // Update the indicator with the current value.
   const instance = instances.bollinger_bands.settings[indicatorKey];
   const value = verticalOhlcv[target][index];
-  instance.update(value, lastIndexReplace);
+  instance.update(value);
 
   // Attempt to retrieve the result.
   let result = {};

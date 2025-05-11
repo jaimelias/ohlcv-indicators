@@ -4,7 +4,7 @@ import {FasterEMA, FasterSMA, FasterBollingerBands} from 'trading-signals';
 const indicatorClasses = {ema: FasterEMA, sma: FasterSMA} 
 
 export const movingAverages = (main, index, indicatorName, size, { target, lag }) => {
-  const { verticalOhlcv, instances, priceBased, lastIndexReplace } = main;
+  const { verticalOhlcv, instances, priceBased } = main;
   let suffix =
     typeof target === 'string' &&
     verticalOhlcv.hasOwnProperty(target) &&
@@ -44,7 +44,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, lag }
   const { maInstance } = instances[keyName];
 
   // Update the moving average instance.
-  maInstance.update(value, lastIndexReplace);
+  maInstance.update(value);
   let currMa = NaN;
   try {
     currMa = maInstance.getResult();

@@ -34,14 +34,15 @@ export default class OHLCV_INDICATORS {
         this.inputTypes = inputTypes
         this.arrayTypes = arrayTypes
 
+
         if(!this.firstRow.hasOwnProperty('close')) throw Error(`input OHLCV array objects require at least "close" property: ${ticker}`)
 
+        this.dateType = this.inputTypes.date ? this.inputTypes.date : null;
         this.isComputed = false
         this.lastComputedIndex = 0
         this.input = input
         this.priceBased = ['open', 'high', 'low', 'close']
         this.len = input.length
-        this.lastIndexReplace = false 
         this.instances = {}
         this.crossPairsList = []
         this.verticalOhlcv = {}
@@ -132,78 +133,28 @@ export default class OHLCV_INDICATORS {
         return (precision) ? divideByMultiplier({row, precisionMultiplier, priceBased}) : row
     }
 
-    compute(change) {
+    compute() {
 
-        //if change is a valid object and change.date is after the last row in this.input[this.input.length - 1].date pushes change to this.input using the mainLoop function.
-
-
-        //stops the compute if compute is called from getData, getDataAsCols or getLastValues an isComputed is false
-        if(this.isComputed === true && !change)
-        {
-            return this
+        // If we've already computed, bail out immediately
+        if (this.isComputed) {
+          return this;
         }
-        else{
-            this.isComputed = false
+      
+        // Mark as “in progress”
+        this.isComputed = false;
+      
+        // Figure out whether there’s a date field in the inputs
+        
+      
+        // Only run the full loop once (or when new data appears later,
+        // if you extend this to reset isComputed elsewhere)
+        if (this.lastComputedIndex === 0 && this.len > 0) {
+          mainLoop(this.input, this);
+          this.isComputed = true;
         }
-
-        //checks if the date property has been added to input
-        this.dateType = this.inputTypes.hasOwnProperty('date') && this.inputTypes.date ? this.inputTypes.date : null
-
-         //compute method can be used to process indicators if no arguments are provided
-         //compute method can be called to access the .verticalOhlcv object
-         //compute method is called automatically if getLastValues or getDate methods are called
-        if (this.len > this.lastComputedIndex && !change) {
-            mainLoop(this.input, this, 0);
-        }        
-
-        //compute method can be used to add new or update the last datapoints if a new OHLCV object is passed with a valid date property
-        //valid date properties: "2024-12-16 15:45:00" or "2024-12-16"
-        if (change && typeof change === 'object') {
-
-            if (!this.inputCols.every(f => Object.keys(change).includes(f))) {
-                throw Error(`Invalid OHLCV object sent in "compute". Correct usage: .compute(${JSON.stringify(this.firstRow)})`);
-            }            
-            else if(this.dateType === null)
-            {
-                throw Error('All the OHLCV rows require a valid "date" property to access the compute change method.')
-            }
-            else if(!change.hasOwnProperty('date') || selectDateFormatter(change.date) !== this.dateType)
-            {
-                throw Error(`The "date" property added to the ohlcv object in the compute method is not available or invalid. Correct format for date property is ${this.dateType}.`)
-            }
-
-            const changeDate = dateFormaters[this.dateType](change.date)
-            const lastIndex = this.len - 1;
-            const lastDate = this.verticalOhlcv.date[lastIndex];
-
-            console.log({changeDate, lastDate})
-
-    
-            //fallback if .compute(change) is triggered before .compute() alone
-            if (this.lastComputedIndex === 0) {
-                this.compute()
-                return this
-            } else{
-                this.isComputed = false
-            }
-
-            if (changeDate > lastDate) {
-                // Add new item
-                this.len++
-                this.input.push(change)
-                mainLoop(this.input, this, this.len)
-            } else {
-                // Modify the last item
-                this.input[lastIndex] = change
-                mainLoop(this.input, this, lastIndex)
-            }
-
-        }
-    
-
-    
+      
         return this;
-    }
+    }      
     
     
 

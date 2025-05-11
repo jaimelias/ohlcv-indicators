@@ -4,7 +4,7 @@ const defaultTarget = 'close';
 
 export const macd = (main, index, fast, slow, signal, {target, lag}) => {
 
-  const { verticalOhlcv, instances, lastIndexReplace } = main;
+  const { verticalOhlcv, instances } = main;
 
   // Create an instance key that includes the target if it isn't the default.
   const instanceKey = `${fast}_${slow}_${signal}${target === defaultTarget ? '' : `_${target}`}`;
@@ -71,7 +71,7 @@ export const macd = (main, index, fast, slow, signal, {target, lag}) => {
 
   const macdInstance = settings[instanceKey];
   const value = verticalOhlcv[target][index];
-  macdInstance.update(value, lastIndexReplace);
+  macdInstance.update(value);
 
   let macdResult = {}
   try {

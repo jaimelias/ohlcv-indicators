@@ -3,7 +3,7 @@ import { FasterSMA } from 'trading-signals';
 export const relativeVolume = (main, index, size, {lag}) => {
 
   const key = `relative_volume_${size}`;
-  const { instances, verticalOhlcv, lastIndexReplace } = main;
+  const { instances, verticalOhlcv } = main;
 
   if (index === 0) {
     const { len, arrayTypes } = main;
@@ -25,7 +25,7 @@ export const relativeVolume = (main, index, size, {lag}) => {
 
   const value = verticalOhlcv.volume[index];
   const smaInstance = instances[key].instance;
-  smaInstance.update(value, lastIndexReplace);
+  smaInstance.update(value);
 
   let smaValue = NaN;
   try {

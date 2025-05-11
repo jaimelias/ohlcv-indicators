@@ -19,7 +19,7 @@ export const Scaler = (
     range,         // used for minmax: [validMin, validMax]
     lag,
   ) => {
-    const { verticalOhlcv, instances, lastIndexReplace, arrayTypes } = main;
+    const { verticalOhlcv, instances, arrayTypes } = main;
     const prefix = `${type}_${size}`;
     let groupKey = '';
   
@@ -72,14 +72,12 @@ export const Scaler = (
       const winKey = group ? groupKey : target;
       const win = windows[winKey];
   
-      if (lastIndexReplace) {
-        win[win.length - 1] = val;
-      } else {
-        win.push(val);
-        if (win.length > (group ? size * instances.scaler.groupKeyLen : size)) {
-          win.shift();
-        }
+      win.push(val);
+      
+      if (win.length > (group ? size * instances.scaler.groupKeyLen : size)) {
+        win.shift();
       }
+
     }
   
     const ready = index + 1 >= size;

@@ -2,7 +2,7 @@ import { FasterEMA } from 'trading-signals';
 
 export const volumeOscillator = (main, index, fast, slow, {lag}) => {
 
-    const {verticalOhlcv, instances, lastIndexReplace} = main
+    const {verticalOhlcv, instances} = main
     const value = verticalOhlcv.volume[index]
     const key = 'volume_oscillator'
 
@@ -29,8 +29,8 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
 
     const { fastEMA, slowEMA } = instances[key];
 
-    fastEMA.update(value, lastIndexReplace);
-    slowEMA.update(value, lastIndexReplace);
+    fastEMA.update(value);
+    slowEMA.update(value);
 
     let fastValue = NaN;
     let slowValue = NaN;

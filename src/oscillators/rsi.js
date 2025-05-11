@@ -3,7 +3,7 @@ import { FasterSMA } from 'trading-signals';
 
 const defaultTarget = 'close'
 export const rsi = (main, index, size, { target, lag }) => {
-  const { verticalOhlcv, instances, lastIndexReplace } = main;
+  const { verticalOhlcv, instances } = main;
 
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const rsiKey = `rsi_${size}${suffix}`;
@@ -51,7 +51,7 @@ export const rsi = (main, index, size, { target, lag }) => {
   let smoothedRsi = NaN;
 
   // Update the RSI indicator.
-  instances[rsiKey].update(value, lastIndexReplace);
+  instances[rsiKey].update(value);
 
   try {
     currentRsi = instances[rsiKey].getResult();
@@ -65,7 +65,7 @@ export const rsi = (main, index, size, { target, lag }) => {
 
   // Update the SMA indicator only if a valid RSI value is available.
   if (!Number.isNaN(currentRsi)) {
-    instances[rsiSmaKey].update(currentRsi, lastIndexReplace);
+    instances[rsiSmaKey].update(currentRsi);
   }
 
   try {

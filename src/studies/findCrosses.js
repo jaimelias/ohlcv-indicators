@@ -15,12 +15,11 @@ class CrossInstance {
         Object.assign(this, {
             interval: 0,
             prevState: 0.5,
-            prevFast: null,
-            prevSlow: null,
-            prevHigh: null,
-            prevLow: null,
+            prevFast: NaN,
+            prevSlow: NaN,
+            prevHigh: NaN,
+            prevLow: NaN,
             areHighAndLowUndefined: false,
-            index: 0,
             crossIndexes: {
                 up: [],
                 down: []
@@ -28,7 +27,7 @@ class CrossInstance {
         })        
 
     }
-    update({fast, high, slow, low})
+    update(index, {fast, high, slow, low})
     {
         let currState = this.prevState
 
@@ -40,7 +39,7 @@ class CrossInstance {
             }
         }
 
-        if(fast === null || slow === null){
+        if(Number.isNaN(fast) || Number.isNaN(slow)){
             currState = 0.5
         }
         else if(eq(fast, slow)) {
@@ -54,7 +53,7 @@ class CrossInstance {
             }
             else
             {
-                if ([low, slow, this.prevLow, this.prevSlow].every(v => v !== null) && lt(low, slow) && gt(this.prevLow, this.prevSlow))
+                if ([low, slow, this.prevLow, this.prevSlow].every(v => !Number.isNaN(v)) && lt(low, slow) && gt(this.prevLow, this.prevSlow))
                 {
                     currState = 0
                 }
@@ -72,7 +71,7 @@ class CrossInstance {
             }
             else
             {
-                if([high, slow, this.prevHigh, this.prevSlow].every(v => v !== null) && gt(high, slow) && lt(this.prevHigh, this.prevSlow))
+                if([high, slow, this.prevHigh, this.prevSlow].every(v => !Number.isNaN(v)) && gt(high, slow) && lt(this.prevHigh, this.prevSlow))
                 {
                     currState = 1
                 }
@@ -111,12 +110,11 @@ class CrossInstance {
         }
 
 
-        if(this.interval === 1) this.crossIndexes.up.push(this.index)
-        if(this.interval === -1) this.crossIndexes.down.push(this.index)
+        if(this.interval === 1) this.crossIndexes.up.push(index)
+        if(this.interval === -1) this.crossIndexes.down.push(index)
 
         //save prev state
         Object.assign(this, {
-            index: this.index + 1,
             prevState: currState,
             prevFast: fast,
             prevSlow: slow,
@@ -158,7 +156,7 @@ export const crossPairs = (main, index) => {
         {
             if(typeof slow === 'number')
             {
-                verticalOhlcv[slow] = new Array(len).fill(slow)
+                verticalOhlcv[slow] = new Int32Array(len).fill(slow)
             }
             
             if(fast !== 'price' && !verticalOhlcv.hasOwnProperty(fast)) throw Error(`fast "${fast} not found in crossPairs"`)
@@ -185,14 +183,14 @@ export const crossPairs = (main, index) => {
             lowValue = verticalOhlcv.low[index]
             slowValue = verticalOhlcv[slow][index]
 
-            instances[crossName].update({fast: closeValue, slow: slowValue, high: highValue, low: lowValue})
+            instances[crossName].update(index, {fast: closeValue, slow: slowValue, high: highValue, low: lowValue})
 
         } else
         {
             fastValue = verticalOhlcv[fast][index]
             slowValue = verticalOhlcv[slow][index]
 
-            instances[crossName].update({fast: fastValue, slow: slowValue})
+            instances[crossName].update(index, {fast: fastValue, slow: slowValue})
         }
 
         main.pushToMain({index, key: crossName, value: instances[crossName].getResult()})
