@@ -39,7 +39,6 @@ export default class OHLCV_INDICATORS {
 
         this.dateType = this.inputTypes.date ? this.inputTypes.date : null;
         this.isComputed = false
-        this.lastComputedIndex = 0
         this.input = input
         this.priceBased = ['open', 'high', 'low', 'close']
         this.len = input.length
@@ -148,7 +147,7 @@ export default class OHLCV_INDICATORS {
       
         // Only run the full loop once (or when new data appears later,
         // if you extend this to reset isComputed elsewhere)
-        if (this.lastComputedIndex === 0 && this.len > 0) {
+        if (this.len > 0) {
           mainLoop(this.input, this);
           this.isComputed = true;
         }

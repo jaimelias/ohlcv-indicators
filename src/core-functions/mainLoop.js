@@ -97,6 +97,4 @@ const processThisRow = ({x, main, curr, indicatorCalls, priceBased, precisionMul
     // Process these indicators separately (ensuring their execution order)
     lag(main, x)
     crossPairs(main, x)
-
-    main.lastComputedIndex++
 }
