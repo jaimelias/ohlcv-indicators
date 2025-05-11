@@ -111,7 +111,7 @@ export default class OHLCV_INDICATORS {
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
 
-        return verticalToHorizontal(skipNull, this)
+        return verticalToHorizontal(skipNull, this, 0)
     }
     
     
@@ -119,15 +119,7 @@ export default class OHLCV_INDICATORS {
 
         this.compute()
 
-        const {precisionMultiplier, priceBased, precision, verticalOhlcv, len, verticalOhlcvKeyNames} = this
-        const row = {}
-
-        for(const key of verticalOhlcvKeyNames)
-        {
-            row[key] = verticalOhlcv[key][len - 1]
-        }
-     
-        return (precision) ? divideByMultiplier({row, precisionMultiplier, priceBased}) : row
+        return verticalToHorizontal(false, this, this.len - 1)[0]
     }
 
     compute() {
