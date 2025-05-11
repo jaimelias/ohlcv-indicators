@@ -1,7 +1,7 @@
 
 export const donchianChannels = (main, index, size, offset, { height, range, lag }) => {
   const indicatorKey = `${size}_${offset}`;
-  const { verticalOhlcv, instances, len, lastIndexReplace } = main;
+  const { verticalOhlcv, instances, len } = main;
 
   // Initialization: create output arrays and indicator instance on the first call.
   if (index === 0) {
