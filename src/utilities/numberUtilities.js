@@ -34,11 +34,6 @@ export const parseNumber = (num, type, precisionMultiplier) => {
 
 };
 
-export const parseVolume = (volume, type) => {
-
-  return numberFormater[type](volume)
-}
-
 export const classifyNum = (num, throwError = false) => {
   // 1) true numbers
   if (typeof num === 'number' && !Number.isNaN(num)) {

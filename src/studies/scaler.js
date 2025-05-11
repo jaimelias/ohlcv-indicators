@@ -19,7 +19,7 @@ export const Scaler = (
     range,         // used for minmax: [validMin, validMax]
     lag,
   ) => {
-    const { verticalOhlcv, instances, lastIndexReplace } = main;
+    const { verticalOhlcv, instances, lastIndexReplace, arrayTypes } = main;
     const prefix = `${type}_${size}`;
     let groupKey = '';
   
@@ -43,6 +43,7 @@ export const Scaler = (
   
         const key = `${prefix}_${target}`;
         verticalOhlcv[key] = new Float64Array(len).fill(NaN);
+        arrayTypes[key] = 'Float64Array'
   
         const winKey = group ? groupKey : target;
         instances.scaler.windows[winKey] = [];

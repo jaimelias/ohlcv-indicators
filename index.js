@@ -1,12 +1,12 @@
 import { mainLoop } from './src/core-functions/mainLoop.js'
 import { correlation } from './src/studies/correlation.js'
-import { validateDate } from './src/utilities/validators.js'
 import { isAlreadyComputed, validateArray, validateObject, validateArrayOptions, validateBoolean, validateNumber } from './src/utilities/validators.js'
-import { divideByMultiplier, parseVolume } from './src/utilities/numberUtilities.js'
+import { divideByMultiplier } from './src/utilities/numberUtilities.js'
 import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
+import { selectDateFormatter, dateFormaters } from './src/utilities/dateUtilities.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -25,17 +25,16 @@ export default class OHLCV_INDICATORS {
 
         validateBoolean(precision, 'precision', 'constructor')
 
-        const firstRow = input[0]
+        this.firstRow = input[0]
         
-        this.inputCols = Object.keys(firstRow)
+        this.inputCols = Object.keys(this.firstRow)
 
-        const {inputTypes, arrayTypes} = assignTypes(firstRow)
+        const {inputTypes, arrayTypes} = assignTypes(this.firstRow)
         
         this.inputTypes = inputTypes
         this.arrayTypes = arrayTypes
 
-        
-        if(!firstRow.hasOwnProperty('close')) throw Error(`input OHLCV array objects require at least "close" property: ${ticker}`)
+        if(!this.firstRow.hasOwnProperty('close')) throw Error(`input OHLCV array objects require at least "close" property: ${ticker}`)
 
         this.isComputed = false
         this.lastComputedIndex = 0
@@ -55,7 +54,7 @@ export default class OHLCV_INDICATORS {
         this.invalidValueIndex = -1
 
         this.precision = precision
-        this.precisionMultiplier = calcPrecisionMultiplier(this, firstRow)
+        this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.ScaledGroups = {}
         
         
@@ -147,8 +146,8 @@ export default class OHLCV_INDICATORS {
             this.isComputed = false
         }
 
-        //checks the first row in OHLCV input to verify if the date property is valid
-        this.isValidDate = this.input[0].hasOwnProperty('date') && validateDate(this.input[0].date)
+        //checks if the date property has been added to input
+        this.dateType = this.inputTypes.hasOwnProperty('date') && this.inputTypes.date ? this.inputTypes.date : null
 
          //compute method can be used to process indicators if no arguments are provided
          //compute method can be called to access the .verticalOhlcv object
@@ -161,29 +160,34 @@ export default class OHLCV_INDICATORS {
         //valid date properties: "2024-12-16 15:45:00" or "2024-12-16"
         if (change && typeof change === 'object') {
 
-            if (!['open', 'high', 'low', 'close', 'volume', 'date'].every(f => Object.keys(change).includes(f))) {
-                throw Error('Invalid OHLCV object sent in "compute". Correct usage: .compute({open: 108.25, high: 108.410004, low: 108.25, close: 99999999, volume: 875903, date: "2024-12-16 15:45:00" || "2024-12-16"})');
+            if (!this.inputCols.every(f => Object.keys(change).includes(f))) {
+                throw Error(`Invalid OHLCV object sent in "compute". Correct usage: .compute(${JSON.stringify(this.firstRow)})`);
             }            
-            if(!this.isValidDate)
+            else if(this.dateType === null)
             {
-                throw Error('All the OHLCV rows require a valid date property to access the compute change method. Correct date format: "2024-12-16 15:45:00" or "2024-12-16"')
+                throw Error('All the OHLCV rows require a valid "date" property to access the compute change method.')
             }
-            if(!validateDate(change.date))
+            else if(!change.hasOwnProperty('date') || selectDateFormatter(change.date) !== this.dateType)
             {
-                throw Error('The date in the new OHLCV row is invalid. Correct date format: "2024-12-16 15:45:00" or "2024-12-16"')
+                throw Error(`The "date" property added to the ohlcv object in the compute method is not available or invalid. Correct format for date property is ${this.dateType}.`)
             }
 
-            const { date: changeDate } = change;
+            const changeDate = dateFormaters[this.dateType](change.date)
             const lastIndex = this.len - 1;
-            const inputDate = this.input[lastIndex]?.date;
+            const lastDate = this.verticalOhlcv.date[lastIndex];
+
+            console.log({changeDate, lastDate})
+
     
             //fallback if .compute(change) is triggered before .compute() alone
             if (this.lastComputedIndex === 0) {
                 this.compute()
+                return this
+            } else{
+                this.isComputed = false
             }
 
-
-            if (inputDate !== changeDate) {
+            if (changeDate > lastDate) {
                 // Add new item
                 this.len++
                 this.input.push(change)

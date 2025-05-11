@@ -43,6 +43,11 @@ export const lag = (main, index) => {
                 for (let step = 1; step <= lookback; step++) {
                     const key = `${colKey}_lag_${step}`;
 
+                    if(!arrayTypes.hasOwnProperty(colKey))
+                    {
+                        throw new Error(`Lag processing invoked by "${colKey}" expected arrayTypes to have a "${colKey}" property, but it wasn’t found.`)                          
+                    }
+
                     verticalOhlcv[key] = buildArray(arrayTypes[colKey], len)
                     arrayTypes[key] = arrayTypes[colKey]
                 }

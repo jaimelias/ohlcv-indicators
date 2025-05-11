@@ -4,8 +4,8 @@ export const dateTime = (main, index, {lag}) => {
  
     if(index === 0)
     {
-        const {len, isValidDate, arrayTypes} = main
-        if(!isValidDate) throw Error('dateTime method found and invalid "date" in input ohlcv')
+        const {len, dateType, arrayTypes} = main
+        if(!dateType) throw Error('dateTime method found and invalid "date" in input ohlcv')
 
         Object.assign(instances, {
             dateTime: {

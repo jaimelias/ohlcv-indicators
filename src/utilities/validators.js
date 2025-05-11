@@ -1,6 +1,3 @@
-export const validateDate = dateString => typeof dateString === 'string' &&  /^\d{4}-\d{2}-\d{2}/.test(dateString)
-
-
 export const validateInputParams = main => {
 
     const {inputParams, len} = main
@@ -16,7 +13,7 @@ export const validateInputParams = main => {
 }
 
 export const isAlreadyComputed = main => {
-    if(main.lastComputedIndex !== 0) throw Error('ohlcv is already computed, you can not add new indicators after "compute", "getLastValues" , "getDataAsCols" or "getData" methods are called.')
+    if(main.lastComputedIndex > 0 && main.isComputed === true) throw Error('ohlcv is already computed, you can not add new indicators after "compute", "getLastValues" , "getDataAsCols" or "getData" methods are called.')
 }
 
 export const validateArray = (arr, paramName, callerName) => {
