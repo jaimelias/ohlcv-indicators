@@ -14,7 +14,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, lag }
   const keyName = `${indicatorName}_${size}${suffix}`;
 
   if (index === 0) {
-    const { nullArray } = main;
+    const { len, arrayTypes } = main;
 
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(
@@ -27,13 +27,15 @@ export const movingAverages = (main, index, indicatorName, size, { target, lag }
       maInstance: new indicatorClasses[indicatorName](size)
     };
 
-    verticalOhlcv[keyName] = [...nullArray]
+    verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
     priceBased.push(keyName);
 
     if(lag > 0)
     {
       main.lag([keyName], lag)
     }
+
+    arrayTypes[keyName] = 'Float64Array'
 
   }
 
@@ -43,14 +45,14 @@ export const movingAverages = (main, index, indicatorName, size, { target, lag }
 
   // Update the moving average instance.
   maInstance.update(value, lastIndexReplace);
-  let currMa = null;
+  let currMa = NaN;
   try {
     currMa = maInstance.getResult();
   } catch (err) {
-    currMa = null;
+    currMa = NaN;
   }
 
-  // Always push the MA value (even if null).
+  // Always push the MA value (even if NaN).
   main.pushToMain({ index, key: keyName, value: currMa });
 
   return true;

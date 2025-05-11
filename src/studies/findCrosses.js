@@ -134,7 +134,7 @@ class CrossInstance {
 
 export const crossPairs = (main, index) => {
 
-    const {nullArray, verticalOhlcv, instances, len} = main
+    const {verticalOhlcv, instances, len, arrayTypes} = main
 
     if(index === 0)
     {
@@ -167,7 +167,9 @@ export const crossPairs = (main, index) => {
 
             instances[crossName] = new CrossInstance()
 
-            verticalOhlcv[crossName] = [...nullArray]
+            verticalOhlcv[crossName] = new Int32Array(len).fill(NaN)
+
+            arrayTypes[crossName] = 'Int32Array'
         }
 
         let fastValue

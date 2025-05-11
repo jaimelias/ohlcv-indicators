@@ -11,7 +11,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   // Initialization on the first call.
   if (index === 0) {
 
-    const { priceBased, inputParams, nullArray, verticalOhlcv } = main;
+    const { priceBased, inputParams, verticalOhlcv, len, arrayTypes } = main;
 
     if (!(target in verticalOhlcv)) {
       throw new Error(`bollingerBands could not find target "${target}"`);
@@ -52,7 +52,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
 
     }
 
-    const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, [...nullArray]]))
+    const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, new Float64Array(len).fill(NaN)]))
     Object.assign(verticalOhlcv, {...verticalOhlcvSetup})
 
     if(lag > 0)
@@ -61,6 +61,11 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     }
 
     priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`);
+
+    for(const key of keyNames)
+    {
+      arrayTypes[key] = 'Float64Array'
+    }
   }
 
   // Derive prefix for subsequent calls if not set.
@@ -76,17 +81,17 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   instance.update(value, lastIndexReplace);
 
   // Attempt to retrieve the result.
-  let result = null;
+  let result = {};
   try {
     result = instance.getResult();
   } catch (err) {
-    // If not available, result stays null.
+    // If not available, result stays {}.
   }
 
-  // Use null fallbacks for the primary values.
-  const upper = result?.upper ?? null;
-  const middle = result?.middle ?? null;
-  const lower = result?.lower ?? null;
+  // Use NaN fallbacks for the primary values.
+  const upper = result?.upper ?? NaN;
+  const middle = result?.middle ?? NaN;
+  const lower = result?.lower ?? NaN;
 
   // Always push the indicator outputs.
   main.pushToMain({ index, key: `${subPrefix}_upper`, value: upper });
@@ -95,8 +100,8 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
 
   // Process height if requested.
   if (height) {
-    let heightValue = null;
-    if (typeof upper === 'number' && typeof lower === 'number' && lower !== 0) {
+    let heightValue = NaN;
+    if (!Number.isNaN(lower) && !Number.isNaN(upper)) {
       heightValue = ((upper - lower) / lower)
     }
     main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
@@ -104,9 +109,9 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
 
   // Process each range property.
   for (const rangeKey of range) {
-    let rangeValue = null;
+    let rangeValue = NaN;
     const priceValue = verticalOhlcv[rangeKey][index];
-    if (typeof priceValue === 'number' && typeof lower === 'number' && typeof upper === 'number' && (upper - lower) !== 0) {
+    if (!Number.isNaN(priceValue) && !Number.isNaN(lower) && !Number.isNaN(upper)) {
       rangeValue = (priceValue - lower) / (upper - lower)
     }
     main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue });

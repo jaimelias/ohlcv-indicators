@@ -1,10 +1,12 @@
-import { parseOhlcvToVertical } from './src/utilities/parsing-utilities.js'
+import { mainLoop } from './src/core-functions/mainLoop.js'
 import { correlation } from './src/studies/correlation.js'
 import { validateDate } from './src/utilities/validators.js'
 import { isAlreadyComputed, validateArray, validateObject, validateArrayOptions, validateBoolean, validateNumber } from './src/utilities/validators.js'
-import { divideByMultiplier } from './src/utilities/numberUtilities.js'
-import { verticalToHorizontal } from './src/utilities/dataParsingUtilities.js'
-import { pushToMain } from './src/utilities/pushToMain.js'
+import { divideByMultiplier, parseVolume } from './src/utilities/numberUtilities.js'
+import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
+import { pushToMain } from './src/core-functions/pushToMain.js'
+import { assignTypes } from './src/utilities/assignTypes.js'
+import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -19,16 +21,25 @@ export default class OHLCV_INDICATORS {
     constructor({input, ticker = null, precision = true, inputParams = null}) {
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
+        if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
+
         validateBoolean(precision, 'precision', 'constructor')
 
-        if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
-        if(!input[0].hasOwnProperty('close')) throw Error('input OHLCV array objects require at least close property: ' + ticker)
-        this.hasVolume = ((typeof input[0].volume === 'number' && input[0].volume > 0) || (typeof input[0].volume === 'string' && input[0].volume)) ? true : false
+        const firstRow = input[0]
+        
+        this.inputCols = Object.keys(firstRow)
+
+        const {inputTypes, arrayTypes} = assignTypes(firstRow)
+        
+        this.inputTypes = inputTypes
+        this.arrayTypes = arrayTypes
+
+        
+        if(!firstRow.hasOwnProperty('close')) throw Error(`input OHLCV array objects require at least "close" property: ${ticker}`)
 
         this.isComputed = false
         this.lastComputedIndex = 0
         this.input = input
-        this.inputTypes = (this.hasVolume) ? {open: '', high: '', low: '', close: '', volume: ''} : {open: '', high: '', low: '', close: ''}
         this.priceBased = ['open', 'high', 'low', 'close']
         this.len = input.length
         this.lastIndexReplace = false 
@@ -44,8 +55,7 @@ export default class OHLCV_INDICATORS {
         this.invalidValueIndex = -1
 
         this.precision = precision
-        this.precisionMultiplier = (this.precision === true) ? 0 : 1
-        this.minMaxRanges = {}
+        this.precisionMultiplier = calcPrecisionMultiplier(this, firstRow)
         this.ScaledGroups = {}
         
         
@@ -81,7 +91,6 @@ export default class OHLCV_INDICATORS {
         const shouldSlice = invalidValueIndex >= 0 && skipNull;
         const sliceLength = len - (invalidValueIndex + 1);
       
-
         for (const [key, arr] of Object.entries(verticalOhlcv)) {
           // If slicing is needed, create a sliced copy, otherwise re-use the array.
           let newArr = shouldSlice ? arr.slice(-sliceLength) : arr;
@@ -126,7 +135,7 @@ export default class OHLCV_INDICATORS {
 
     compute(change) {
 
-        //if change is a valid object and change.date is after the last row in this.input[this.input.length - 1].date pushes change to this.input using the parseOhlcvToVertical function.
+        //if change is a valid object and change.date is after the last row in this.input[this.input.length - 1].date pushes change to this.input using the mainLoop function.
 
 
         //stops the compute if compute is called from getData, getDataAsCols or getLastValues an isComputed is false
@@ -145,7 +154,7 @@ export default class OHLCV_INDICATORS {
          //compute method can be called to access the .verticalOhlcv object
          //compute method is called automatically if getLastValues or getDate methods are called
         if (this.len > this.lastComputedIndex && !change) {
-            parseOhlcvToVertical(this.input, this, 0);
+            mainLoop(this.input, this, 0);
         }        
 
         //compute method can be used to add new or update the last datapoints if a new OHLCV object is passed with a valid date property
@@ -178,11 +187,11 @@ export default class OHLCV_INDICATORS {
                 // Add new item
                 this.len++
                 this.input.push(change)
-                parseOhlcvToVertical(this.input, this, this.len)
+                mainLoop(this.input, this, this.len)
             } else {
                 // Modify the last item
                 this.input[lastIndex] = change
-                parseOhlcvToVertical(this.input, this, lastIndex)
+                mainLoop(this.input, this, lastIndex)
             }
 
         }
@@ -238,7 +247,7 @@ export default class OHLCV_INDICATORS {
 
         const methodName = 'relativeVolume'
 
-        if(this.hasVolume === false) {
+        if(!this.inputCols.includes('volume')) {
             throw new Error('If "relativeVolume" is called the input ohlcv must contain valid volume properties.')
         }
 
@@ -378,7 +387,7 @@ export default class OHLCV_INDICATORS {
     {
         const methodName = 'volumeOscillator'
 
-        if(this.hasVolume === false) {
+        if(!this.inputCols.includes('volume')) {
             throw new Error('If "volumeOscillator" is called the input ohlcv must contain valid volume properties.')
         }
 

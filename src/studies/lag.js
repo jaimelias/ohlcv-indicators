@@ -1,10 +1,12 @@
+import { buildArray } from "../utilities/assignTypes.js";
+
 export const lag = (main, index) => {
 
-    const {instances, verticalOhlcv, nullArray} = main
+    const {instances, verticalOhlcv, len, arrayTypes, priceBased} = main
 
     if(index === 0)
     {
-        const {inputParams, priceBased} = main
+        const {inputParams} = main
         const findParams = inputParams.filter(o => o.key === 'lag')
 
         if(typeof findParams !== 'object') return
@@ -40,7 +42,9 @@ export const lag = (main, index) => {
             if (index === 0) {
                 for (let step = 1; step <= lookback; step++) {
                     const key = `${colKey}_lag_${step}`;
-                    verticalOhlcv[key] = [...nullArray];
+
+                    verticalOhlcv[key] = buildArray(arrayTypes[colKey], len)
+                    arrayTypes[key] = arrayTypes[colKey]
                 }
             }
 

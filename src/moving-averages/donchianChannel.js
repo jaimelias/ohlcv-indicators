@@ -5,7 +5,7 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
 
   // Initialization: create output arrays and indicator instance on the first call.
   if (index === 0) {
-    const { inputParams, priceBased, nullArray } = main;
+    const { inputParams, priceBased, arrayTypes} = main;
     const numberOfIndicators = inputParams.filter(o => o.key === 'donchianChannels').length;
     const prefix = numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
 
@@ -34,7 +34,7 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
 
     }
 
-    const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, [...nullArray]]))
+    const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, new Float64Array(len).fill(NaN)]))
     Object.assign(verticalOhlcv, {...verticalOhlcvSetup})
 
     if(lag > 0)
@@ -48,6 +48,11 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
       maxDeque: [], // will hold indices for highs in descending order
       minDeque: []  // will hold indices for lows in ascending order
     };
+
+    for(const key of keyNames)
+    {
+      arrayTypes[key] = 'Float64Array'
+    }
   }
 
   const numberOfIndicators = instances.donchian_channel.numberOfIndicators;
@@ -61,16 +66,16 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
   const endIdx = currentBarIdx + 1; // currentBarIdx is inclusive
   const startIdx = endIdx - size;     // window: [startIdx, endIdx)
 
-  // If the window is not fully available, push null values for all computed outputs.
+  // If the window is not fully available, push NaN values for all computed outputs.
   if (startIdx < 0 || endIdx > len) {
-    main.pushToMain({ index, key: `${subPrefix}_upper`, value: null });
-    main.pushToMain({ index, key: `${subPrefix}_basis`, value: null });
-    main.pushToMain({ index, key: `${subPrefix}_lower`, value: null });
+    main.pushToMain({ index, key: `${subPrefix}_upper`, value: NaN });
+    main.pushToMain({ index, key: `${subPrefix}_basis`, value: NaN });
+    main.pushToMain({ index, key: `${subPrefix}_lower`, value: NaN });
     if (height) {
-      main.pushToMain({ index, key: `${subPrefix}_height`, value: null });
+      main.pushToMain({ index, key: `${subPrefix}_height`, value: NaN });
     }
     for (const rangeKey of range) {
-      main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: null });
+      main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: NaN });
     }
     return true;
   }
@@ -97,9 +102,9 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
   minDeque.push(currentBarIdx);
 
   // Retrieve computed values with safety checks.
-  const upper = maxDeque.length ? highs[maxDeque[0]] : null;
-  const lower = minDeque.length ? lows[minDeque[0]] : null;
-  const basis = (typeof upper === 'number' && typeof lower === 'number') ? (upper + lower) / 2 : null;
+  const upper = maxDeque.length ? highs[maxDeque[0]] : NaN;
+  const lower = minDeque.length ? lows[minDeque[0]] : NaN;
+  const basis = (!Number.isNaN(upper) && !Number.isNaN(lower)) ? (upper + lower) / 2 : NaN;
 
   // Always push the main indicator values.
   main.pushToMain({ index, key: `${subPrefix}_upper`, value: upper });
@@ -108,8 +113,8 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
 
   // Process height if enabled.
   if (height) {
-    let heightValue = null;
-    if (typeof upper === 'number' && typeof lower === 'number' && lower !== 0) {
+    let heightValue = NaN;
+    if (!Number.isNaN(upper) && !Number.isNaN(lower)) {
       heightValue = ((upper - lower) / lower)
     }
     main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
@@ -117,13 +122,12 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
 
   // Process each range property.
   for (const rangeKey of range) {
-    let rangeValue = null;
-    const priceValue = verticalOhlcv[rangeKey][index];
+    let rangeValue = NaN;
+    const priceValue = verticalOhlcv[rangeKey][index]
     if (
-      typeof priceValue === 'number' &&
-      typeof upper === 'number' &&
-      typeof lower === 'number' &&
-      (upper - lower) !== 0
+      !Number.isNaN(priceValue) &&
+      !Number.isNaN(upper) &&
+      !Number.isNaN(lower)
     ) {
       rangeValue = (priceValue - lower) / (upper - lower)
     }

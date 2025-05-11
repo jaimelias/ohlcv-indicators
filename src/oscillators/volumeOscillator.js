@@ -8,7 +8,7 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
 
     if (index === 0) {
 
-        const {crossPairsList, nullArray} = main
+        const {crossPairsList, len, arrayTypes} = main
         Object.assign(instances, {
             volume_oscillator: {
                 fastEMA: new FasterEMA(fast),
@@ -16,13 +16,15 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
             }
         })
 
-        verticalOhlcv[key] = [...nullArray];
-        crossPairsList.push({ fast: key, slow: 0, isDefault: true });
+        verticalOhlcv[key] = new Float64Array(len).fill(NaN)
+        crossPairsList.push({ fast: key, slow: 0, isDefault: true })
 
         if(lag > 0)
         {
             main.lag([key], lag)
         }
+
+        arrayTypes[key] = 'Float64Array'
     }
 
     const { fastEMA, slowEMA } = instances[key];
@@ -30,24 +32,24 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
     fastEMA.update(value, lastIndexReplace);
     slowEMA.update(value, lastIndexReplace);
 
-    let fastValue = null;
-    let slowValue = null;
+    let fastValue = NaN;
+    let slowValue = NaN;
 
     try {
         fastValue = fastEMA.getResult();
     } catch (err) {
-        fastValue = null;
+        
     }
 
     try {
         slowValue = slowEMA.getResult();
     } catch (err) {
-        slowValue = null;
+
     }
 
-    let volumeOscValue = null
+    let volumeOscValue = NaN
 
-    if(typeof fastValue === 'number' && typeof slowValue === 'number' && slowValue !== 0)
+    if(!Number.isNaN(fastValue) && !Number.isNaN(slowValue))
     {
         volumeOscValue = 100 * (fastValue - slowValue) / slowValue
     }

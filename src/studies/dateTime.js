@@ -4,23 +4,26 @@ export const dateTime = (main, index, {lag}) => {
  
     if(index === 0)
     {
-        const {nullArray, isValidDate} = main
+        const {len, isValidDate, arrayTypes} = main
         if(!isValidDate) throw Error('dateTime method found and invalid "date" in input ohlcv')
-
-        const index0DateStr = verticalOhlcv.date[0].slice(0, 10)
 
         Object.assign(instances, {
             dateTime: {
-                prevDateStr: index0DateStr,
+                prevDateStr: verticalOhlcv.date[0],
                 sessionDailyIndexCount: 0,
                 sessionIntradayIndexCount: 0,
-                cachedDayInfo: index0DateStr
+                cachedDayInfo: verticalOhlcv.date[0]
             }
         })
 
         const colKeys = ['day_of_the_week', 'day_of_the_month', 'week_of_the_month', 'hour', 'month', 'year', 'session_daily_index', 'session_intraday_index']
 
-        Object.assign(verticalOhlcv, {...Object.fromEntries(colKeys.map(k => [k, [...nullArray]]))})
+        for(const key of colKeys)
+        {
+            arrayTypes[key] = 'Int32Array'
+        }
+
+        Object.assign(verticalOhlcv, {...Object.fromEntries(colKeys.map(k => [k, new Int32Array(len).fill(NaN)]))})
 
         if(lag > 0)
         {
@@ -28,7 +31,9 @@ export const dateTime = (main, index, {lag}) => {
         }
     }
 
+
     const currDate = verticalOhlcv.date[index]
+
     const {
         day_of_the_week,
         day_of_the_month,
@@ -39,7 +44,7 @@ export const dateTime = (main, index, {lag}) => {
     } = getDateInfo(currDate)
 
 
-    const currDateStr = currDate.slice(0, 10)
+    const currDateStr = currDate
 
     if(currDateStr !== instances.dateTime.prevDateStr)
     {
@@ -66,8 +71,7 @@ export const dateTime = (main, index, {lag}) => {
 
 
 
-const getDateInfo = dateString => {
-    const date = new Date(dateString)
+const getDateInfo = date => {
     const month = date.getMonth()
     const year = date.getFullYear()
     const hour = date.getHours()

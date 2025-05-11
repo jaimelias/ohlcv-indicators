@@ -24,7 +24,7 @@ export const Scaler = (
     let groupKey = '';
   
     if (index === 0) {
-      const { nullArray, priceBased, groups } = main;
+      const { len, priceBased, groups } = main;
       groupKey = `${prefix}_group_${colKeys.join('_')}`;
   
       instances.scaler = {
@@ -42,7 +42,7 @@ export const Scaler = (
         }
   
         const key = `${prefix}_${target}`;
-        verticalOhlcv[key] = [...nullArray];
+        verticalOhlcv[key] = new Float64Array(len).fill(NaN);
   
         const winKey = group ? groupKey : target;
         instances.scaler.windows[winKey] = [];

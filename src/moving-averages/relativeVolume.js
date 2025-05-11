@@ -6,38 +6,39 @@ export const relativeVolume = (main, index, size, {lag}) => {
   const { instances, verticalOhlcv, lastIndexReplace } = main;
 
   if (index === 0) {
-    const { nullArray } = main;
+    const { len, arrayTypes } = main;
 
     instances[key] = {
       instance: new FasterSMA(size),
-      prevRelativeVolumeSma: null
+      prevRelativeVolumeSma: NaN
     };
     
-    verticalOhlcv[key] = [...nullArray];
+    verticalOhlcv[key] = new Float64Array(len).fill(NaN);
 
     if(lag > 0)
     {
       main.lag([key], lag)
     }
   
+    arrayTypes[key] = 'Float64Array'
   }
 
   const value = verticalOhlcv.volume[index];
   const smaInstance = instances[key].instance;
   smaInstance.update(value, lastIndexReplace);
 
-  let smaValue = null;
+  let smaValue = NaN;
   try {
     smaValue = smaInstance.getResult();
   } catch (err) {
-    smaValue = null;
+
   }
 
   const prevSma = instances[key].prevRelativeVolumeSma;
-  let currRelativeVolume = null;
+  let currRelativeVolume = NaN;
 
   // Only calculate relative volume if both current SMA and previous SMA are valid numbers and prevSma is not zero.
-  if (typeof smaValue === 'number' && typeof prevSma === 'number' && prevSma !== 0) {
+  if (!Number.isNaN(smaValue) && !Number.isNaN(prevSma)) {
     currRelativeVolume = value / prevSma;
   }
 
