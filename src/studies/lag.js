@@ -17,10 +17,10 @@ export const lag = (main, index) => {
         {
             for (const colKey of colKeys)
             {
-                if(priceBased.includes(colKey))
+                if(priceBased.has(colKey))
                 {
                     for (let step = 1; step <= lookback; step++) {
-                        priceBased.push(`${colKey}_lag_${step}`)
+                        priceBased.add(`${colKey}_lag_${step}`)
                     }
                 }
             }

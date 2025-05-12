@@ -52,7 +52,7 @@ export const mainLoop = (input, main) => {
       {
         let formatedValue = numberFormater[formaterKey](value)
 
-        if(precisionMultiplier > 1 && priceBased.includes(key))
+        if(precisionMultiplier > 1 && priceBased.has(key))
         {
           formatedValue = formatedValue * precisionMultiplier
         }

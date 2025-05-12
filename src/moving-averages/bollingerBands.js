@@ -45,7 +45,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
 
     // Set up additional arrays for each range property.
     for (const rangeKey of range) {
-      if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
+      if (!(rangeKey in verticalOhlcv) || !priceBased.has(rangeKey)) {
         throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
       keyNames.push(`${prefix}_range_${rangeKey}`)
@@ -60,7 +60,9 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
       main.lag(keyNames, lag)
     }
 
-    priceBased.push(`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`);
+    [`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`].forEach(v => {
+      priceBased.add(v)
+    })
 
     for(const key of keyNames)
     {

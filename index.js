@@ -1,12 +1,10 @@
 import { mainLoop } from './src/core-functions/mainLoop.js'
 import { correlation } from './src/studies/correlation.js'
 import { isAlreadyComputed, validateArray, validateObject, validateArrayOptions, validateBoolean, validateNumber } from './src/utilities/validators.js'
-import { divideByMultiplier } from './src/utilities/numberUtilities.js'
 import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
-import { selectDateFormatter, dateFormaters } from './src/utilities/dateUtilities.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -27,20 +25,16 @@ export default class OHLCV_INDICATORS {
 
         this.firstRow = input[0]
         
-        this.inputCols = Object.keys(this.firstRow)
-
         const {inputTypes, arrayTypes} = assignTypes(this.firstRow)
-        
+
         this.inputTypes = inputTypes
         this.arrayTypes = arrayTypes
-
-
         if(!this.firstRow.hasOwnProperty('close')) throw Error(`input OHLCV array objects require at least "close" property: ${ticker}`)
 
         this.dateType = this.inputTypes.date ? this.inputTypes.date : null;
         this.isComputed = false
         this.input = input
-        this.priceBased = ['open', 'high', 'low', 'close']
+        this.priceBased = new Set(['open', 'high', 'low', 'close'])
         this.len = input.length
         this.instances = {}
         this.crossPairsList = []
@@ -96,7 +90,7 @@ export default class OHLCV_INDICATORS {
           let newArr = shouldSlice ? arr.slice(-sliceLength) : arr;
       
           // If this key is price based and precision is enabled, map over the array.
-          if (precision && priceBased.includes(key)) {
+          if (precision && priceBased.has(key)) {
             newArr = newArr.map(v => (v == null ? null : v / precisionMultiplier));
           }
           result[key] = newArr;
@@ -144,6 +138,7 @@ export default class OHLCV_INDICATORS {
           //flushing after mainLoop
           this.input = []
           this.instances = {}
+          this.firstRow = []
         }
       
         return this;
@@ -178,13 +173,11 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.push({key: methodName, params: [colKeys, lookback]})
 
-        for(let x = 0; x < colKeys.length; x++)
+        for(const key of colKeys)
         {
-            const key = colKeys[x]
-
-            if(this.priceBased.find(v => key === v))
+            if(this.priceBased.has(key))
             {
-                this.priceBased.push(key)
+                this.priceBased.add(key);
             }
         }
         
@@ -195,7 +188,7 @@ export default class OHLCV_INDICATORS {
 
         const methodName = 'relativeVolume'
 
-        if(!this.inputCols.includes('volume')) {
+        if(!this.inputTypes.hasOwnProperty('volume')) {
             throw new Error('If "relativeVolume" is called the input ohlcv must contain valid volume properties.')
         }
 
@@ -335,7 +328,7 @@ export default class OHLCV_INDICATORS {
     {
         const methodName = 'volumeOscillator'
 
-        if(!this.inputCols.includes('volume')) {
+        if(!this.inputTypes.hasOwnProperty('volume')) {
             throw new Error('If "volumeOscillator" is called the input ohlcv must contain valid volume properties.')
         }
 

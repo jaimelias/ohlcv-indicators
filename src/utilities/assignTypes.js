@@ -1,7 +1,7 @@
 import { classifyNum } from "./numberUtilities.js";
 import { selectDateFormatter } from "./dateUtilities.js";
 
-const numberKeys = ['open', 'high', 'low', 'close']
+const numberKeys = new Set(['open', 'high', 'low', 'close'])
 
 export const buildArray = (arrayType, len) => {
   if(arrayType === 'Array') return new Array(len).fill(null)
@@ -24,7 +24,7 @@ export const assignTypes = firstRow => {
       inputTypes[colName] = classifyNum(cellValue, true)
       arrayTypes[colName] = 'Int32Array'
     }
-    else if(numberKeys.includes(colName))
+    else if(numberKeys.has(colName))
     {
       inputTypes[colName] = classifyNum(cellValue, true)
       arrayTypes[colName] = 'Float64Array'

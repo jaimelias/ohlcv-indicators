@@ -19,7 +19,7 @@ export const verticalToHorizontal = (
       const key = verticalOhlcvKeyNames[j]
       const value = verticalOhlcv[key][i]
 
-      row[key] = (precision && priceBased.includes(key)) ? value / precisionMultiplier : value
+      row[key] = (precision && priceBased.has(key)) ? value / precisionMultiplier : value
       
     }
 

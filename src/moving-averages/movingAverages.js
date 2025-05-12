@@ -28,7 +28,8 @@ export const movingAverages = (main, index, indicatorName, size, { target, lag }
     };
 
     verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
-    priceBased.push(keyName);
+
+    priceBased.add(keyName);
 
     if(lag > 0)
     {

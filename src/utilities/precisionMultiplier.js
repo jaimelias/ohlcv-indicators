@@ -4,7 +4,7 @@ export const calcPrecisionMultiplier = (main, firstRow) => {
     if(precision === false) return 1
 
     let output = 1
-    const priceBasedValues = Object.entries(firstRow).filter(([k, _]) => priceBased.includes(k)).map(([_, v]) => v)
+    const priceBasedValues = Object.entries(firstRow).filter(([k, _]) => priceBased.has(k)).map(([_, v]) => v)
 
 
     for(const value of priceBasedValues)

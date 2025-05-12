@@ -47,7 +47,9 @@ export const macd = (main, index, fast, slow, signal, {target, lag}) => {
       [histogramKey]: new Float64Array(len).fill(NaN),
     });
 
-    priceBased.push(diffKey, deaKey, histogramKey)
+    [diffKey, deaKey, histogramKey].forEach(v => {
+      priceBased.add(v)
+    })
 
     const keyNames = [diffKey, deaKey, histogramKey]
 

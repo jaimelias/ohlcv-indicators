@@ -27,7 +27,7 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
 
     // Set up additional arrays for each range property.
     for (const rangeKey of range) {
-      if (!(rangeKey in verticalOhlcv) || !priceBased.includes(rangeKey)) {
+      if (!(rangeKey in verticalOhlcv) || !priceBased.has(rangeKey)) {
         throw new Error(`Invalid range item value "${rangeKey}" property for donchianChannels. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
       }
       keyNames.push(`${prefix}_range_${rangeKey}`)
@@ -42,7 +42,10 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
       main.lag(keyNames, lag)
     }
 
-    priceBased.push(`${prefix}_upper`, `${prefix}_basis`, `${prefix}_lower`);
+
+    [`${prefix}_upper`, `${prefix}_basis`, `${prefix}_lower`].forEach(v => {
+      priceBased.add(v)
+    })
 
     instances.donchian_channel.settings[indicatorKey] = {
       maxDeque: [], // will hold indices for highs in descending order

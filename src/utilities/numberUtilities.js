@@ -15,7 +15,7 @@ export const divideByMultiplier = ({row, precisionMultiplier, priceBased}) => {
 
         let newValue = value
 
-        if(priceBased.includes(key))
+        if(priceBased.has(key))
         {
             newValue = newValue / precisionMultiplier
         }
