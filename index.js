@@ -41,17 +41,14 @@ export default class OHLCV_INDICATORS {
         this.verticalOhlcv = {}
         this.verticalOhlcvKeyNames = []
 
-        this.studies = {}
         this.utilities = {
             correlation
         }
 
         this.invalidValueIndex = -1
-
         this.precision = precision
         this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.ScaledGroups = {}
-        
         
         if(inputParams !== null)
         {
@@ -65,7 +62,6 @@ export default class OHLCV_INDICATORS {
 
         this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
         
-
         return this 
     }
 
