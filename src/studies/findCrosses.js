@@ -137,14 +137,20 @@ export const crossPairs = (main, index) => {
     if(index === 0)
     {
         const {inputParams} = main
-        const findParams = inputParams.filter(o => o.key === 'crossPairs')
 
-        if(typeof findParams !== 'object') return
-
-        instances.crossPairs = {crossPairsList: findParams.flatMap(o => o.params.flat())}
+        instances.crossPairsList = inputParams.reduce((acc, { key, params }) => {
+            if (key === 'crossPairs') {
+              for (const group of params) {
+                for (const pair of group) {
+                  acc.push(pair)
+                }
+              }
+            }
+            return acc;
+          }, [])
     }
 
-    const {crossPairsList} = instances.crossPairs
+    const {crossPairsList} = instances
 
     for (const { fast, slow } of crossPairsList)
     {

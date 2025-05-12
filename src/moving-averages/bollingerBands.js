@@ -17,7 +17,12 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
       throw new Error(`bollingerBands could not find target "${target}"`);
     }
 
-    const numberOfIndicators = inputParams.filter(o => o.key === 'bollingerBands').length;
+    let numberOfIndicators = 0
+
+    for (const o of inputParams) {
+      if (o.key === 'bollingerBands') numberOfIndicators++;
+    }
+
     prefix = numberOfIndicators > 1
       ? `bollinger_bands_${indicatorKey}`
       : `bollinger_bands${suffix}`;

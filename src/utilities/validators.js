@@ -1,4 +1,9 @@
-export const validateInputParams = ({inputParams, len}) => {
+export const validateInputParams = (inputParams, len) => {
+
+    if(!Array.isArray(inputParams))
+    {
+        throw new Error('Property "inputParams" must be an "Array" or "Set".')
+    }
 
     for (const { params } of inputParams) {
         for (const v of params) {
@@ -87,3 +92,25 @@ export const validateNumber = (value, options, paramName, callerName) => {
     return true
 }
 
+export const validateArrayOfRanges = (range, paramName, callerName) => {
+
+    validateArray(range, paramName, callerName)
+
+    if (range.length !== 2) {
+        throw new Error(
+          `Invalid "${paramName}" array length: expected 2 items, but got ${range.length} in "${callerName}.${paramName}".`
+        );
+    }
+
+    const [min, max] = range
+
+    validateNumber(min, {min: -100, max, allowDecimals: false}, 'min', callerName)
+    validateNumber(max, {min: min, max: 100, allowDecimals: false}, 'max', callerName)
+
+    if(min === max)
+    {
+        throw new Error(`Invalid "min" can not be equal to "max" property in "${callerName}.${paramName}".`)
+    }
+
+    return true
+}

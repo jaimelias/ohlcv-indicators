@@ -33,7 +33,7 @@ const indicatorFunctions = {
 export const mainLoop = (input, main) => {
   const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes } = main;
 
-  validateInputParams({inputParams, len})
+  validateInputParams(inputParams, len)
 
   for(const key of Object.keys(inputTypes))
   {

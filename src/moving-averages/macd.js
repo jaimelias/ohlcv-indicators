@@ -17,7 +17,12 @@ export const macd = (main, index, fast, slow, signal, {target, lag}) => {
       throw new Error(`Target property ${target} not found in verticalOhlcv for macd.`);
     }
 
-    const numberOfIndicators = inputParams.filter(o => o.key === 'macd').length;
+    let numberOfIndicators = 0
+
+    for (const o of inputParams) {
+      if (o.key === 'macd') numberOfIndicators++;
+    }
+
     // Choose a display prefix based on the number of indicators.
     const displayPrefix = numberOfIndicators > 1 ? `macd_${fast}_${slow}_${signal}` : 'macd';
 

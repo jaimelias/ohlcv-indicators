@@ -6,7 +6,12 @@ export const donchianChannels = (main, index, size, offset, { height, range, lag
   // Initialization: create output arrays and indicator instance on the first call.
   if (index === 0) {
     const { inputParams, priceBased, arrayTypes} = main;
-    const numberOfIndicators = inputParams.filter(o => o.key === 'donchianChannels').length;
+    let numberOfIndicators = 0
+
+    for (const o of inputParams) {
+      if (o.key === 'donchianChannels') numberOfIndicators++;
+    }
+
     const prefix = numberOfIndicators > 1 ? `donchian_channel_${indicatorKey}` : 'donchian_channel';
 
     const keyNames = [

@@ -1,6 +1,14 @@
 import { mainLoop } from './src/core-functions/mainLoop.js'
 import { correlation } from './src/studies/correlation.js'
-import { isAlreadyComputed, validateArray, validateObject, validateArrayOptions, validateBoolean, validateNumber } from './src/utilities/validators.js'
+import { 
+    isAlreadyComputed, 
+    validateArray, 
+    validateObject, 
+    validateArrayOptions, 
+    validateBoolean, 
+    validateNumber, 
+    validateArrayOfRanges
+} from './src/utilities/validators.js'
 import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
@@ -52,7 +60,7 @@ export default class OHLCV_INDICATORS {
         
         if(inputParams !== null)
         {
-            validateArray(inputParams, 'inputParams', 'constructor')
+            validateInputParams(inputParams, this.len)
             this.inputParams = inputParams
             this.compute()
         }
@@ -195,7 +203,7 @@ export default class OHLCV_INDICATORS {
 
         const { lag = 0} = options;
 
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         this.inputParams.push({key: methodName, params: [size, {lag}]})
  
@@ -213,7 +221,7 @@ export default class OHLCV_INDICATORS {
 
         const {target = 'close', lag = 0} = options
 
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
 
@@ -230,7 +238,7 @@ export default class OHLCV_INDICATORS {
 
         const {target = 'close', lag = 0} = options
 
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
 
@@ -251,7 +259,7 @@ export default class OHLCV_INDICATORS {
 
         const {target = 'close', lag = 0} = options
         
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         this.inputParams.push({key: methodName, params: [fast, slow, signal, {target, lag}]})
         
@@ -271,9 +279,9 @@ export default class OHLCV_INDICATORS {
         const {target = 'close', height = false, range = [],  lag = 0} = options
 
 
-        validateArray(range, 'range', methodName)
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
-        validateBoolean(height, 'height', methodName)
+        validateArray(range, 'options.range', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(height, 'options.height', methodName)
     
         this.inputParams.push({key: methodName, params: [size, stdDev, {target, height, range, lag}]});
     
@@ -291,7 +299,7 @@ export default class OHLCV_INDICATORS {
         
         const {target = 'close', lag = 0} = options
 
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         this.inputParams.push({key: methodName, params: [size, {target, lag}]})
 
@@ -310,9 +318,9 @@ export default class OHLCV_INDICATORS {
         validateObject(options, 'options', methodName)
         const { height = false, range = [], lag = 0} = options;
       
-        validateArray(range, 'range', methodName)
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
-        validateBoolean(height, 'height', methodName)
+        validateArray(range, 'options.range', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(height, 'options.height', methodName)
       
         this.inputParams.push({ key: methodName, params: [size, offset, { height, range, lag }] });
       
@@ -336,7 +344,7 @@ export default class OHLCV_INDICATORS {
 
         const {lag = 0} = options
 
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         this.inputParams.push({key: methodName, params: [fastSize, slowSize, {lag}]})
         return this           
@@ -352,7 +360,7 @@ export default class OHLCV_INDICATORS {
 
         const {lag = 0} = options
 
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'lag', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         this.inputParams.push({key: methodName, params: [{lag}]})
         return this           
@@ -369,9 +377,9 @@ export default class OHLCV_INDICATORS {
 
         const {group = false, range = [0, 1], lag = 0, type = 'minmax'} = options
 
-        validateBoolean(group, 'group', methodName)
-        validateArray(range, 'range', methodName)
-        validateArrayOptions(['minmax', 'zscore'], type, 'type', methodName)
+        validateBoolean(group, 'options.group', methodName)
+        validateArrayOfRanges(range, 'options.range', methodName)
+        validateArrayOptions(['minmax', 'zscore'], type, 'options.type', methodName)
 
         this.inputParams.push({key: methodName, params: [size, colKeys, type, group, range, lag]})
         return this

@@ -7,11 +7,14 @@ export const lag = (main, index) => {
     if(index === 0)
     {
         const {inputParams} = main
-        const findParams = inputParams.filter(o => o.key === 'lag')
 
-        if(typeof findParams !== 'object') return
+        const params = []
 
-        const params = findParams.map(o => o.params)
+        for (const o of inputParams) {
+            if (o.key === 'lag') {
+                params.push(o.params)
+            }
+        }
 
         for (const [colKeys, lookback] of params)
         {
