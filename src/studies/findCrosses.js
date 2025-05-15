@@ -132,7 +132,7 @@ class CrossInstance {
 
 export const crossPairs = (main, index) => {
 
-    const {verticalOhlcv, instances, len, arrayTypes} = main
+    const {verticalOhlcv, instances, len, arrayTypes, verticalOhlcvTempCols} = main
 
     if(index === 0)
     {
@@ -162,7 +162,8 @@ export const crossPairs = (main, index) => {
         {
             if(typeof slow === 'number')
             {
-                verticalOhlcv[slow] = new Int32Array(len).fill(slow)
+                verticalOhlcvTempCols.add(slow.toString())
+                verticalOhlcv[slow.toString()] = new Int32Array(len).fill(slow)
             }
             
             if(fast !== 'price' && !verticalOhlcv.hasOwnProperty(fast)) throw Error(`fast "${fast} not found in crossPairs"`)

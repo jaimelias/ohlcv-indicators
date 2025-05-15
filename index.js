@@ -13,6 +13,7 @@ import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
+import { buildArray } from './src/utilities/assignTypes.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -48,6 +49,7 @@ export default class OHLCV_INDICATORS {
         this.crossPairsList = []
         this.verticalOhlcv = {}
         this.verticalOhlcvKeyNames = []
+        this.verticalOhlcvTempCols = new Set()
 
         this.utilities = {
             correlation
@@ -83,21 +85,28 @@ export default class OHLCV_INDICATORS {
           invalidValueIndex,
           len,
           verticalOhlcv,
-          priceBased
-        } = this;
-        const result = {};
-        const shouldSlice = invalidValueIndex >= 0 && skipNull;
-        const sliceLength = len - (invalidValueIndex + 1);
+          priceBased,
+          arrayTypes,
+          verticalOhlcvTempCols
+        } = this
+        const result = {}
+        const startIndex = skipNull ? invalidValueIndex + 1 : 0
+        const newLen = len - startIndex
       
         for (const [key, arr] of Object.entries(verticalOhlcv)) {
-          // If slicing is needed, create a sliced copy, otherwise re-use the array.
-          let newArr = shouldSlice ? arr.slice(-sliceLength) : arr;
-      
-          // If this key is price based and precision is enabled, map over the array.
-          if (precision && priceBased.has(key)) {
-            newArr = newArr.map(v => (v == null ? null : v / precisionMultiplier));
-          }
-          result[key] = newArr;
+
+            if(verticalOhlcvTempCols.has(key)) continue
+
+            const shouldApplyPrecision = priceBased.has(key) && precision
+            result[key] = buildArray(arrayTypes[key], newLen)
+
+            for (let x = startIndex; x < len; x++)
+            {
+                result[key][x] =  (shouldApplyPrecision) 
+                    ? arr[x] / precisionMultiplier 
+                    : arr[x]
+            }
+
         }
       
         return result;
