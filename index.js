@@ -58,7 +58,7 @@ export default class OHLCV_INDICATORS {
         this.invalidValueIndex = -1
         this.precision = precision
         this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
-        this.ScaledGroups = {}
+        this.scaledGroups = {}
         
         if(inputParams !== null)
         {
@@ -375,9 +375,9 @@ export default class OHLCV_INDICATORS {
         return this           
     }
 
-    Scaler(size, colKeys, options)
+    scaler(size, colKeys, options)
     {
-        const methodName = 'Scaler'
+        const methodName = 'scaler'
 
         isAlreadyComputed(this)
 

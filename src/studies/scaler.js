@@ -1,4 +1,4 @@
-/* General Scaler: supports "minmax" and "zscore" types */
+/* General scaler: supports "minmax" and "zscore" types */
 
 const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
     const clamped = Math.min(Math.max(value, min), max);
@@ -9,7 +9,7 @@ const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
     return std === 0 ? 0 : (value - mean) / std;
   };
   
-export const Scaler = (
+export const scaler = (
     main,
     index,
     size,
@@ -49,14 +49,14 @@ export const Scaler = (
         instances.scaler.windows[winKey] = [];
   
         if (group) {
-          if (!main.ScaledGroups[groupKey]) main.ScaledGroups[groupKey] = [];
-          main.ScaledGroups[groupKey].push(key);
+          if (!main.scaledGroups[groupKey]) main.scaledGroups[groupKey] = [];
+          main.scaledGroups[groupKey].push(key);
         }
   
         if (lag > 0) {
           if (group) {
             const lags = Array.from({ length: lag }).map((_, i) => `${key}_lag_${i + 1}`);
-            main.ScaledGroups[groupKey].push(...lags);
+            main.scaledGroups[groupKey].push(...lags);
           }
           main.lag([key], lag);
         }

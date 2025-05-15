@@ -9,7 +9,7 @@ import { volumeOscillator } from "../oscillators/volumeOscillator.js";
 import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
-import { Scaler } from "../studies/scaler.js";
+import { scaler } from "../studies/scaler.js";
 
 import { buildArray } from "../utilities/assignTypes.js";
 import {  numberFormater } from "../utilities/numberUtilities.js";
@@ -26,7 +26,7 @@ const indicatorFunctions = {
   donchianChannels,
   bollingerBands,
   volumeOscillator,
-  Scaler
+  scaler
 };
 
 
