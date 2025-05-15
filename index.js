@@ -7,7 +7,8 @@ import {
     validateArrayOptions, 
     validateBoolean, 
     validateNumber, 
-    validateArrayOfRanges
+    validateArrayOfRanges,
+    validateInputParams
 } from './src/utilities/validators.js'
 import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
