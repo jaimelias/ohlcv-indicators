@@ -60,6 +60,8 @@ export default class OHLCV_INDICATORS {
         this.precision = precision
         this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.scaledGroups = {}
+
+        this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
         
         if(inputParams !== null)
         {
@@ -71,7 +73,7 @@ export default class OHLCV_INDICATORS {
             this.inputParams = []
         }
 
-        this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
+        
         
         return this 
     }
