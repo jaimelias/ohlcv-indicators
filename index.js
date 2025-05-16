@@ -378,7 +378,7 @@ export default class OHLCV_INDICATORS {
         return this           
     }
 
-    scaler(size, colKeys, options)
+    scaler(size, colKeys = [], options = {})
     {
         const methodName = 'scaler'
 
@@ -393,7 +393,11 @@ export default class OHLCV_INDICATORS {
         validateArrayOfRanges(range, 'options.range', methodName)
         validateArrayOptions(['minmax', 'zscore'], type, 'options.type', methodName)
 
-        this.inputParams.push({key: methodName, params: [size, colKeys, type, group, range, lag]})
+        const groupKey = (group) ? `${type}_${size}_group_${colKeys.join('_')}` : ''
+        const groupKeyLen = colKeys.length
+        const precomputed = {groupKey, groupKeyLen}
+
+        this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed}]})
         return this
     }
 }

@@ -9,30 +9,21 @@ const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
     return std === 0 ? 0 : (value - mean) / std;
   };
   
-export const scaler = (
-    main,
-    index,
-    size,
-    colKeys,
-    type,
-    group,
-    range,         // used for minmax: [validMin, validMax]
-    lag,
-  ) => {
+export const scaler = (main, index, size, colKeys, {type, group, range, lag, precomputed}) => {
+    const {groupKey, groupKeyLen} = precomputed
     const { verticalOhlcv, instances, arrayTypes } = main;
     const prefix = `${type}_${size}`;
-    let groupKey = '';
   
     if (index === 0) {
-      const { len, priceBased } = main;
-      groupKey = `${prefix}_group_${colKeys.join('_')}`;
+      const { len } = main;
   
-      instances.scaler = {
-        groupKeyLen: colKeys.length,
-        groupKey,
-        windows: {}           // stores arrays of past values for each key or group
-      };
-  
+      if(!instances.hasOwnProperty('scaler'))
+      {
+        instances.scaler = {
+          windows: {}
+        }
+      }
+
       for (const target of colKeys) {
         if (!verticalOhlcv.hasOwnProperty(target)) {
           throw new Error(`Target property "${target}" not found in verticalOhlcv`);
@@ -60,8 +51,7 @@ export const scaler = (
       }
     }
   
-    const { windows } = instances.scaler;
-    groupKey = instances.scaler.groupKey;
+    const { windows } = instances.scaler
   
     // update windows with current values
     for (const target of colKeys) {
@@ -71,7 +61,7 @@ export const scaler = (
   
       win.push(val);
       
-      if (win.length > (group ? size * instances.scaler.groupKeyLen : size)) {
+      if (win.length > (group ? size * groupKeyLen : size)) {
         win.shift();
       }
 
