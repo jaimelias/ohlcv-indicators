@@ -24,7 +24,7 @@ export const scaler = (
     let groupKey = '';
   
     if (index === 0) {
-      const { len, priceBased, groups } = main;
+      const { len, priceBased } = main;
       groupKey = `${prefix}_group_${colKeys.join('_')}`;
   
       instances.scaler = {
@@ -36,9 +36,6 @@ export const scaler = (
       for (const target of colKeys) {
         if (!verticalOhlcv.hasOwnProperty(target)) {
           throw new Error(`Target property "${target}" not found in verticalOhlcv`);
-        }
-        if (!priceBased.has(target)) {
-          throw new Error(`Column "${target}" is not priceBased and cannot be scaled.`);
         }
   
         const key = `${prefix}_${target}`;
