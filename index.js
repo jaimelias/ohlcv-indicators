@@ -16,6 +16,10 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 
+
+//precomputed
+import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
+
 /**
  * Class OHLCV_INDICATORS
  *
@@ -235,7 +239,9 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
+        const precomputed = precomputeMovingAverages({main: this, size, target, lag, methodName})
+
+        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag, precomputed}]})
 
         return this
     }
@@ -252,7 +258,10 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
+
+        const precomputed = precomputeMovingAverages({main: this, size, target, lag, methodName})
+
+        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag, precomputed}]})
 
         return this
     }
@@ -273,7 +282,10 @@ export default class OHLCV_INDICATORS {
         
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [fast, slow, signal, {target, lag}]})
+        const instanceKey = `${fast}_${slow}_${signal}${target === 'close' ? '' : `_${target}`}`
+        const precomputed = {instanceKey}
+
+        this.inputParams.push({key: methodName, params: [fast, slow, signal, {target, lag, precomputed}]})
         
         return this
 

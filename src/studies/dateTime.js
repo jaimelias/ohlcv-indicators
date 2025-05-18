@@ -16,7 +16,7 @@ export const dateTime = (main, index, {lag}) => {
             }
         })
 
-        const colKeys = ['day_of_the_week', 'day_of_the_month', 'week_of_the_month', 'hour', 'month', 'year', 'session_daily_index', 'session_intraday_index']
+        const colKeys = ['day_of_the_week', 'day_of_the_month', 'week_of_the_month', 'minute', 'hour', 'month', 'year', 'session_daily_index', 'session_intraday_index']
 
         for(const key of colKeys)
         {
@@ -41,6 +41,7 @@ export const dateTime = (main, index, {lag}) => {
         month,
         year,
         hour,
+        minute
     } = getDateInfo(currDate)
 
 
@@ -63,6 +64,7 @@ export const dateTime = (main, index, {lag}) => {
     main.pushToMain({index, key: 'month', value: month})
     main.pushToMain({index, key: 'year', value: year})
     main.pushToMain({index, key: 'hour', value: hour})
+    main.pushToMain({index, key: 'minute', value: minute})
 
 
     instances.dateTime.sessionIntradayIndexCount++
