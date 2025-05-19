@@ -30,7 +30,7 @@ import { precomputeMovingAverages } from './src/moving-averages/movingAverages.j
  */
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, precision = true, inputParams = null, chunkProcess = 100000}) {
+    constructor({input, ticker = null, precision = true, inputParams = null, chunkProcess = 2000}) {
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
