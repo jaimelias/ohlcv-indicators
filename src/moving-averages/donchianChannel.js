@@ -1,16 +1,10 @@
 
+import { roundDecimalPlaces } from "../utilities/numberUtilities.js";
+
 export const donchianChannels = (main, index, size, offset, options) => {
-  const {
-    verticalOhlcv,
-    instances,
-    len,
-    inputParams,
-    priceBased,
-    arrayTypes,
-    lag,
-  } = main;
-  const { height: includeHeight, range: rangeKeys } = options;
-  const indicatorKey = `${size}_${offset}`;
+  const {verticalOhlcv, instances, len, inputParams, priceBased, arrayTypes, lag} = main
+  const { height: includeHeight, range: rangeKeys, decimals } = options
+  const indicatorKey = `${size}_${offset}`
 
   // ---- INIT (only at first bar) ----
   if (index === 0) {
@@ -103,7 +97,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
     const heightVal = hasBounds && lower
       ? (upper - lower) / lower
       : NaN;
-    main.pushToMain({ index, key: `${prefix}_height`, value: heightVal });
+    main.pushToMain({ index, key: `${prefix}_height`, value: (decimals === null) ? heightVal : roundDecimalPlaces(heightVal, decimals) });
   }
 
   // precompute spread once
@@ -118,7 +112,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
     const val   = hasBounds && price === price && spread
       ? (price - lower) / spread
       : NaN;
-    main.pushToMain({ index, key: rangeOut[i], value: val });
+    main.pushToMain({ index, key: rangeOut[i], value: (decimals === null) ? val : roundDecimalPlaces(val, decimals) });
   }
 
   return true;

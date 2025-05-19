@@ -1,8 +1,9 @@
 import { FasterBollingerBands } from 'trading-signals'
+import { roundDecimalPlaces } from '../utilities/numberUtilities.js';
 
 const defaultTarget = 'close'
 
-export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, lag }) => {
+export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, lag, decimals }) => {
   const { verticalOhlcv, instances } = main;
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const indicatorKey = `${size}_${stdDev}${suffix}`;
@@ -111,7 +112,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     if (!Number.isNaN(lower) && !Number.isNaN(upper)) {
       heightValue = ((upper - lower) / lower)
     }
-    main.pushToMain({ index, key: `${subPrefix}_height`, value: heightValue });
+    main.pushToMain({ index, key: `${subPrefix}_height`, value: (decimals === null) ? heightValue : roundDecimalPlaces(heightValue, decimals) });
   }
 
   // Process each range property.
@@ -121,7 +122,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     if (!Number.isNaN(priceValue) && !Number.isNaN(lower) && !Number.isNaN(upper)) {
       rangeValue = (priceValue - lower) / (upper - lower)
     }
-    main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: rangeValue });
+    main.pushToMain({ index, key: `${subPrefix}_range_${rangeKey}`, value: (decimals === null) ? rangeValue : roundDecimalPlaces(rangeValue, decimals) });
   }
 
   return true;

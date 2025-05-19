@@ -1,4 +1,8 @@
+import { roundDecimalPlaces } from "../utilities/numberUtilities.js";
+
 /* General scaler: supports "minmax" and "zscore" types */
+
+
 
 const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
     const clamped = Math.min(Math.max(value, min), max);
@@ -9,7 +13,7 @@ const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
     return std === 0 ? 0 : (value - mean) / std;
   };
   
-export const scaler = (main, index, size, colKeys, {type, group, range, lag, precomputed}) => {
+export const scaler = (main, index, size, colKeys, {type, group, range, lag, precomputed, decimals}) => {
     const {groupKey, groupKeyLen} = precomputed
     const { verticalOhlcv, instances, arrayTypes } = main;
     const prefix = `${type}_${size}`;
@@ -93,7 +97,7 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
         }
       }
   
-      main.pushToMain({ index, key, value: scaled });
+      main.pushToMain({ index, key, value: (decimals === null) ? scaled : roundDecimalPlaces(scaled, decimals)})
     }
   };
   

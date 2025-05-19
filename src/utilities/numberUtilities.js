@@ -68,3 +68,11 @@ export const classifyNum = (num, throwError = false) => {
 
   return typeof num
 };
+
+
+export const roundDecimalPlaces = (value, decimals) => {
+
+  const factor = 10 ** decimals
+  // add a tiny epsilon to mitigate floating-point quirks around .5
+  return Math.round((value + Number.EPSILON) * factor) / factor
+};

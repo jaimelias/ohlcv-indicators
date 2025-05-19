@@ -302,14 +302,15 @@ export default class OHLCV_INDICATORS {
         validateNumber(stdDev, {min: 0.01, max: 50, allowDecimals: true}, 'stdDev', methodName)
         validateObject(options, 'options', methodName)
 
-        const {target = 'close', height = false, range = [],  lag = 0} = options
+        const {target = 'close', height = false, range = [],  lag = 0, decimals = null} = options
 
 
         validateArray(range, 'options.range', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(height, 'options.height', methodName)
+        if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
     
-        this.inputParams.push({key: methodName, params: [size, stdDev, {target, height, range, lag}]});
+        this.inputParams.push({key: methodName, params: [size, stdDev, {target, height, range, lag, decimals}]});
     
         return this;
     }
@@ -342,13 +343,14 @@ export default class OHLCV_INDICATORS {
         validateNumber(offset, {min: 0, max: this.len, allowDecimals: false}, 'offset', methodName)
       
         validateObject(options, 'options', methodName)
-        const { height = false, range = [], lag = 0} = options;
+        const { height = false, range = [], lag = 0, decimals = null} = options;
       
         validateArray(range, 'options.range', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(height, 'options.height', methodName)
+        if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
       
-        this.inputParams.push({ key: methodName, params: [size, offset, { height, range, lag }] });
+        this.inputParams.push({ key: methodName, params: [size, offset, { height, range, lag, decimals}] });
       
         return this;
     }
@@ -401,17 +403,19 @@ export default class OHLCV_INDICATORS {
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateArray(colKeys, 'colKeys', methodName)
 
-        const {group = false, range = [0, 1], lag = 0, type = 'minmax'} = options
+        const {group = false, range = [0, 1], lag = 0, type = 'minmax', decimals = null} = options
 
         validateBoolean(group, 'options.group', methodName)
         validateArrayOfRanges(range, 'options.range', methodName)
         validateArrayOptions(['minmax', 'zscore'], type, 'options.type', methodName)
 
+        if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
+
         const groupKey = (group) ? `${type}_${size}_group_${colKeys.join('_')}` : ''
         const groupKeyLen = colKeys.length
         const precomputed = {groupKey, groupKeyLen}
 
-        this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed}]})
+        this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed, decimals}]})
         return this
     }
 }
