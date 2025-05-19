@@ -4,13 +4,13 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
 
     const {verticalOhlcv, instances} = main
     const value = verticalOhlcv.volume[index]
-    const key = 'volume_oscillator'
+    const key = `volume_oscillator_${fast}_${slow}`
 
     if (index === 0) {
 
         const {crossPairsList, len, arrayTypes} = main
         Object.assign(instances, {
-            volume_oscillator: {
+            [key]: {
                 fastEMA: new FasterEMA(fast),
                 slowEMA: new FasterEMA(slow)
             }
