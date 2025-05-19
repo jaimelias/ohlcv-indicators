@@ -30,13 +30,16 @@ import { precomputeMovingAverages } from './src/moving-averages/movingAverages.j
  */
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, precision = true, inputParams = null}) {
+    constructor({input, ticker = null, precision = true, inputParams = null, chunkProcess = 100000}) {
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
 
         validateBoolean(precision, 'precision', 'constructor')
+        validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
 
+
+        this.chunkProcess = chunkProcess
         this.firstRow = input[0]
         
         const {inputTypes, arrayTypes} = assignTypes(this.firstRow)
@@ -168,7 +171,6 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr = [])
     {
-
         const methodName = 'crossPairs'
 
         isAlreadyComputed(this)

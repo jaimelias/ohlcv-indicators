@@ -31,7 +31,7 @@ const indicatorFunctions = {
 
 
 export const mainLoop = (input, main) => {
-  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes } = main;
+  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes, chunkProcess } = main;
 
   validateInputParams(inputParams, len)
 
@@ -41,44 +41,50 @@ export const mainLoop = (input, main) => {
   }
 
   // Process each row in the input
-  for (let index = 0; index < len; index++) {
-    const curr = input[index]
-    
-    for(const [key, formaterKey] of Object.entries(inputTypes))
-    {
-      const value = curr[key]
+  for (let chunkStart = 0; chunkStart < len; chunkStart += chunkProcess) {
 
-      if(numberFormater.hasOwnProperty(formaterKey))
-      {
-        let formatedValue = numberFormater[formaterKey](value)
+      const chunkEnd = Math.min(chunkStart + chunkProcess, len);
 
-        if(precisionMultiplier > 1 && priceBased.has(key))
+      for (let index = chunkStart; index < chunkEnd; index++) {
+        const curr = input[index]
+      
+        for(const [key, formaterKey] of Object.entries(inputTypes))
         {
-          formatedValue = formatedValue * precisionMultiplier
-        }
+          const value = curr[key]
 
-        main.pushToMain({index, key, value: formatedValue})
+          if(numberFormater.hasOwnProperty(formaterKey))
+          {
+            let formatedValue = numberFormater[formaterKey](value)
+
+            if(precisionMultiplier > 1 && priceBased.has(key))
+            {
+              formatedValue = formatedValue * precisionMultiplier
+            }
+
+            main.pushToMain({index, key, value: formatedValue})
+          }
+          else if(dateFormaters.hasOwnProperty(formaterKey))
+          {
+            main.pushToMain({index, key, value: dateFormaters[formaterKey](value)})
+          }
+          else
+          {
+            main.pushToMain({index, key, value})
+          }
+        }
+      
+        // Run all indicator functions except for the ones processed later
+        for (const { key, params } of inputParams) {
+          if (key === 'lag' || key === 'crossPairs') continue;
+          // resolve fn on-demand, no per-item object allocation here
+          indicatorFunctions[key](main, index, ...params)
+        }
+    
+        // Process these indicators separately (ensuring their execution order)
+        lag(main, index)
+        crossPairs(main, index)
+        input[index] = null //flusing data
       }
-      else if(dateFormaters.hasOwnProperty(formaterKey))
-      {
-        main.pushToMain({index, key, value: dateFormaters[formaterKey](value)})
-      }
-      else
-      {
-        main.pushToMain({index, key, value})
-      }
-    }
-  
-      // Run all indicator functions except for the ones processed later
-      for (const { key, params } of inputParams) {
-        if (key === 'lag' || key === 'crossPairs') continue;
-        // resolve fn on-demand, no per-item object allocation here
-        indicatorFunctions[key](main, index, ...params)
-      }
-  
-      // Process these indicators separately (ensuring their execution order)
-      lag(main, index)
-      crossPairs(main, index)
   }
 
   verticalOhlcvKeyNames.push(...Object.keys(verticalOhlcv))
