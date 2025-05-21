@@ -1,8 +1,6 @@
-export const verticalToHorizontal = (
-  skipNull = false, 
-  main,
-  startIndex = 0
-) => {
+import { dateOutputFormaters } from "./dateUtilities.js" 
+
+export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, dateFormat}) => {
 
   const {precisionMultiplier, priceBased, precision, verticalOhlcv, invalidValueIndex, len, verticalOhlcvKeyNames, verticalOhlcvTempCols} = main
 
@@ -19,9 +17,19 @@ export const verticalToHorizontal = (
 
     for (let i = maxStartIndex; i < len; i++)
     {
-      result[i - maxStartIndex][key] = (shouldApplyPrecision)
-        ? arr[i] / precisionMultiplier 
-        : arr[i]
+      if(shouldApplyPrecision)
+      {
+        result[i - maxStartIndex][key] = arr[i] / precisionMultiplier 
+
+      }
+      else if(key === 'date')
+      {
+        result[i - maxStartIndex][key] = dateOutputFormaters[dateFormat](arr[i])
+      } 
+      else
+      {
+        result[i - maxStartIndex][key] = arr[i]
+      }
     }
   }
 

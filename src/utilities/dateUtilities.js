@@ -1,3 +1,10 @@
+export const dateOutputFormaters = {
+  string: d => d.toISOString(),
+  milliseconds: d => d.getTime(),
+  seconds: d => d.getTime() / 1000,
+  object: d => d
+}
+
 export const dateFormaters = {
     dateObject: d => d,
     dateMilliseconds: d => new Date(d),

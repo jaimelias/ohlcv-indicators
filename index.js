@@ -15,7 +15,7 @@ import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
-
+import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -86,8 +86,13 @@ export default class OHLCV_INDICATORS {
     }
 
 
-    getDataAsCols(skipNull = true) {
+    getDataAsCols(options = {}) {
         this.compute();
+
+        const {skipNull = true, dateFormat = 'string'} = options
+
+        validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getDataAsCols')
+        validateObject(options, 'options', 'getDataAsCols')
       
         const {
           precisionMultiplier,
@@ -112,9 +117,17 @@ export default class OHLCV_INDICATORS {
 
             for (let x = startIndex; x < len; x++)
             {
-                result[key][x] =  (shouldApplyPrecision) 
-                    ? arr[x] / precisionMultiplier 
-                    : arr[x]
+                if(shouldApplyPrecision)
+                {
+                    result[key][x] = arr[x] / precisionMultiplier 
+                }
+                else if(key === 'date')
+                {
+                    result[key][x] = dateOutputFormaters[dateFormat](arr[x])
+                }
+                else{
+                    result[key][x] = arr[x]
+                }
             }
 
         }
@@ -123,20 +136,38 @@ export default class OHLCV_INDICATORS {
       }
       
 
-    getData(skipNull = true) {
+    getData(options = {}) {
 
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
 
-        return verticalToHorizontal(skipNull, this, 0)
+        const {skipNull = true, dateFormat = 'string'} = options
+
+        validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getData')
+        validateObject(options, 'options', 'getData')
+ 
+        return verticalToHorizontal({
+            main: this, 
+            skipNull, 
+            startIndex: 0,
+            dateFormat
+        })
     }
     
     
-    getLastValues(){
+    getLastValues(options = {}){
 
         this.compute()
 
-        return verticalToHorizontal(false, this, this.len - 1)[0]
+        const {dateFormat = 'string'} = options
+         validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getData')
+
+        return verticalToHorizontal({
+            skipNull: false, 
+            main: this, 
+            startIndex: this.len - 1,
+            dateFormat
+        })[0]
     }
 
     compute() {
