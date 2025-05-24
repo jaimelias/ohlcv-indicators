@@ -259,6 +259,24 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
+    atr(size = 14, options = {}) {
+
+        const methodName = 'atr'
+
+        isAlreadyComputed(this)
+
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {lag = 0} = options
+
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+
+        this.inputParams.push({key: methodName, params: [size, {lag}]})
+
+        return this
+    }
+
     ema(size = 5, options = {}) {
 
         const methodName = 'ema'

@@ -10,6 +10,7 @@ import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
 import { scaler } from "../studies/scaler.js";
+import { atr } from "../volatility/atr.js";
 
 import { buildArray } from "../utilities/assignTypes.js";
 import {  numberFormater } from "../utilities/numberUtilities.js";
@@ -19,6 +20,7 @@ import { dateFormaters } from "../utilities/dateUtilities.js";
 const indicatorFunctions = {
   dateTime,
   rsi,
+  atr,
   ema: movingAverages,
   sma: movingAverages,
   macd,

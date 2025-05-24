@@ -1,7 +1,10 @@
 
 import {FasterEMA, FasterSMA} from 'trading-signals';
 
-const indicatorClasses = {ema: FasterEMA, sma: FasterSMA} 
+const indicatorClasses = {
+  ema: FasterEMA, 
+  sma: FasterSMA
+} 
 
 export const movingAverages = (main, index, indicatorName, size, { target, lag, precomputed }) => {
   const { verticalOhlcv, instances } = main
@@ -18,13 +21,13 @@ export const movingAverages = (main, index, indicatorName, size, { target, lag, 
 
   // Retrieve the current price value.
   const value = verticalOhlcv[target][index]
-  const { maInstance } = instances[keyName]
+  const instance = instances[keyName]
 
   // Update the moving average instance.
-  maInstance.update(value);
+  instance.update(value);
   let currMa = NaN;
   try {
-    currMa = maInstance.getResult();
+    currMa = instance.getResult();
   } catch (err) {
 
   }
@@ -42,9 +45,7 @@ export const precomputeMovingAverages = ({main, size, target, lag, methodName}) 
   const keyName = `${methodName}_${size}${suffix}`
 
     // Create the main moving average instance.
-    instances[keyName] = {
-      maInstance: new indicatorClasses[methodName](size)
-    }
+    instances[keyName] = new indicatorClasses[methodName](size)
 
     verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
 
