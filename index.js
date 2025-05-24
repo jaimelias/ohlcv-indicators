@@ -268,14 +268,12 @@ export default class OHLCV_INDICATORS {
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateObject(options, 'options', methodName)
 
-        const {lag = 0, tp = null, sl = null} = options
+        const {lag = 0, type = 'price'} = options
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateArrayOptions(['price', 'percentage'], type, 'options.type', methodName)
 
-        if(tp !== null) validateNumber(tp, {min: 0.01, max: 100, allowDecimals: true}, 'options.tp', methodName)
-        if(sl !== null) validateNumber(sl, {min: 0.01, max: 100, allowDecimals: true}, 'options.tp', methodName)
-
-        this.inputParams.push({key: methodName, params: [size, {lag, tp, sl}]})
+        this.inputParams.push({key: methodName, params: [size, {lag, type}]})
 
         return this
     }

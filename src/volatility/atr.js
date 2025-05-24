@@ -1,39 +1,27 @@
 
 import {FasterATR, FasterWSMA} from 'trading-signals';
 
-export const atr = (main, index, size, {lag, tp, sl}) => {
+export const atr = (main, index, size, {lag, type}) => {
   const { verticalOhlcv, instances } = main
-  const keyName = `atr_${size}`
+  const keyName = (type === 'percentage') ? `atr_${size}_percentage`  : `atr_${size}` 
 
   if (index === 0) {
 
     const {instances, verticalOhlcv, arrayTypes, len, priceBased} = main
 
     instances[keyName] = new FasterATR(size, FasterWSMA)
-    
-    const keyNames = [keyName]
 
-    if(tp !== null)
+    if(type === 'price')
     {
-      keyNames.push(`${keyName}_tp`)
-    }
-
-    if(sl !== null)
-    {
-       keyNames.push(`${keyName}_sl`)
-    }
-
-    for(const k of keyNames)
-    {
-      priceBased.add(k)
-      verticalOhlcv[k] = new Float64Array(len).fill(NaN)
-      arrayTypes[k] = 'Float64Array'
+      priceBased.add(keyName)
     }
     
-
+    verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
+    arrayTypes[keyName] = 'Float64Array'
+    
     if(lag > 0)
     {
-      main.lag(keyNames, lag)
+      main.lag([keyName], lag)
     }
   }
 
@@ -54,14 +42,9 @@ export const atr = (main, index, size, {lag, tp, sl}) => {
 
   }
 
-  if(tp !== null)
+  if(type === 'percentage')
   {
-    main.pushToMain({ index, key: `${keyName}_tp`, value: (!Number.isNaN(currAtr)) ? curr.close + (currAtr*tp) : NaN });
-  }
-
-  if(sl !== null)
-  {
-    main.pushToMain({ index, key: `${keyName}_sl`, value: (!Number.isNaN(currAtr)) ? curr.close - (currAtr*sl) : NaN });
+    currAtr = (Number.isNaN(currAtr)) ? NaN : (currAtr / curr.close)
   }
 
   // Always push the MA value (even if NaN).
