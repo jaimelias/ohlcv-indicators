@@ -1,7 +1,7 @@
 
 import {FasterATR, FasterWSMA} from 'trading-signals';
 
-export const atr = (main, index, size, {lag}) => {
+export const atr = (main, index, size, {lag, tp, sl}) => {
   const { verticalOhlcv, instances } = main
   const keyName = `atr_${size}`
 
@@ -10,20 +10,35 @@ export const atr = (main, index, size, {lag}) => {
     const {instances, verticalOhlcv, arrayTypes, len, priceBased} = main
 
     instances[keyName] = new FasterATR(size, FasterWSMA)
-    verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
+    
+    const keyNames = [keyName]
 
-    priceBased.add(keyName)
+    if(tp !== null)
+    {
+      keyNames.push(`${keyName}_tp`)
+    }
+
+    if(sl !== null)
+    {
+       keyNames.push(`${keyName}_sl`)
+    }
+
+    for(const k of keyNames)
+    {
+      priceBased.add(k)
+      verticalOhlcv[k] = new Float64Array(len).fill(NaN)
+      arrayTypes[k] = 'Float64Array'
+    }
+    
 
     if(lag > 0)
     {
-      main.lag([keyName], lag)
+      main.lag(keyNames, lag)
     }
-
-    arrayTypes[keyName] = 'Float64Array'
   }
 
   // Retrieve the current price value.
-  const value = {
+  const curr = {
       high: verticalOhlcv.high[index],
       low: verticalOhlcv.low[index],
       close: verticalOhlcv.close[index],
@@ -31,16 +46,26 @@ export const atr = (main, index, size, {lag}) => {
   const instance = instances[keyName]
 
   // Update the moving average instance.
-  instance.update(value);
-  let currMa = NaN;
+  instance.update(curr);
+  let currAtr = NaN;
   try {
-    currMa = instance.getResult();
+    currAtr = instance.getResult();
   } catch (err) {
 
   }
 
+  if(tp !== null)
+  {
+    main.pushToMain({ index, key: `${keyName}_tp`, value: (!Number.isNaN(currAtr)) ? curr.close + (currAtr*tp) : NaN });
+  }
+
+  if(sl !== null)
+  {
+    main.pushToMain({ index, key: `${keyName}_sl`, value: (!Number.isNaN(currAtr)) ? curr.close - (currAtr*sl) : NaN });
+  }
+
   // Always push the MA value (even if NaN).
-  main.pushToMain({ index, key: keyName, value: currMa });
+  main.pushToMain({ index, key: keyName, value: currAtr });
 
   return true;
 }
