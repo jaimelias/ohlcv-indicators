@@ -1,27 +1,36 @@
 
 import {FasterATR, FasterWSMA} from 'trading-signals';
 
-export const atr = (main, index, size, {lag, type}) => {
+export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
   const { verticalOhlcv, instances } = main
-  const keyName = (type === 'percentage') ? `atr_${size}_percentage`  : `atr_${size}` 
+  const baseKeyName = `atr_${size}`
 
   if (index === 0) {
 
     const {instances, verticalOhlcv, arrayTypes, len, priceBased} = main
 
-    instances[keyName] = new FasterATR(size, FasterWSMA)
+    instances[baseKeyName] = new FasterATR(size, FasterWSMA)
 
-    if(type === 'price')
+    const keyNames = [baseKeyName]
+
+    if(percentage) keyNames.push(`${baseKeyName}_percentage`)
+    if(upper !== null) keyNames.push(`${baseKeyName}_upper`)
+    if(lower !== null) keyNames.push(`${baseKeyName}_lower`)
+
+    for(const k of keyNames)
     {
-      priceBased.add(keyName)
+      if(!k.endsWith('_percentage'))
+      {
+        priceBased.add(k)
+      }
+      
+      verticalOhlcv[k] = new Float64Array(len).fill(NaN)
+      arrayTypes[k] = 'Float64Array'
     }
-    
-    verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
-    arrayTypes[keyName] = 'Float64Array'
-    
+
     if(lag > 0)
     {
-      main.lag([keyName], lag)
+      main.lag(keyNames, lag)
     }
   }
 
@@ -31,7 +40,7 @@ export const atr = (main, index, size, {lag, type}) => {
       low: verticalOhlcv.low[index],
       close: verticalOhlcv.close[index],
     } 
-  const instance = instances[keyName]
+  const instance = instances[baseKeyName]
 
   // Update the moving average instance.
   instance.update(curr);
@@ -42,13 +51,24 @@ export const atr = (main, index, size, {lag, type}) => {
 
   }
 
-  if(type === 'percentage')
+  if(percentage)
   {
-    currAtr = (Number.isNaN(currAtr)) ? NaN : (currAtr / curr.close)
+    const percentageValue = (Number.isNaN(currAtr)) ? NaN : (currAtr / curr.close)
+    main.pushToMain({ index, key: `${baseKeyName}_percentage`, value: percentageValue });
+  }
+  if(upper !== null)
+  {
+    const upperValue = (Number.isNaN(currAtr)) ? NaN : (curr.close + (currAtr * upper))
+    main.pushToMain({ index, key: `${baseKeyName}_upper`, value: upperValue });
+  }
+  if(lower !== null)
+  {
+    const lowerValue = (Number.isNaN(currAtr)) ? NaN : (curr.close - (currAtr * lower))
+    main.pushToMain({ index, key: `${baseKeyName}_lower`, value: lowerValue });
   }
 
   // Always push the MA value (even if NaN).
-  main.pushToMain({ index, key: keyName, value: currAtr });
+  main.pushToMain({ index, key: baseKeyName, value: currAtr });
 
   return true;
 }

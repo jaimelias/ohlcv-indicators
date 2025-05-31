@@ -1,6 +1,6 @@
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import TerserPlugin from 'terser-webpack-plugin';
+//import TerserPlugin from 'terser-webpack-plugin';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,7 +16,7 @@ export default {
   output,
   mode: 'production',
   target: 'web',
-  optimization: { //TerserPlugin start
+/*   optimization: { //TerserPlugin start
     minimize: true,
     minimizer: [
       new TerserPlugin({
@@ -28,7 +28,7 @@ export default {
         },
       }),
     ],
-  }, // TerserPlugin end
+  }, // TerserPlugin end */
   module: {
     rules: [
       {
