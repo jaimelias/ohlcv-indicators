@@ -9,12 +9,14 @@ import { volumeOscillator } from "../oscillators/volumeOscillator.js";
 import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
-import { scaler } from "../studies/scaler.js";
+import { scaler } from "../machine-learning/scaler.js";
 import { atr } from "../volatility/atr.js";
 
 import { buildArray } from "../utilities/assignTypes.js";
 import {  numberFormater } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
+
+import { pca } from "../machine-learning/pca.js";
 
 // Map indicator keys to their respective functions
 const indicatorFunctions = {
@@ -33,7 +35,7 @@ const indicatorFunctions = {
 
 
 export const mainLoop = (input, main) => {
-  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes, chunkProcess } = main;
+  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes, chunkProcess, scaledGroups } = main;
 
   validateInputParams(inputParams, len)
 
@@ -88,6 +90,8 @@ export const mainLoop = (input, main) => {
         input[index] = null //flusing data
       }
   }
+
+  pca(main)
 
   verticalOhlcvKeyNames.push(...Object.keys(verticalOhlcv))
 }
