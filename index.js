@@ -67,6 +67,7 @@ export default class OHLCV_INDICATORS {
         this.precision = precision
         this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.scaledGroups = {}
+        this.scaledLabels = new Set()
 
         this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
         
@@ -456,9 +457,10 @@ export default class OHLCV_INDICATORS {
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateArray(colKeys, 'colKeys', methodName)
 
-        const {group = false, range = [0, 1], lag = 0, type = 'minmax', decimals = null} = options
+        const {group = false, range = [0, 1], lag = 0, type = 'zscore', decimals = null, pca = false} = options
 
         validateBoolean(group, 'options.group', methodName)
+        validateBoolean(pca, 'options.pca', methodName)
         validateArrayOfRanges(range, 'options.range', methodName)
         validateArrayOptions(['minmax', 'zscore'], type, 'options.type', methodName)
 
@@ -468,7 +470,7 @@ export default class OHLCV_INDICATORS {
         const groupKeyLen = colKeys.length
         const precomputed = {groupKey, groupKeyLen}
 
-        this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed, decimals}]})
+        this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed, decimals, pca}]})
         return this
     }
 }

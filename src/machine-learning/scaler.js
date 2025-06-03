@@ -19,7 +19,13 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
     const prefix = `${type}_${size}`;
   
     if (index === 0) {
-      const { len } = main;
+      const { len, scaledLabels } = main;
+
+      if(scaledLabels.has(prefix))
+      {
+        throw new Error(`Method "scaler" cannot have both "size" and "options.type" parameters specified together.`)
+      }
+      scaledLabels.add(prefix)
   
       if(!instances.hasOwnProperty('scaler'))
       {
