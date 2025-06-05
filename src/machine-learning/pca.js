@@ -49,7 +49,6 @@ export const pca = main => {
 
         scaledKeyNames.push(...laggedKeys)
 
-
         const diffLen = len - startIndex
         const numCols = scaledKeyNames.length
         const tempArr = new Array(diffLen)
