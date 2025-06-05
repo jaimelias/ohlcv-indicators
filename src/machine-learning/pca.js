@@ -1,4 +1,5 @@
 import { PCA } from "ml-pca";
+import { validateBoolean, validateArrayOptions, validateNumber } from "../utilities/validators.js";
 
 export const pca = main => {
 
@@ -13,9 +14,29 @@ export const pca = main => {
 
         const [size, keyNames, options] = params
 
-        const {type, group, lag, pca: pcaBoolean} = options
+        const {type, group, lag, pca: pcaOptions} = options
 
-        if(!group || !pcaBoolean) continue
+        const {
+            showSource = false,
+            storeModel = false,
+            isCovarianceMatrix = false,
+            method = 'NIPALS', //SVD, covarianceMatrix or NIPALS
+            center = true,
+            scale = false,
+            nCompNIPALS = 2,
+            ignoreZeroVariance = false
+        } = pcaOptions
+
+        if(!group || pcaOptions === null) continue
+
+        validateBoolean(showSource, 'showSource', 'scaler.options.pca.showSource')
+        validateBoolean(storeModel, 'storeModel', 'scaler.options.pca.storeModel')
+        validateBoolean(isCovarianceMatrix, 'isCovarianceMatrix', 'scaler.options.pca.isCovarianceMatrix')
+        validateBoolean(center, 'center', 'scaler.options.pca.center')
+        validateBoolean(scale, 'scale', 'scaler.options.pca.scale')
+        validateBoolean(ignoreZeroVariance, 'ignoreZeroVariance', 'scaler.options.pca.ignoreZeroVariance')
+        validateArrayOptions(['SVD', 'NIPALS', 'covarianceMatrix'], method, 'scaler.options.pca.method')
+        validateNumber(nCompNIPALS, {min: 1}, 'nCompNIPALS', 'scaler.options.pca.nCompNIPALS')
 
         const scaledKeyNames = keyNames.map(v => `${type}_${size}_${v}`)
         const laggedKeys = []
@@ -46,19 +67,36 @@ export const pca = main => {
             tempArr[i - startIndex] = row
         }
 
-        for (const key of scaledKeyNames) {
-            delete verticalOhlcv[key]
+        if(!showSource)
+        {
+            for (const key of scaledKeyNames) {
+                delete verticalOhlcv[key]
+            }
         }
 
-        const pca = new PCA(tempArr)
-        const predictions = [...pca.predict(tempArr)]
-
         const verticalKey = `pca_${type}_${size}`
+
+        const pca = new PCA(tempArr, {
+            isCovarianceMatrix,
+            method,
+            center,
+            scale,
+            nCompNIPALS,
+            ignoreZeroVariance
+        })
+
+        if(storeModel)
+        {
+            main.models[verticalKey] = pca.toJSON()
+        }
+        
+        const predictions = pca.predict(tempArr).to2DArray()
+
         verticalOhlcv[verticalKey] = new Array(len).fill(null)
 
         for(let x = 0; x < predictions.length; x++)
         {
-            verticalOhlcv[verticalKey][x + startIndex + 1] = predictions[x]
+            verticalOhlcv[verticalKey][x + startIndex] = predictions[x]
         }
 
     }

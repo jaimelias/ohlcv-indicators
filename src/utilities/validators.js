@@ -31,7 +31,7 @@ export const validateArray = (arr, paramName, callerName) => {
 
 export const validateObject = (obj, paramName, callerName) => {
     
-    if(!Boolean(obj) || !typeof obj == 'object')
+    if(obj instanceof Object === false)
     {
         throw new Error(`Param "${paramName}" must be an object in "${callerName}".`)
     }
@@ -62,35 +62,54 @@ export const validateBoolean = (value, paramName, callerName) => {
 }
 
 export const validateNumber = (value, options, paramName, callerName) => {
+  validateObject(options, 'options', `${callerName}.${paramName}.validateNumber`);
 
-    validateObject(options, 'options', `${callerName}.${paramName}.validateNumber`)
+  const { allowDecimals = false, min, max } = options;
+  const label = allowDecimals ? 'number' : 'integer';
 
-    const {allowDecimals = false, min, max} = options
+  // 1) check that value is a number (and integer if decimals not allowed)
+  if (typeof value !== 'number' || (allowDecimals === false && !Number.isInteger(value))) {
+    throw new Error(
+      `Param "${paramName}" must be an ${label} in "${callerName}".`
+    );
+  }
 
-    const label = (allowDecimals) ? 'number' : 'integer'
+  // 2) validate types of min and max if they’re provided
+  if (min !== undefined && typeof min !== 'number') {
+    throw new Error(
+      `Param "min" must be a valid ${label} (if provided) in "${callerName}.${paramName}.validateNumber".`
+    );
+  }
+  if (max !== undefined && typeof max !== 'number') {
+    throw new Error(
+      `Param "max" must be a valid ${label} (if provided) in "${callerName}.${paramName}.validateNumber".`
+    );
+  }
 
-    if(typeof value !== 'number' || (allowDecimals === false && !Number.isInteger(value)))
-    {
-        throw new Error(`Param "${paramName}" must be an integer in "${callerName}".`)
-    }
+  // 3) if both were provided, ensure min < max
+  if (min !== undefined && max !== undefined && min >= max) {
+    throw new Error(
+      `Param "min" must be less than "max" in "${callerName}.${paramName}.validateNumber".`
+    );
+  }
 
-    if(typeof min !== 'number' || typeof max !== 'number' || min >= max)
-    {
-        throw new Error(`Param "min" must be a valid ${label} lower than "max" "${callerName}.${paramName}.validateNumber".`)
-    }
+  // 4) check value against min (if set)
+  if (min !== undefined && value < min) {
+    throw new Error(
+      `Param "${paramName}" must be an ${label} ≥ ${min} in "${callerName}".`
+    );
+  }
 
-    if(value < min)
-    {
-        throw new Error(`Param "${paramName}" must be an ${label} greater than or equal to ${min} in "${callerName}".`)
-    }
+  // 5) check value against max (if set)
+  if (max !== undefined && value > max) {
+    throw new Error(
+      `Param "${paramName}" must be an ${label} ≤ ${max} in "${callerName}".`
+    );
+  }
 
-    if(value > max)
-    {
-        throw new Error(`Param "${paramName}" must be an ${label} lower than or equal to ${max} in "${callerName}".`)
-    }
+  return true;
+};
 
-    return true
-}
 
 export const validateArrayOfRanges = (range, paramName, callerName) => {
 
