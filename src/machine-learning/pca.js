@@ -16,6 +16,8 @@ export const pca = main => {
 
         const {type, group, lag, pca: pcaOptions} = options
 
+        if(!group || pcaOptions === null) continue
+
         const {
             showSource = false,
             storeModel = false,
@@ -27,7 +29,7 @@ export const pca = main => {
             ignoreZeroVariance = false
         } = pcaOptions
 
-        if(!group || pcaOptions === null) continue
+        
 
         validateBoolean(showSource, 'showSource', 'scaler.options.pca.showSource')
         validateBoolean(storeModel, 'storeModel', 'scaler.options.pca.storeModel')
