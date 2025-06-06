@@ -1,9 +1,8 @@
-import { PCA } from "ml-pca";
 import { validateBoolean, validateArrayOptions, validateNumber } from "../utilities/validators.js";
 
 export const pca = main => {
 
-    const {inputParams, invalidValueIndex, len, verticalOhlcv} = main
+    const {inputParams, invalidValueIndex, len, verticalOhlcv, ML} = main
     const startIndex = invalidValueIndex + 1
 
     for(const rowParams of inputParams)
@@ -17,6 +16,12 @@ export const pca = main => {
         const {type, group, lag, pca: pcaOptions} = options
 
         if(!group || pcaOptions === null) continue
+
+        if (!ML.hasOwnProperty('PCA')) {
+            throw new Error(
+                `"PCA" isn’t available because its library wasn’t imported into OHLCV_INDICATORS.ML.`
+            )
+        }
 
         const {
             showSource = false,
@@ -77,7 +82,7 @@ export const pca = main => {
 
         const verticalKey = `pca_${type}_${size}`
 
-        const pca = new PCA(tempArr, {
+        const pca = new ML.PCA(tempArr, {
             isCovarianceMatrix,
             method,
             center,

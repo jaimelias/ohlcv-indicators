@@ -30,13 +30,14 @@ import { precomputeMovingAverages } from './src/moving-averages/movingAverages.j
  */
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, precision = true, inputParams = null, chunkProcess = 2000}) {
+    constructor({input, ticker = null, precision = true, inputParams = null, chunkProcess = 2000, ML = {}}) {
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
 
         validateBoolean(precision, 'precision', 'constructor')
         validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
+        validateObject(ML, 'ML', 'constructor')
 
 
         this.chunkProcess = chunkProcess
@@ -69,6 +70,7 @@ export default class OHLCV_INDICATORS {
         this.scaledGroups = {}
         this.scaledLabels = new Set()
         this.models = {}
+        this.ML = ML
 
         this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
         
@@ -457,6 +459,7 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateArray(colKeys, 'colKeys', methodName)
+        validateObject(options, 'options', methodName)
 
         const {group = false, range = [0, 1], lag = 0, type = 'zscore', decimals = null, pca = null} = options
 
@@ -473,5 +476,35 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed, decimals, pca}]})
         return this
+    }
+
+    regressor(size, options = {})
+    {
+        const validRegressors = [
+            'SimpleLinearRegression', 
+            'PolynomialRegression',
+            'MultivariateLinearRegression', 
+            'DecisionTreeRegression', 
+            'RandomForestRegression'
+        ]
+
+        const methodName = 'regressor'
+
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {target = 'close', lookback =  -1, future =  1, trainingCols = ['close'], type = 'SimpleLinearRegression'} = options
+
+        if (!this.ML.hasOwnProperty(type)) {
+            throw new Error(
+                `"${type}" isn’t available because its library wasn’t imported into OHLCV_INDICATORS.ML.`
+            )
+        }
+        
+        validateNumber(lookback, {min: size, max: -1, allowDecimals: false}, 'lookback', methodName)
+        validateNumber(future, {min: 1, allowDecimals: false}, 'future', methodName)
+        validateArray(trainingCols, 'trainingCols', methodName)
+        validateArrayOptions(validRegressors, type, 'type', methodName)
+
     }
 }
