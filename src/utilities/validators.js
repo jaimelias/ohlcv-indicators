@@ -133,3 +133,10 @@ export const validateArrayOfRanges = (range, paramName, callerName) => {
 
     return true
 }
+
+export const validateString = (txt, paramName, callerName) => {
+
+  if(typeof txt !== 'string' || !txt.length) throw new Error(`Invalid "${paramName}" property in "${callerName}". Only strings are accepted.`)
+
+  return true
+}

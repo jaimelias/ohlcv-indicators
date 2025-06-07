@@ -8,7 +8,8 @@ import {
     validateBoolean, 
     validateNumber, 
     validateArrayOfRanges,
-    validateInputParams
+    validateInputParams,
+    validateString
 } from './src/utilities/validators.js'
 import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
@@ -16,6 +17,7 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
+import { validRegressors } from './src/machine-learning/regressor.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -296,6 +298,7 @@ export default class OHLCV_INDICATORS {
 
         const {target = 'close', lag = 0} = options
 
+        validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         const precomputed = precomputeMovingAverages({main: this, size, target, lag, methodName})
@@ -315,6 +318,7 @@ export default class OHLCV_INDICATORS {
 
         const {target = 'close', lag = 0} = options
 
+        validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
 
@@ -339,6 +343,7 @@ export default class OHLCV_INDICATORS {
 
         const {target = 'close', lag = 0} = options
         
+        validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         const instanceKey = `${fast}_${slow}_${signal}${target === 'close' ? '' : `_${target}`}`
@@ -361,7 +366,7 @@ export default class OHLCV_INDICATORS {
 
         const {target = 'close', height = false, range = [],  lag = 0, decimals = null} = options
 
-
+        validateString(target, 'options.target', methodName)
         validateArray(range, 'options.range', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(height, 'options.height', methodName)
@@ -383,6 +388,7 @@ export default class OHLCV_INDICATORS {
         
         const {target = 'close', lag = 0} = options
 
+        validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
         this.inputParams.push({key: methodName, params: [size, {target, lag}]})
@@ -413,7 +419,7 @@ export default class OHLCV_INDICATORS {
     }
       
 
-    volumeOscillator(fastSize = 5, slowSize = 10, options = {})
+    volumeOscillator(fastsize = 5, slowsize = 10, options = {})
     {
         const methodName = 'volumeOscillator'
 
@@ -423,15 +429,15 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
 
-        validateNumber(fastSize, {min: 1, max: this.len, allowDecimals: false}, 'fastSize', methodName)
-        validateNumber(slowSize, {min: fastSize, max: this.len, allowDecimals: false}, 'slowSize', methodName)
+        validateNumber(fastsize, {min: 1, max: this.len, allowDecimals: false}, 'fastsize', methodName)
+        validateNumber(slowsize, {min: fastsize, max: this.len, allowDecimals: false}, 'slowsize', methodName)
         validateObject(options, 'options', methodName)
 
         const {lag = 0} = options
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [fastSize, slowSize, {lag}]})
+        this.inputParams.push({key: methodName, params: [fastsize, slowsize, {lag}]})
         return this           
     }
     dateTime(options = {})
@@ -478,22 +484,16 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    regressor(size, options = {})
+    regressor(trainingSize, options = {})
     {
-        const validRegressors = [
-            'SimpleLinearRegression', 
-            'PolynomialRegression',
-            'MultivariateLinearRegression', 
-            'DecisionTreeRegression', 
-            'RandomForestRegression'
-        ]
+         isAlreadyComputed(this)
 
         const methodName = 'regressor'
 
-        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateNumber(trainingSize, {min: 1, max: this.len, allowDecimals: false}, 'trainingSize', methodName)
         validateObject(options, 'options', methodName)
 
-        const {target = 'close', lookback =  -1, future =  1, trainingCols = ['close'], type = 'SimpleLinearRegression'} = options
+        const {target = 'close', predictions =  1, trainingCols = [], type = 'SimpleLinearRegression', lookback = 0} = options
 
         if (!this.ML.hasOwnProperty(type)) {
             throw new Error(
@@ -501,10 +501,15 @@ export default class OHLCV_INDICATORS {
             )
         }
         
-        validateNumber(lookback, {min: size, max: -1, allowDecimals: false}, 'lookback', methodName)
-        validateNumber(future, {min: 1, allowDecimals: false}, 'future', methodName)
+        validateString(target, 'options.target', methodName)
+        validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
+        validateNumber(lookback, {min: 0, allowDecimals: false}, 'lookback', methodName)
         validateArray(trainingCols, 'trainingCols', methodName)
-        validateArrayOptions(validRegressors, type, 'type', methodName)
+        if(type === 'SimpleLinearRegression' && trainingCols.length > 0) throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
+        validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
 
+        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, trainingCols, type}]})
+
+        return this
     }
 }

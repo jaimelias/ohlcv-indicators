@@ -17,6 +17,7 @@ import {  numberFormater } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
 
 import { pca } from "../machine-learning/pca.js";
+import { regressor } from "../machine-learning/regressor.js";
 
 // Map indicator keys to their respective functions
 const indicatorFunctions = {
@@ -30,6 +31,7 @@ const indicatorFunctions = {
   donchianChannels,
   bollingerBands,
   volumeOscillator,
+  regressor,
   scaler
 };
 
