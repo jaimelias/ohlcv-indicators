@@ -17,7 +17,7 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
-import { validRegressors } from './src/machine-learning/regressor.js'
+import { validRegressors, univariableRegressors } from './src/machine-learning/regressor.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -505,7 +505,13 @@ export default class OHLCV_INDICATORS {
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
         validateNumber(lookback, {min: 0, allowDecimals: false}, 'lookback', methodName)
         validateArray(trainingCols, 'trainingCols', methodName)
-        if(type === 'SimpleLinearRegression' && trainingCols.length > 0) throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
+
+        if(univariableRegressors.has(type) && trainingCols.length > 0){
+            throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
+        } else {
+            trainingCols.push(target)
+        }
+
         validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
 
         this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, trainingCols, type}]})
