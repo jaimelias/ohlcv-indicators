@@ -14,7 +14,6 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
     const prefix = `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`
 
 
-
     if(index === 0)
     {
         if(!verticalOhlcv.hasOwnProperty(target))
@@ -24,44 +23,49 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
 
         if(!instances.hasOwnProperty('regressor'))
         {
-            instances.regressor = {}
+            instances.regressor = {
+                X: {},
+                Y: {}
+            }
         }
 
         for(let x = 0; x < predictions; x++)
         {
-            const keyName = `${prefix}_${(x+1)}`
-            verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
+            const predictionKey = `${prefix}_${(x+1)}`
+            verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
 
-            instances.regressor[keyName] = []
+            instances.regressor.X[predictionKey] = []
+            instances.regressor.Y[predictionKey] = []
 
-            if(priceBased.has(keyName))
+            if(priceBased.has(predictionKey))
             {
-                priceBased.add(keyName)
+                priceBased.add(predictionKey)
             }
         }
     }
 
-     for(let x = 0; x < predictions; x++)
-     {
-        const keyName = `${prefix}_${(x+1)}`
+    const {X: xInstance, Y: yInstance} = instances.regressor
 
-        const thisRow = new Float64Array(trainingCols.length).fill(NaN)
+    for(let x = 0; x < predictions; x++)
+    {
+        const predictionKey = `${prefix}_${(x+1)}`
+        const trainX = new Float64Array(trainingCols.length).fill(NaN)
 
         for(let t = 0; t < trainingCols.length; t++)
         {
             const trainingKey = trainingCols[t]
             const value = verticalOhlcv[trainingKey][index]
-            thisRow[t] = value
+            trainX[t] = typeof value === 'undefined' ? NaN : value
         }
 
-        instances.regressor[keyName].push(thisRow)
+        const predictedValue = verticalOhlcv[target][index + (x + 1)]
 
-        if(instances.regressor[keyName].length > trainingSize)
+        xInstance[predictionKey].push(trainX)
+        yInstance[predictionKey].push(typeof predictedValue === 'undefined' ? NaN : predictedValue)
+
+        if(xInstance[predictionKey].length > trainingSize)
         {
-            instances.regressor[keyName].shift()
+            xInstance[predictionKey].shift()
         }
      }
-
-
-
 }

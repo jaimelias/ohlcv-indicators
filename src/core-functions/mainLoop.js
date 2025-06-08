@@ -31,13 +31,12 @@ const indicatorFunctions = {
   donchianChannels,
   bollingerBands,
   volumeOscillator,
-  regressor,
   scaler
 };
 
 
 export const mainLoop = (input, main) => {
-  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes, chunkProcess, scaledGroups } = main;
+  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, inputTypes, chunkProcess } = main;
 
   validateInputParams(inputParams, len)
 
@@ -45,6 +44,8 @@ export const mainLoop = (input, main) => {
   {
     verticalOhlcv[key] = buildArray(arrayTypes[key], len)
   }
+
+  const mainLoopInputParams = inputParams.filter(({ key }) => indicatorFunctions.hasOwnProperty(key))
 
   // Process each row in the input
   for (let chunkStart = 0; chunkStart < len; chunkStart += chunkProcess) {
@@ -80,9 +81,7 @@ export const mainLoop = (input, main) => {
         }
       
         // Run all indicator functions except for the ones processed later
-        for (const { key, params } of inputParams) {
-          if (key === 'lag' || key === 'crossPairs') continue;
-          // resolve fn on-demand, no per-item object allocation here
+        for (const { key, params } of mainLoopInputParams) {
           indicatorFunctions[key](main, index, ...params)
         }
     
@@ -93,7 +92,29 @@ export const mainLoop = (input, main) => {
       }
   }
 
+
+  secondaryLoop(main)
   pca(main)
+
+  
+}
+
+export const secondaryLoop = main => {
+  const {inputParams, len, verticalOhlcv, verticalOhlcvKeyNames} = main
+
+
+  for(const rowParams of inputParams)
+  {
+    const {key: indicatorName, params} = rowParams
+
+    if(!['regressor', 'classifier'].includes(indicatorName)) continue
+
+    for(let index = 0; index < len; index++)
+    {
+      regressor(main, index, ...params)
+    }
+
+  }
 
   verticalOhlcvKeyNames.push(...Object.keys(verticalOhlcv))
 }

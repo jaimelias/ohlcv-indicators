@@ -484,7 +484,7 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    regressor(trainingSize, options = {})
+    regressor(trainingSize = 50, options = {})
     {
          isAlreadyComputed(this)
 
