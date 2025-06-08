@@ -5,13 +5,9 @@ export const calcPrecisionMultiplier = (main, firstRow) => {
 
     let output = 1
 
-    const priceBasedValues = Object.entries(firstRow)
-        .filter(([k, _]) => new Set('open', 'high', 'low', 'close').has(k))
-        .map(([_, v]) => v)
-
-
-    for(const value of priceBasedValues)
+    for(const [key, value] of Object.entries(firstRow))
     {
+        if(new Set(['open', 'high', 'low', 'close']).has(key) === false) continue
         const [, decimals = ''] = String(value).split('.')
         const decimalPrecision = Math.max(4, decimals.length)
         const multiplier = decimalPrecision > 1 ? Math.pow(10, decimalPrecision - 1) : 1

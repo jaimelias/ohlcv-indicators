@@ -6,13 +6,13 @@ export const validRegressors = {
     'RandomForestRegression': 'randomForest'
 }
 
-export const univariableRegressors = new Set('SimpleLinearRegression', 'PolynomialRegression')
+export const univariableRegressorsX = new Set(['SimpleLinearRegression', 'PolynomialRegression'])
+export const univariableRegressorsY = new Set(['SimpleLinearRegression', 'PolynomialRegression'])
 
-export const regressor = (main, index, trainingSize, {target, predictions, trainingCols, type}) => {
+export const regressor = (main, index, trainingSize, {target, predictions, lookback, trainingCols, type, precompute}) => {
 
+    const {lookbackAbs, trainingColsLen, prefix, flatX, flatY} = precompute
     const {verticalOhlcv, len, instances} = main
-    const prefix = `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`
-
 
     if(index === 0)
     {
@@ -29,6 +29,11 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
             }
         }
 
+        for(const trainingKey of trainingCols)
+        {
+            if(!verticalOhlcv.hasOwnProperty(trainingKey)) throw new Error(`Target property ${trainingKey} not found in verticalOhlcv for regressor.`)
+        }
+
         for(let x = 0; x < predictions; x++)
         {
             const predictionKey = `${prefix}_${(x+1)}`
@@ -40,27 +45,71 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
     }
 
     const {X: xInstance, Y: yInstance} = instances.regressor
+    
+
+    //console.log({trainingCols})
 
     for(let x = 0; x < predictions; x++)
     {
         const predictionKey = `${prefix}_${(x+1)}`
-        const trainX = new Float64Array(trainingCols.length).fill(NaN)
+        let trainX
+        let model
 
-        for(let t = 0; t < trainingCols.length; t++)
+        if(flatX)
         {
-            const trainingKey = trainingCols[t]
-            const value = verticalOhlcv[trainingKey][index]
-            trainX[t] = typeof value === 'undefined' ? NaN : value
+            trainX = verticalOhlcv[target][index]
+        }
+        else{
+
+            // skip until we have at least `lookbackAbs` bars of history
+            if(index < lookbackAbs) continue
+
+            trainX = new Array(trainingColsLen *  lookbackAbs).fill(NaN)
+
+            for(let l = 0; l < lookbackAbs; l++)
+            {
+                for(let t = 0; t < trainingColsLen; t++)
+                {
+                    const trainingKey = trainingCols[t]
+                    const value = verticalOhlcv[trainingKey][index - l]
+                    trainX[l * trainingColsLen + t] = value
+                }
+            }
         }
 
-        const predictedValue = verticalOhlcv[target][index + (x + 1)]
+        //predict from stored model in main
+        if(main.models.hasOwnProperty(predictionKey)){
 
-        xInstance[predictionKey].push(trainX)
-        yInstance[predictionKey].push(typeof predictedValue === 'undefined' ? NaN : predictedValue)
+            //current prediction should be extracted from the saved model in 
+            model = main.ML[type].load(main.models[predictionKey])
 
-        if(xInstance[predictionKey].length > trainingSize)
-        {
-            xInstance[predictionKey].shift()
+            const prediction = model.predict(trainX)
+            
+            //the output pushed to main should be always a flat number
+            main.pushToMain({ index, key: predictionKey, value: (flatY) ? prediction : prediction[0]})
         }
-     }
+        
+
+        const trainY = verticalOhlcv[target][index + (x + 1)] 
+
+        if(typeof trainY === 'undefined') continue
+
+        const yRows = yInstance[predictionKey]
+        const xRows = xInstance[predictionKey]
+
+        if(yRows.length === trainingSize && xRows.length === trainingSize){
+            model = new main.ML[type](xRows, yRows)
+
+            main.models[predictionKey] = model.toJSON()
+        }
+
+        xRows.push(trainX)
+        yRows.push((flatY) ? trainY : [trainY])
+
+        if(xRows.length > trainingSize)
+        {
+            xRows.shift()
+            yRows.shift()
+        }
+    }
 }

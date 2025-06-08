@@ -17,7 +17,7 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
-import { validRegressors, univariableRegressors } from './src/machine-learning/regressor.js'
+import { validRegressors, univariableRegressorsX, univariableRegressorsY } from './src/machine-learning/regressor.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -41,11 +41,11 @@ export default class OHLCV_INDICATORS {
         validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
         validateObject(ML, 'ML', 'constructor')
 
-        this.notNumberKeys = new Set(['date'])
+        this.notNumberKeys = new Set()
         this.chunkProcess = chunkProcess
         this.firstRow = input[0]
         
-        const {inputTypes, arrayTypes} = assignTypes(this.firstRow)
+        const {inputTypes, arrayTypes} = assignTypes(this)
 
         this.inputTypes = inputTypes
         this.arrayTypes = arrayTypes
@@ -495,18 +495,33 @@ export default class OHLCV_INDICATORS {
         
         validateString(target, 'options.target', methodName)
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
-        validateNumber(lookback, {min: 0, allowDecimals: false}, 'lookback', methodName)
+        validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
         validateArray(trainingCols, 'trainingCols', methodName)
 
-        if(univariableRegressors.has(type) && trainingCols.length > 0){
-            throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
-        } else {
-            trainingCols.push(target)
+        if(univariableRegressorsX.has(type)){
+            if(trainingCols.length > 0)
+            {
+                throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
+            }
+            else if(lookback > 0)
+            {
+                throw new Error(`If regressor type is ${type} then leave "options.lookback" must be 0.`)
+            }
+            else {                
+                trainingCols.push(target)
+            }
         }
-
         validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, trainingCols, type}]})
+        const precompute = {
+            trainingColsLen: trainingCols.length,
+            lookbackAbs: Math.abs(lookback) + 1,
+            flatX: univariableRegressorsX.has(type),
+            flatY: univariableRegressorsY.has(type),
+            prefix: `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`
+        }
+
+        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, lookback, trainingCols, type, precompute}]})
 
         return this
     }

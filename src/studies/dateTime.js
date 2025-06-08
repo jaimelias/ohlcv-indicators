@@ -1,6 +1,9 @@
 export const dateTime = (main, index, {lag}) => {
 
-    const {instances, verticalOhlcv} = main
+    const {instances, verticalOhlcv, notNumberKeys} = main
+
+    const colKeys = ['day_of_the_week', 'day_of_the_month', 'week_of_the_month', 'minute', 'hour', 'month', 'year', 'session_daily_index', 'session_intraday_index']
+
  
     if(index === 0)
     {
@@ -16,8 +19,7 @@ export const dateTime = (main, index, {lag}) => {
             }
         })
 
-        const colKeys = ['day_of_the_week', 'day_of_the_month', 'week_of_the_month', 'minute', 'hour', 'month', 'year', 'session_daily_index', 'session_intraday_index']
-
+        
         for(const key of colKeys)
         {
             arrayTypes[key] = 'Int32Array'
@@ -28,6 +30,11 @@ export const dateTime = (main, index, {lag}) => {
         if(lag > 0)
         {
             main.lag(colKeys, lag)
+        }
+
+        for(const k of colKeys)
+        {
+            notNumberKeys.add(k)
         }
     }
 

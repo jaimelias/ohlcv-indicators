@@ -9,7 +9,8 @@ export const buildArray = (arrayType, len) => {
   if(arrayType === 'Int32Array') return new Int32Array(len).fill(NaN)
 }
 
-export const assignTypes = firstRow => {
+export const assignTypes = main => {
+  const {firstRow, notNumberKeys} = main
   const inputTypes  = {}
   const arrayTypes  = {}
 
@@ -18,11 +19,13 @@ export const assignTypes = firstRow => {
     if (colName === 'date') {
       inputTypes[colName] = selectDateFormatter(cellValue, true)
       arrayTypes[colName] = 'Array'
+      notNumberKeys.add(colName)
     }
     else if(colName === 'volume')
     {
       inputTypes[colName] = classifyNum(cellValue, true)
       arrayTypes[colName] = 'Int32Array'
+      notNumberKeys.add(colName)
     }
     else if(numberKeys.has(colName))
     {
@@ -32,6 +35,12 @@ export const assignTypes = firstRow => {
       const thisType = classifyNum(cellValue, false)
       inputTypes[colName] = thisType
       arrayTypes[colName] = (thisType === 'number') ? 'Float64Array' : 'Array'
+
+      if(!thisType.startsWith('number'))
+      {
+        notNumberKeys.add(colName)
+      }
+
     }
   }
 
