@@ -2,7 +2,7 @@ import { dateOutputFormaters } from "./dateUtilities.js"
 
 export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, dateFormat}) => {
 
-  const {precisionMultiplier, priceBased, precision, verticalOhlcv, invalidValueIndex, len, verticalOhlcvKeyNames, verticalOhlcvTempCols} = main
+  const {precisionMultiplier, precision, verticalOhlcv, invalidValueIndex, len, verticalOhlcvKeyNames, verticalOhlcvTempCols, notNumberKeys} = main
 
   if (verticalOhlcvKeyNames.length === 0) return []
   
@@ -13,7 +13,7 @@ export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, da
 
    for(const [key, arr] of Object.entries(verticalOhlcv)){
     if(verticalOhlcvTempCols.has(key)) continue
-    const shouldApplyPrecision = priceBased.has(key) && precision
+    const shouldApplyPrecision = precision && !notNumberKeys.has(key)
 
     for (let i = maxStartIndex; i < len; i++)
     {

@@ -40,7 +40,7 @@ export const movingAverages = (main, index, indicatorName, size, { target, lag, 
 
 export const precomputeMovingAverages = ({main, size, target, lag, methodName}) => {
 
-  const {instances, verticalOhlcv, priceBased, arrayTypes, len} = main
+  const {instances, verticalOhlcv, arrayTypes, len} = main
   const suffix = (target !== 'close') ?  `_${target}` : ''
   const keyName = `${methodName}_${size}${suffix}`
 
@@ -48,8 +48,6 @@ export const precomputeMovingAverages = ({main, size, target, lag, methodName}) 
     instances[keyName] = new indicatorClasses[methodName](size)
 
     verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
-
-    priceBased.add(keyName)
 
     if(lag > 0)
     {

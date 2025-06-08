@@ -2,7 +2,7 @@
 import { roundDecimalPlaces } from "../utilities/numberUtilities.js";
 
 export const donchianChannels = (main, index, size, offset, options) => {
-  const {verticalOhlcv, instances, len, inputParams, priceBased, arrayTypes, lag} = main
+  const {verticalOhlcv, instances, len, inputParams, arrayTypes, lag} = main
   const { height: includeHeight, range: rangeKeys, decimals } = options
   const indicatorKey = `${size}_${offset}`
 
@@ -19,9 +19,9 @@ export const donchianChannels = (main, index, size, offset, options) => {
     const keys = ['upper', 'basis', 'lower'].map(n => `${prefix}_${n}`);
     if (includeHeight) keys.push(`${prefix}_height`);
     for (const rk of rangeKeys) {
-      if (!(rk in verticalOhlcv) || !priceBased.has(rk)) {
+      if (!(rk in verticalOhlcv)) {
         throw new Error(
-          `Invalid range key "${rk}". Only price-based keys are allowed: ${[...priceBased]}`
+          `Invalid range key "${rk}".`
         );
       }
       keys.push(`${prefix}_range_${rk}`);
@@ -44,7 +44,6 @@ export const donchianChannels = (main, index, size, offset, options) => {
     if (lag > 0) main.lag(keys, lag);
 
     // mark price-based outputs
-    ['upper','basis','lower'].forEach(n => priceBased.add(`${prefix}_${n}`));
     keys.forEach(k => arrayTypes[k] = 'Float64Array');
   }
 

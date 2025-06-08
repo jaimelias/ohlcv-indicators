@@ -2,7 +2,7 @@ import { buildArray } from "../utilities/assignTypes.js";
 
 export const lag = (main, index) => {
 
-    const {instances, verticalOhlcv, len, arrayTypes, priceBased} = main
+    const {instances, verticalOhlcv, len, arrayTypes} = main
 
     if(index === 0)
     {
@@ -13,19 +13,6 @@ export const lag = (main, index) => {
         for (const o of inputParams) {
             if (o.key === 'lag') {
                 params.push(o.params)
-            }
-        }
-
-        for (const [colKeys, lookback] of params)
-        {
-            for (const colKey of colKeys)
-            {
-                if(priceBased.has(colKey))
-                {
-                    for (let step = 1; step <= lookback; step++) {
-                        priceBased.add(`${colKey}_lag_${step}`)
-                    }
-                }
             }
         }
 

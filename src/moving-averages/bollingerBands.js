@@ -12,7 +12,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   // Initialization on the first call.
   if (index === 0) {
 
-    const { priceBased, inputParams, verticalOhlcv, len, arrayTypes } = main;
+    const {inputParams, verticalOhlcv, len, arrayTypes } = main;
 
     if (!(target in verticalOhlcv)) {
       throw new Error(`bollingerBands could not find target "${target}"`);
@@ -51,8 +51,8 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
 
     // Set up additional arrays for each range property.
     for (const rangeKey of range) {
-      if (!(rangeKey in verticalOhlcv) || !priceBased.has(rangeKey)) {
-        throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands. Only price based key names are accepted:\n${JSON.stringify(priceBased)}`);
+      if (!(rangeKey in verticalOhlcv)) {
+        throw new Error(`Invalid range item value "${rangeKey}" property for bollingerBands.`);
       }
       keyNames.push(`${prefix}_range_${rangeKey}`)
 
@@ -65,10 +65,6 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     {
       main.lag(keyNames, lag)
     }
-
-    [`${prefix}_upper`, `${prefix}_middle`, `${prefix}_lower`].forEach(v => {
-      priceBased.add(v)
-    })
 
     for(const key of keyNames)
     {

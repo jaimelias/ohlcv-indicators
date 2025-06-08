@@ -9,7 +9,7 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
 
   // Initialization on the first index.
   if (index === 0) {
-    const { inputParams, crossPairsList, priceBased, len , arrayTypes} = main
+    const { inputParams, crossPairsList, len , arrayTypes} = main
 
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(`Target property ${target} not found in verticalOhlcv for macd.`)
@@ -48,10 +48,6 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
       [diffKey]: new Float64Array(len).fill(NaN),
       [deaKey]: new Float64Array(len).fill(NaN),
       [histogramKey]: new Float64Array(len).fill(NaN),
-    })
-
-    [diffKey, deaKey, histogramKey].forEach(v => {
-      priceBased.add(v)
     })
 
     const keyNames = [diffKey, deaKey, histogramKey]

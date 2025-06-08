@@ -36,7 +36,7 @@ const indicatorFunctions = {
 
 
 export const mainLoop = (input, main) => {
-  const { len, inputParams, priceBased, precisionMultiplier, arrayTypes, verticalOhlcv, inputTypes, chunkProcess } = main;
+  const { len, inputParams, precisionMultiplier, arrayTypes, verticalOhlcv, inputTypes, chunkProcess } = main;
 
   validateInputParams(inputParams, len)
 
@@ -63,7 +63,7 @@ export const mainLoop = (input, main) => {
           {
             let formatedValue = numberFormater[formaterKey](value)
 
-            if(precisionMultiplier > 1 && priceBased.has(key))
+            if(precisionMultiplier > 1)
             {
               formatedValue = formatedValue * precisionMultiplier
             }
@@ -77,6 +77,14 @@ export const mainLoop = (input, main) => {
           else
           {
             main.pushToMain({index, key, value})
+
+            if(index === 0)
+            {
+              if(typeof value !== 'number')
+              {
+                main.notNumberKeys.add(key)
+              }
+            }
           }
         }
       

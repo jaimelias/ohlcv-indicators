@@ -7,7 +7,7 @@ export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
 
   if (index === 0) {
 
-    const {instances, verticalOhlcv, arrayTypes, len, priceBased} = main
+    const {instances, verticalOhlcv, arrayTypes, len} = main
 
     instances[baseKeyName] = new FasterATR(size, FasterWSMA)
 
@@ -18,12 +18,7 @@ export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
     if(lower !== null) keyNames.push(`${baseKeyName}_lower`)
 
     for(const k of keyNames)
-    {
-      if(!k.endsWith('_percentage'))
-      {
-        priceBased.add(k)
-      }
-      
+    { 
       verticalOhlcv[k] = new Float64Array(len).fill(NaN)
       arrayTypes[k] = 'Float64Array'
     }

@@ -41,7 +41,7 @@ export default class OHLCV_INDICATORS {
         validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
         validateObject(ML, 'ML', 'constructor')
 
-
+        this.notNumberKeys = new Set(['date'])
         this.chunkProcess = chunkProcess
         this.firstRow = input[0]
         
@@ -54,7 +54,6 @@ export default class OHLCV_INDICATORS {
         this.dateType = this.inputTypes.date ? this.inputTypes.date : null;
         this.isComputed = false
         this.input = input
-        this.priceBased = new Set(['open', 'high', 'low', 'close'])
         this.len = input.length
         this.instances = {}
         this.crossPairsList = []
@@ -106,9 +105,9 @@ export default class OHLCV_INDICATORS {
           invalidValueIndex,
           len,
           verticalOhlcv,
-          priceBased,
           arrayTypes,
-          verticalOhlcvTempCols
+          verticalOhlcvTempCols,
+          notNumberKeys
         } = this
         const result = {}
         const startIndex = skipNull ? invalidValueIndex + 1 : 0
@@ -118,7 +117,7 @@ export default class OHLCV_INDICATORS {
 
             if(verticalOhlcvTempCols.has(key)) continue
 
-            const shouldApplyPrecision = priceBased.has(key) && precision
+            const shouldApplyPrecision = precision && !notNumberKeys.has(key)
             result[key] = buildArray(arrayTypes[key], newLen)
 
             for (let x = startIndex; x < len; x++)
@@ -166,7 +165,8 @@ export default class OHLCV_INDICATORS {
         this.compute()
 
         const {dateFormat = 'string'} = options
-         validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getData')
+        
+        validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getData')
 
         return verticalToHorizontal({
             skipNull: false, 
@@ -231,14 +231,6 @@ export default class OHLCV_INDICATORS {
         validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
 
         this.inputParams.push({key: methodName, params: [colKeys, lookback]})
-
-        for(const key of colKeys)
-        {
-            if(this.priceBased.has(key))
-            {
-                this.priceBased.add(key);
-            }
-        }
         
         return this;
     }

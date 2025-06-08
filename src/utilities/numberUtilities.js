@@ -7,32 +7,6 @@ export const numberFormater = {
   numberDirtyString: n => Number(sanitizeDirtyNumberString(n))
 }
 
-export const divideByMultiplier = ({row, precisionMultiplier, priceBased}) => {
-    const output = {}
-
-    for(const [key, value] of Object.entries(row))
-    {
-
-        let newValue = value
-
-        if(priceBased.has(key))
-        {
-            newValue = newValue / precisionMultiplier
-        }
-
-        output[key] = newValue
-    }
-
-    return output
-} 
-
-// Parses a number from either a numeric or string input, applying a multiplier to fix precision issues
-export const parseNumber = (num, type, precisionMultiplier) => {
-  const addMultiplier = cNum => precisionMultiplier > 1 ? cNum * precisionMultiplier : cNum;
-
-  return addMultiplier(numberFormater[type](num))
-
-};
 
 export const classifyNum = (num, throwError = false) => {
   // 1) true numbers

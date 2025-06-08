@@ -10,7 +10,7 @@ export const univariableRegressors = new Set('SimpleLinearRegression', 'Polynomi
 
 export const regressor = (main, index, trainingSize, {target, predictions, trainingCols, type}) => {
 
-    const {verticalOhlcv, len, priceBased, instances} = main
+    const {verticalOhlcv, len, instances} = main
     const prefix = `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`
 
 
@@ -36,11 +36,6 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
 
             instances.regressor.X[predictionKey] = []
             instances.regressor.Y[predictionKey] = []
-
-            if(priceBased.has(predictionKey))
-            {
-                priceBased.add(predictionKey)
-            }
         }
     }
 

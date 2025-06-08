@@ -82,6 +82,8 @@ export const pca = main => {
 
         const verticalKey = `pca_${type}_${size}`
 
+        main.notNumberKeys.add(verticalKey)
+
         const pca = new ML.PCA(tempArr, {
             isCovarianceMatrix,
             method,
@@ -97,8 +99,9 @@ export const pca = main => {
         }
         
         const predictions = pca.predict(tempArr).to2DArray()
-
         verticalOhlcv[verticalKey] = new Array(len).fill(null)
+
+        
 
         for(let x = 0; x < predictions.length; x++)
         {
