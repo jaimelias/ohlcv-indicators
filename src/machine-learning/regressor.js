@@ -7,11 +7,12 @@ export const validRegressors = {
 }
 
 export const univariableRegressorsX = new Set(['SimpleLinearRegression', 'PolynomialRegression'])
-export const univariableRegressorsY = new Set(['SimpleLinearRegression', 'PolynomialRegression'])
+export const univariableRegressorsY = new Set(['SimpleLinearRegression', 'PolynomialRegression', 'DecisionTreeRegression'])
+export const regressorUseTrainMethod = new Set(['DecisionTreeRegression'])
 
 export const regressor = (main, index, trainingSize, {target, predictions, lookback, trainingCols, type, precompute}) => {
 
-    const {lookbackAbs, trainingColsLen, prefix, flatX, flatY} = precompute
+    const {lookbackAbs, trainingColsLen, prefix, flatX, flatY, useTrainMethod} = precompute
     const {verticalOhlcv, len, instances} = main
 
     if(index === 0)
@@ -83,10 +84,10 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
             //current prediction should be extracted from the saved model in 
             model = main.ML[type].load(main.models[predictionKey])
 
-            const prediction = model.predict(trainX)
+            let prediction = model.predict([trainX])
             
             //the output pushed to main should be always a flat number
-            main.pushToMain({ index, key: predictionKey, value: (flatY) ? prediction : prediction[0]})
+            main.pushToMain({ index, key: predictionKey, value: prediction[0]})
         }
         
 
@@ -98,7 +99,16 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
         const xRows = xInstance[predictionKey]
 
         if(yRows.length === trainingSize && xRows.length === trainingSize){
-            model = new main.ML[type](xRows, yRows)
+
+            if(useTrainMethod)
+            {
+                model = new main.ML[type]()
+                model.train(xRows, yRows)
+            }
+            else
+            {
+                model = new main.ML[type](xRows, yRows)
+            }
 
             main.models[predictionKey] = model.toJSON()
         }

@@ -17,7 +17,7 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
-import { validRegressors, univariableRegressorsX, univariableRegressorsY } from './src/machine-learning/regressor.js'
+import { validRegressors, univariableRegressorsX, univariableRegressorsY, regressorUseTrainMethod } from './src/machine-learning/regressor.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -518,8 +518,11 @@ export default class OHLCV_INDICATORS {
             lookbackAbs: Math.abs(lookback) + 1,
             flatX: univariableRegressorsX.has(type),
             flatY: univariableRegressorsY.has(type),
-            prefix: `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`
+            prefix: `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`,
+            useTrainMethod: regressorUseTrainMethod.has(type)
         }
+
+        if(precompute.flatX === false && trainingCols.length === 0) throw new Error(`Param "options.trainingCols" must have at least 2 cols for ${type}.`)
 
         this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, lookback, trainingCols, type, precompute}]})
 
