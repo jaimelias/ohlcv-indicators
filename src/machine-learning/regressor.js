@@ -7,8 +7,8 @@ export const validRegressors = {
 }
 
 export const univariableRegressorsX = new Set(['SimpleLinearRegression', 'PolynomialRegression'])
-export const univariableRegressorsY = new Set(['SimpleLinearRegression', 'PolynomialRegression', 'DecisionTreeRegression'])
-export const regressorUseTrainMethod = new Set(['DecisionTreeRegression'])
+export const univariableRegressorsY = new Set(['SimpleLinearRegression', 'PolynomialRegression', 'DecisionTreeRegression', 'RandomForestRegression'])
+export const regressorUseTrainMethod = new Set(['DecisionTreeRegression', 'RandomForestRegression'])
 
 export const regressor = (main, index, trainingSize, {target, predictions, lookback, trainingCols, type, precompute}) => {
 
@@ -85,6 +85,8 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
             model = main.ML[type].load(main.models[predictionKey])
 
             let prediction = model.predict([trainX])
+
+            console.log(prediction)
             
             //the output pushed to main should be always a flat number
             main.pushToMain({ index, key: predictionKey, value: prediction[0]})
@@ -102,7 +104,19 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
 
             if(useTrainMethod)
             {
-                model = new main.ML[type]()
+                let regressorOptions
+
+                if(type === 'RandomForestRegression')
+                {
+                    regressorOptions = {
+                        seed: 3,
+                        maxFeatures: 2,
+                        replacement: false,
+                        nEstimators: 30
+                    }
+                }
+
+                model = new main.ML[type](regressorOptions)
                 model.train(xRows, yRows)
             }
             else

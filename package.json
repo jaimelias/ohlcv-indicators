@@ -23,6 +23,7 @@
     "dotenv": "^16.4.5",
     "ml-cart": "^2.1.1",
     "ml-pca": "^4.1.1",
+    "ml-random-forest": "^2.1.0",
     "ml-regression-multivariate-linear": "^2.0.4",
     "ml-regression-simple-linear": "^3.0.1",
     "terser-webpack-plugin": "^5.3.14",
