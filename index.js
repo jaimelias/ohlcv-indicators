@@ -208,13 +208,29 @@ export default class OHLCV_INDICATORS {
 
     crossPairs(arr = [])
     {
-        const methodName = 'crossPairs'
+        let methodName = 'crossPairs'
 
         isAlreadyComputed(this)
 
         validateArray(arr, 'arr', methodName)
 
+        for (const [i, pair] of arr.entries()) {
+            const { fast, slow } = pair || {};
+            if (fast == null || slow == null) {
+                throw new Error(
+                    `Invalid crossPairs[${i}]: Object property “fast” must be a non-null column name and “slow” must be a non-null column name or integer.`
+                );
+            }
+        }
+
         this.crossPairsList = [...this.crossPairsList, ...arr]
+
+
+        if(arr.some(({fast, slow}) => `${fast}`.includes('_prediction_') || `${slow}`.includes('_prediction_')))
+        {
+            methodName += 'Secondary'
+        }
+
         this.inputParams.push({key: methodName, params: [this.crossPairsList]})
         
         return this
@@ -223,12 +239,17 @@ export default class OHLCV_INDICATORS {
 
     lag(colKeys = ['close'], lookback = 1) {
 
-        const methodName = 'lag'
+        let methodName = 'lag'
 
         isAlreadyComputed(this)
 
         validateArray(colKeys, 'colKeys', methodName)
         validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
+
+        if(colKeys.some(v => v.includes('_prediction_')))
+        {
+            methodName += 'Secondary'
+        }
 
         this.inputParams.push({key: methodName, params: [colKeys, lookback]})
         
@@ -451,7 +472,7 @@ export default class OHLCV_INDICATORS {
 
     scaler(size, colKeys = [], options = {})
     {
-        const methodName = 'scaler'
+        let methodName = 'scaler'
 
         isAlreadyComputed(this)
 
@@ -471,6 +492,11 @@ export default class OHLCV_INDICATORS {
         const groupKey = (group) ? `${type}_${size}` : ''
         const groupKeyLen = colKeys.length
         const precomputed = {groupKey, groupKeyLen}
+
+        if(colKeys.some(v => v.includes('_prediction_')))
+        {
+            methodName += 'Secondary'
+        }
 
         this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed, decimals, pca}]})
         return this

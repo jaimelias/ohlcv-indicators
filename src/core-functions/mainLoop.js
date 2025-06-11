@@ -20,7 +20,7 @@ import { pca } from "../machine-learning/pca.js";
 import { regressor } from "../machine-learning/regressor.js";
 
 // Map indicator keys to their respective functions
-const indicatorFunctions = {
+const mainFunctions = {
   dateTime,
   rsi,
   atr,
@@ -30,10 +30,14 @@ const indicatorFunctions = {
   relativeVolume,
   donchianChannels,
   bollingerBands,
-  volumeOscillator,
-  scaler
+  volumeOscillator
 };
 
+const secondaryFunctions = {
+  scalerSecondary: scaler,
+  lagSecondary: lag,
+  crossPairsSecondary: crossPairs
+}
 
 export const mainLoop = (input, main) => {
   const { len, inputParams, precisionMultiplier, arrayTypes, verticalOhlcv, inputTypes, chunkProcess, notNumberKeys } = main;
@@ -45,7 +49,9 @@ export const mainLoop = (input, main) => {
     verticalOhlcv[key] = buildArray(arrayTypes[key], len)
   }
 
-  const mainLoopInputParams = inputParams.filter(({ key }) => indicatorFunctions.hasOwnProperty(key))
+  const mainInputParams = inputParams.filter(({ key }) => mainFunctions.hasOwnProperty(key))
+  const lagParams = []
+  const crossPairsParams = []
 
   // Process each row in the input
   for (let chunkStart = 0; chunkStart < len; chunkStart += chunkProcess) {
@@ -81,17 +87,23 @@ export const mainLoop = (input, main) => {
         }
       
         // Run all indicator functions except for the ones processed later
-        for (const { key, params } of mainLoopInputParams) {
-          indicatorFunctions[key](main, index, ...params)
+        for (const { key, params } of mainInputParams) {
+          mainFunctions[key](main, index, ...params)
         }
     
         // Process these indicators separately (ensuring their execution order)
-        lag(main, index)
-        crossPairs(main, index)
+
+        for (const { key, params } of inputParams) {
+          if(key === 'scaler') scaler(main, index, ...params)
+          if(key === 'lag') lag(main, index, ...params)
+          if(key === 'crossPairs') crossPairs(main, index, ...params)
+        }
+      
         input[index] = null //flusing data
       }
   }
 
+  console.log({lagParams, crossPairsParams})
 
   secondaryLoop(main)
   pca(main)
@@ -112,6 +124,13 @@ export const secondaryLoop = main => {
     for(let index = 0; index < len; index++)
     {
       regressor(main, index, ...params)
+
+      //secondary params
+        for (const { key, params } of inputParams) {
+          if(key === 'scalerSecondary') scaler(main, index, ...params)
+          if(key === 'lagSecondary') lag(main, index, ...params)
+          if(key === 'crossPairsSecondary') crossPairs(main, index, ...params)
+        }
     }
 
   }

@@ -130,77 +130,65 @@ class CrossInstance {
 
 }
 
-export const crossPairs = (main, index) => {
+export const crossPairs = (main, index, crossPairsList) => {
+  const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes} = main
 
-    const {verticalOhlcv, instances, len, arrayTypes, verticalOhlcvTempCols} = main
-
-    if(index === 0)
-    {
-        const {inputParams} = main
-
-        instances.crossPairsList = inputParams.reduce((acc, { key, params }) => {
-            if (key === 'crossPairs') {
-              for (const group of params) {
-                for (const pair of group) {
-                  acc.push(pair)
-                }
-              }
-            }
-            return acc;
-          }, [])
-    }
-
-    const {crossPairsList} = instances
-
+  if(index === 0)
+  {
     for (const { fast, slow } of crossPairsList)
     {
-        if (fast == null || slow == null) continue;
+        const crossName = `${fast}_x_${slow}`
 
-        let crossName = `${fast}_x_${slow}`
-
-        if(index === 0)
-        {
-            if(typeof slow === 'number')
-            {
-                verticalOhlcvTempCols.add(slow.toString())
-                verticalOhlcv[slow.toString()] = new Int32Array(len).fill(slow)
-            }
-            
-            if(fast !== 'price' && !verticalOhlcv.hasOwnProperty(fast)) throw Error(`fast "${fast} not found in crossPairs"`)
-            if(!verticalOhlcv.hasOwnProperty(slow)) throw Error(`slow "${slow} not found in crossPairs"`)
-
-
-            instances[crossName] = new CrossInstance()
-
-            verticalOhlcv[crossName] = new Int32Array(len).fill(NaN)
-
-            arrayTypes[crossName] = 'Int32Array'
+        // allow numeric 'slow' as a constant column
+        if (typeof slow === "number") {
+            const col = slow.toString()
+            verticalOhlcvTempCols.add(col)
+            verticalOhlcv[col] = new Int32Array(len).fill(slow)
         }
 
-        let fastValue
-        let closeValue
-        let highValue
-        let lowValue
-        let slowValue
-
-        if(fast === 'price')
-        {
-            closeValue = verticalOhlcv.close[index]
-            highValue = verticalOhlcv.high[index]
-            lowValue = verticalOhlcv.low[index]
-            slowValue = verticalOhlcv[slow][index]
-
-            instances[crossName].update(index, {fast: closeValue, slow: slowValue, high: highValue, low: lowValue})
-
-        } else
-        {
-            fastValue = verticalOhlcv[fast][index]
-            slowValue = verticalOhlcv[slow][index]
-
-            instances[crossName].update(index, {fast: fastValue, slow: slowValue})
+        // sanity checks
+        if (fast !== "price" && !verticalOhlcv.hasOwnProperty(fast)) {
+            throw new Error(`fast "${fast}" not found in crossPairs`)
+        }
+        if (!verticalOhlcv.hasOwnProperty(slow)) {
+            throw new Error(`slow "${slow}" not found in crossPairs`)
         }
 
-        main.pushToMain({index, key: crossName, value: instances[crossName].getResult()})
+        // create instance + output buffer
+        instances[crossName] = new CrossInstance()
+        verticalOhlcv[crossName] = new Int32Array(len).fill(NaN)
+        arrayTypes[crossName] = "Int32Array"
+
+    }
+  }
+
+  for (const { fast, slow } of crossPairsList) {
+
+    const crossName = `${fast}_x_${slow}`
+
+    // ——— Per-bar update ———
+    if (fast === "price") {
+      const fastVal = verticalOhlcv.close[index]
+      const slowVal = verticalOhlcv[slow][index]
+      instances[crossName].update(index, {
+        fast: fastVal,
+        slow: slowVal,
+        high: verticalOhlcv.high[index],
+        low: verticalOhlcv.low[index],
+      });
+    } else {
+      const fastVal = verticalOhlcv[fast][index]
+      const slowVal = verticalOhlcv[slow][index]
+      instances[crossName].update(index, { fast: fastVal, slow: slowVal })
     }
 
-}
+    // push the result
+    main.pushToMain({
+      index,
+      key: crossName,
+      value: instances[crossName].getResult(),
+    })
+  }
+
+  return true
+};
