@@ -1,4 +1,3 @@
-import { validateArray } from "xy-scale/src/validators.js"
 
 export const validRegressors = {
     'SimpleLinearRegression': 'linear', 
@@ -67,7 +66,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
 
         for(let x = 0; x < predictions; x++)
         {
-            const predictionKey = `prediction_${(x+1)}`
+            const predictionKey = `${prefix}_${(x+1)}`
             verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
 
             instances.regressor[prefix].X[predictionKey] = []
@@ -82,7 +81,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
 
     for(let x = 0; x < predictions; x++)
     {
-        const predictionKey = `prediction_${(x+1)}`
+        const predictionKey = `${prefix}_${(x+1)}`
         let trainX
         let model
 
