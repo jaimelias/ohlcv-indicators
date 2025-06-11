@@ -23,7 +23,7 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
 
       if(scaledLabels.has(prefix))
       {
-        throw new Error(`Method "scaler" cannot have both "size" and "options.type" parameters specified together.`)
+        throw new Error(`In scaler method can not repeat params "size" and "options.type" together between indicators.`)
       }
       scaledLabels.add(prefix)
   

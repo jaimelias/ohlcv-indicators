@@ -1,33 +1,65 @@
+import { validateArray } from "xy-scale/src/validators.js"
+
 export const validRegressors = {
     'SimpleLinearRegression': 'linear', 
     'PolynomialRegression': 'polynomial',
     'MultivariateLinearRegression': 'multivariable', 
-    'DecisionTreeRegression': 'decisionTree',
-    'RandomForestRegression': 'randomForest'
+    'DecisionTreeRegression': 'decision_tree',
+    'RandomForestRegression': 'random_forest'
 }
 
 export const univariableRegressorsX = new Set(['SimpleLinearRegression', 'PolynomialRegression'])
 export const univariableRegressorsY = new Set(['SimpleLinearRegression', 'PolynomialRegression', 'DecisionTreeRegression', 'RandomForestRegression'])
 export const regressorUseTrainMethod = new Set(['DecisionTreeRegression', 'RandomForestRegression'])
+export const defaultRandomForestOptions = {
+    seed: 3,
+    maxFeatures: 2,
+    replacement: false,
+    nEstimators: 30,
+}
 
-export const regressor = (main, index, trainingSize, {target, predictions, lookback, trainingCols, type, precompute}) => {
+export const regressor = (main, index, trainingSize, {target, predictions, lookback, trainingCols, findGroups, type, rfArgs, precompute}) => {
 
-    const {lookbackAbs, trainingColsLen, prefix, flatX, flatY, useTrainMethod} = precompute
-    const {verticalOhlcv, len, instances} = main
+    const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
+    const {verticalOhlcv, len, instances, scaledGroups} = main
 
     if(index === 0)
     {
+
+        if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
+        {
+            if(trainingCols.length > 0) throw new Error(`If "options.findGroups" array is not empty then leave "options.trainingCols" array empty.`)
+
+            for(let g = 0; g < findGroups.length; g++)
+            {
+                const group = findGroups[g]
+                if(!group.hasOwnProperty('size') || !group.hasOwnProperty('type')) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
+                if(!scaledGroups.hasOwnProperty(`${group.type}_${group.size}`)) throw new Error(`Scaled group not found for ${type} regressor.options.findGroups[${g}]: ${JSON.stringify(group)}`)
+                trainingCols.push(...scaledGroups[`${group.type}_${group.size}`])
+            }
+        }
+
+        if(flatX === false && trainingCols.length === 0) throw new Error(`Param "options.trainingCols" must have at least 2 cols for ${type}.`)
+
         if(!verticalOhlcv.hasOwnProperty(target))
         {
-            throw new Error(`Target property ${target} not found in verticalOhlcv for regressor.`)
+            throw new Error(`Target property "${target}" not found in verticalOhlcv for regressor.`)
+        }
+        if(!trainingCols.includes(target))
+        {
+            throw new Error(`Target property "${target}" not found in options.trainingCols: ${JSON.stringify(trainingCols)}`)
         }
 
         if(!instances.hasOwnProperty('regressor'))
         {
             instances.regressor = {
-                X: {},
-                Y: {}
+                [prefix]: {}
             }
+        }
+
+        instances.regressor[prefix] = {
+            X: {},
+            Y: {}
         }
 
         for(const trainingKey of trainingCols)
@@ -35,24 +67,26 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
             if(!verticalOhlcv.hasOwnProperty(trainingKey)) throw new Error(`Target property ${trainingKey} not found in verticalOhlcv for regressor.`)
         }
 
+        instances.regressor[prefix].trainingColsLen = trainingCols.length
+
         for(let x = 0; x < predictions; x++)
         {
-            const predictionKey = `${prefix}_${(x+1)}`
+            const predictionKey = `prediction_${(x+1)}`
             verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
 
-            instances.regressor.X[predictionKey] = []
-            instances.regressor.Y[predictionKey] = []
+            instances.regressor[prefix].X[predictionKey] = []
+            instances.regressor[prefix].Y[predictionKey] = []
         }
     }
 
-    const {X: xInstance, Y: yInstance} = instances.regressor
+    const {X: xInstance, Y: yInstance, trainingColsLen} = instances.regressor[prefix]
     
 
     //console.log({trainingCols})
 
     for(let x = 0; x < predictions; x++)
     {
-        const predictionKey = `${prefix}_${(x+1)}`
+        const predictionKey = `prediction_${(x+1)}`
         let trainX
         let model
 
@@ -85,8 +119,6 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
             model = main.ML[type].load(main.models[predictionKey])
 
             let prediction = model.predict([trainX])
-
-            console.log(prediction)
             
             //the output pushed to main should be always a flat number
             main.pushToMain({ index, key: predictionKey, value: prediction[0]})
@@ -104,19 +136,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
 
             if(useTrainMethod)
             {
-                let regressorOptions
-
-                if(type === 'RandomForestRegression')
-                {
-                    regressorOptions = {
-                        seed: 3,
-                        maxFeatures: 2,
-                        replacement: false,
-                        nEstimators: 30
-                    }
-                }
-
-                model = new main.ML[type](regressorOptions)
+                model = new main.ML[type](rfArgs)
                 model.train(xRows, yRows)
             }
             else

@@ -17,7 +17,7 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
-import { validRegressors, univariableRegressorsX, univariableRegressorsY, regressorUseTrainMethod } from './src/machine-learning/regressor.js'
+import { validRegressors, univariableRegressorsX, univariableRegressorsY, regressorUseTrainMethod, defaultRandomForestOptions } from './src/machine-learning/regressor.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -468,7 +468,7 @@ export default class OHLCV_INDICATORS {
 
         if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
 
-        const groupKey = (group) ? `${type}_${size}_group_${colKeys.join('_')}` : ''
+        const groupKey = (group) ? `${type}_${size}` : ''
         const groupKeyLen = colKeys.length
         const precomputed = {groupKey, groupKeyLen}
 
@@ -481,11 +481,20 @@ export default class OHLCV_INDICATORS {
          isAlreadyComputed(this)
 
         const methodName = 'regressor'
+        
 
         validateNumber(trainingSize, {min: 1, max: this.len, allowDecimals: false}, 'trainingSize', methodName)
         validateObject(options, 'options', methodName)
 
-        const {target = 'close', predictions =  1, trainingCols = [], type = 'SimpleLinearRegression', lookback = 0} = options
+        const {
+            target = 'close', 
+            predictions =  1, 
+            trainingCols = [], 
+            type = 'SimpleLinearRegression', 
+            lookback = 0, 
+            rf = null,
+            findGroups = []
+        } = options
 
         if (!this.ML.hasOwnProperty(type)) {
             throw new Error(
@@ -496,25 +505,46 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
-        validateArray(trainingCols, 'trainingCols', methodName)
-
+        validateArray(trainingCols, 'options.trainingCols', methodName)
+        
         if(univariableRegressorsX.has(type)){
             if(trainingCols.length > 0)
             {
                 throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
             }
-            else if(lookback > 0)
+            if(lookback > 0)
             {
-                throw new Error(`If regressor type is ${type} then leave "options.lookback" must be 0.`)
+                throw new Error(`If regressor type is ${type} then "options.lookback" must be 0.`)
+            }
+            if(findGroups.length > 0)
+            {
+                throw new Error(`If regressor type is ${type} then "options.findGroups" must be null.`)
             }
             else {                
                 trainingCols.push(target)
             }
         }
         validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
+ 
+        let rfArgs = (type === 'RandomForestRegression') ? defaultRandomForestOptions : undefined
+
+        if(rf !== null){
+
+            if(type !== 'RandomForestRegression') (`If regressor type is not ${type} then leave "options.rf" value null.`)
+
+            validateObject(rf, 'options.rf')
+            if(rf.hasOwnProperty('seed')) validateNumber(rf.seed, {min: 1, allowDecimals: false}, 'options.rf.seed', methodName)
+            if(rf.hasOwnProperty('maxFeatures')) validateNumber(rf.maxFeatures, {min: 1, allowDecimals: false}, 'options.rf.maxFeatures', methodName)
+            if(rf.hasOwnProperty('replacement')) validateBoolean(rf.replacement, 'options.rf.replacement', methodName)
+            if(rf.hasOwnProperty('nEstimators')) validateNumber(rf.nEstimators, {min: 5, allowDecimals: false}, 'options.rf.nEstimators', methodName)
+
+            rfArgs = {
+                ...rfArgs,
+                ...rf
+            }
+        }
 
         const precompute = {
-            trainingColsLen: trainingCols.length,
             lookbackAbs: Math.abs(lookback) + 1,
             flatX: univariableRegressorsX.has(type),
             flatY: univariableRegressorsY.has(type),
@@ -522,9 +552,9 @@ export default class OHLCV_INDICATORS {
             useTrainMethod: regressorUseTrainMethod.has(type)
         }
 
-        if(precompute.flatX === false && trainingCols.length === 0) throw new Error(`Param "options.trainingCols" must have at least 2 cols for ${type}.`)
+        
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, lookback, trainingCols, type, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, lookback, trainingCols, findGroups, type,  rfArgs, precompute}]})
 
         return this
     }
