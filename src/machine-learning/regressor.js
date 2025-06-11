@@ -25,15 +25,11 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
 
     if(index === 0)
     {
-
-        if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
+        if(findGroups.length > 0)
         {
-            if(trainingCols.length > 0) throw new Error(`If "options.findGroups" array is not empty then leave "options.trainingCols" array empty.`)
-
             for(let g = 0; g < findGroups.length; g++)
             {
                 const group = findGroups[g]
-                if(!group.hasOwnProperty('size') || !group.hasOwnProperty('type')) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
                 if(!scaledGroups.hasOwnProperty(`${group.type}_${group.size}`)) throw new Error(`Scaled group not found for ${type} regressor.options.findGroups[${g}]: ${JSON.stringify(group)}`)
                 trainingCols.push(...scaledGroups[`${group.type}_${group.size}`])
             }
