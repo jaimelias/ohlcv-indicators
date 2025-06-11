@@ -103,12 +103,17 @@ export const mainLoop = (input, main) => {
       }
   }
 
-  console.log({lagParams, crossPairsParams})
+  const isSecondaryLoopNeeded = inputParams.some(({ key }) => key === 'regressor' || key === 'classifier')
+  const isPcaNeeded = inputParams.some(({ key, params }) => key.startsWith('scaler') && params[2].pca !== null)
 
-  secondaryLoop(main)
-  pca(main)
+  if(isSecondaryLoopNeeded)
+  {
+    secondaryLoop(main)
+  }
 
-  
+  if(isPcaNeeded) {
+    pca(main)
+  }  
 }
 
 export const secondaryLoop = main => {
