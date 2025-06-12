@@ -40,7 +40,7 @@ const secondaryFunctions = {
 }
 
 export const mainLoop = (input, main) => {
-  const { len, inputParams, precisionMultiplier, arrayTypes, verticalOhlcv, inputTypes, chunkProcess, notNumberKeys } = main;
+  const { len, inputParams, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes, chunkProcess, notNumberKeys } = main;
 
   validateInputParams(inputParams, len)
 
@@ -50,8 +50,6 @@ export const mainLoop = (input, main) => {
   }
 
   const mainInputParams = inputParams.filter(({ key }) => mainFunctions.hasOwnProperty(key))
-  const lagParams = []
-  const crossPairsParams = []
 
   // Process each row in the input
   for (let chunkStart = 0; chunkStart < len; chunkStart += chunkProcess) {
@@ -114,10 +112,13 @@ export const mainLoop = (input, main) => {
   if(isPcaNeeded) {
     pca(main)
   }  
+
+  verticalOhlcvKeyNames.push(...Object.keys(verticalOhlcv))
+  
 }
 
 export const secondaryLoop = main => {
-  const {inputParams, len, verticalOhlcv, verticalOhlcvKeyNames} = main
+  const {inputParams, len} = main
 
 
   for(const rowParams of inputParams)
@@ -140,5 +141,5 @@ export const secondaryLoop = main => {
 
   }
 
-  verticalOhlcvKeyNames.push(...Object.keys(verticalOhlcv))
+
 }

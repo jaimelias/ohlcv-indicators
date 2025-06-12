@@ -22,6 +22,8 @@
     "babel-loader": "^9.1.3",
     "dotenv": "^16.4.5",
     "ml-cart": "^2.1.1",
+    "ml-fnn": "^5.0.0",
+    "ml-knn": "^3.0.0",
     "ml-pca": "^4.1.1",
     "ml-random-forest": "^2.1.0",
     "ml-regression-multivariate-linear": "^2.0.4",

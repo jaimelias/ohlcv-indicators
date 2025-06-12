@@ -17,7 +17,15 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
-import { validRegressors, univariableRegressorsX, univariableRegressorsY, regressorUseTrainMethod, defaultRandomForestOptions } from './src/machine-learning/regressor.js'
+import { 
+    validRegressors, 
+    univariableRegressorsX, 
+    univariableRegressorsY, 
+    regressorUseTrainMethod, 
+    defaultRandomForestOptions,
+    defaultFeedForwardOptions,
+    validFeedForwardActivators
+} from './src/machine-learning/regressor.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -27,7 +35,7 @@ import { precomputeMovingAverages } from './src/moving-averages/movingAverages.j
  *
  * This class provides methods for calculating and managing technical indicators 
  * on financial OHLCV (Open, High, Low, Close, Volume) data. It enables users 
- * to parallel compute various technical indicators in 1 single loop.
+ * to parallel compute various technical indicators in 1 single loop for standard indicators and a second loop for ML regressors and classifier.
  * OHLCV datasets.
  */
 
@@ -502,6 +510,46 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
+    classifier(trainingSize = 50, options = {})
+    {
+        isAlreadyComputed(this)
+
+        const methodName = 'classifier'
+
+        validateNumber(trainingSize, {min: 1, max: this.len, allowDecimals: false}, 'trainingSize', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {
+            trainingCols = [], 
+            type = 'KNN',
+            lookback = 0, 
+            knn = null,
+            findGroups = []
+        } = options
+
+        if (!this.ML.hasOwnProperty(type)) {
+            throw new Error(
+                `"${type}" isn’t available because its library wasn’t imported into OHLCV_INDICATORS.ML.`
+            )
+        }
+
+        validateArray(trainingCols, 'options.trainingCols', methodName)
+        validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
+
+        if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
+        {
+            if(trainingCols.length > 0) throw new Error(`If "options.findGroups" array is not empty then leave "options.trainingCols" array empty.`)
+            if(findGroups.some(o => !o.hasOwnProperty('size') || !o.hasOwnProperty('type'))) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
+        }  else {
+            if(trainingCols.length === 0)
+            {
+                throw new Error(`"trainingCols" array is empty in ${methodName}`)
+            }
+        }
+
+
+    }
+
     regressor(trainingSize = 50, options = {})
     {
          isAlreadyComputed(this)
@@ -519,6 +567,7 @@ export default class OHLCV_INDICATORS {
             type = 'SimpleLinearRegression', 
             lookback = 0, 
             rf = null,
+            ff = null,
             findGroups = []
         } = options
 
@@ -528,6 +577,8 @@ export default class OHLCV_INDICATORS {
             )
         }
         
+        //regressor
+
         validateString(target, 'options.target', methodName)
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
@@ -537,6 +588,12 @@ export default class OHLCV_INDICATORS {
         {
             if(trainingCols.length > 0) throw new Error(`If "options.findGroups" array is not empty then leave "options.trainingCols" array empty.`)
             if(findGroups.some(o => !o.hasOwnProperty('size') || !o.hasOwnProperty('type'))) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
+        } else
+        {
+            if(trainingCols.length === 0)
+            {
+                throw new Error(`"trainingCols" array is empty in ${methodName}`)
+            }
         }
         
         if(univariableRegressorsX.has(type)){
@@ -558,7 +615,17 @@ export default class OHLCV_INDICATORS {
         }
         validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
  
-        let rfArgs = (type === 'RandomForestRegression') ? defaultRandomForestOptions : undefined
+        let regressorArgs
+
+        if(type === 'RandomForestRegression')
+        {
+            regressorArgs = defaultRandomForestOptions
+        }
+        else if(type === 'FeedForwardNeuralNetworks')
+        {
+            regressorArgs = defaultFeedForwardOptions
+        }
+
 
         if(rf !== null){
 
@@ -570,9 +637,30 @@ export default class OHLCV_INDICATORS {
             if(rf.hasOwnProperty('replacement')) validateBoolean(rf.replacement, 'options.rf.replacement', methodName)
             if(rf.hasOwnProperty('nEstimators')) validateNumber(rf.nEstimators, {min: 5, allowDecimals: false}, 'options.rf.nEstimators', methodName)
 
-            rfArgs = {
-                ...rfArgs,
+            regressorArgs = {
+                ...regressorArgs,
                 ...rf
+            }
+        }
+
+        if(ff !== null)
+        {
+            if(type !== 'FeedForwardNeuralNetworks') (`If regressor type is not ${type} then leave "options.ff" value null.`)
+            validateObject(ff, 'options.ff')
+
+            if(ff.hasOwnProperty('hiddenLayers')){
+                validateArray(ff.hiddenLayers, 'options.ff.hiddenLayers', methodName)
+                validateNumber(ff.hiddenLayers[0], {min: 1, allowDecimals: false}, 'options.ff.hiddenLayers[0]', methodName)
+            }
+            if(ff.hasOwnProperty('iterations')) validateNumber(ff.iterations, {min: 1, allowDecimals: false}, 'options.ff.iterations', methodName)
+            if(ff.hasOwnProperty('learningRate')) validateNumber(ff.learningRate, {min: 0.0001, allowDecimals: true}, 'options.ff.learningRate', methodName)
+            if(ff.hasOwnProperty('regularization')) validateNumber(ff.regularization, {min: 0.0001, allowDecimals: true}, 'options.ff.regularization', methodName)
+            if(ff.hasOwnProperty('activationParam')) validateNumber(ff.activationParam, {min: 0, allowDecimals: false}, 'options.ff.activationParam', methodName)
+            if(ff.hasOwnProperty('activation')) validateArrayOptions(validFeedForwardActivators, ff.activation, 'options.ff.activation', methodName)
+            
+            regressorArgs = {
+                ...regressorArgs,
+                ...ff
             }
         }
 
@@ -586,7 +674,7 @@ export default class OHLCV_INDICATORS {
 
         
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, lookback, trainingCols, findGroups, type,  rfArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, lookback, trainingCols, findGroups, type,  regressorArgs, precompute}]})
 
         return this
     }
