@@ -19,13 +19,13 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
     const prefix = `${type}_${size}`;
   
     if (index === 0) {
-      const { len, scaledLabels } = main;
+      const { len, isAlreadyComputed } = main;
 
-      if(scaledLabels.has(prefix))
+      if(isAlreadyComputed.has(prefix))
       {
         throw new Error(`In scaler method can not repeat params "size" and "options.type" together between indicators.`)
       }
-      scaledLabels.add(prefix)
+      isAlreadyComputed.add(prefix)
   
       if(!instances.hasOwnProperty('scaler'))
       {

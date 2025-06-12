@@ -8,21 +8,16 @@ export const validRegressors = {
     'FeedForwardNeuralNetworks': 'feed_forward'
 }
 
-export const validFeedForwardActivators = ['tanh', 'identity', 'logistic', 'arctan', 'softsign', 'relu', 'softplus', 'bent', 'sinusoid', 'sinc', 'gaussian', 'parametric-relu', 'exponential-relu', 'soft-exponential']
-
-export const univariableRegressorsX = new Set(['SimpleLinearRegression', 'PolynomialRegression'])
-export const univariableRegressorsY = new Set(['SimpleLinearRegression', 'PolynomialRegression', 'DecisionTreeRegression', 'RandomForestRegression'])
-export const regressorUseTrainMethod = new Set(['DecisionTreeRegression', 'RandomForestRegression', 'FeedForwardNeuralNetworks'])
-export const defaultRandomForestOptions = {
+export const defaultRandomForestRegressorOptions = {
     seed: 3,
     maxFeatures: 2,
     replacement: false,
     nEstimators: 30,
 }
 
-export const defaultFeedForwardOptions = {
+export const defaultFeedForwardRegressorOptions = {
     hiddenLayers: [10],
-    iterations: 50,
+    iterations: 20,
     learningRate: 0.01,
     regularization: 0.01,
     activationParam: 1,

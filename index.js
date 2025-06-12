@@ -17,15 +17,24 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
-import { 
-    validRegressors, 
-    univariableRegressorsX, 
-    univariableRegressorsY, 
-    regressorUseTrainMethod, 
-    defaultRandomForestOptions,
-    defaultFeedForwardOptions,
+
+import {
+    useTrainMethod,
+    univariableX, 
+    univariableY,
     validFeedForwardActivators
+} from './src/machine-learning/ml-config.js'
+
+import { 
+    validRegressors,
+    defaultRandomForestRegressorOptions,
+    defaultFeedForwardRegressorOptions
 } from './src/machine-learning/regressor.js'
+
+import {
+    defaultYCallback,
+    validClassifiers
+} from './src/machine-learning/classifier.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -77,7 +86,7 @@ export default class OHLCV_INDICATORS {
         this.precision = precision
         this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.scaledGroups = {}
-        this.scaledLabels = new Set()
+        this.isAlreadyComputed = new Set()
         this.models = {}
         this.ML = ML
 
@@ -522,10 +531,21 @@ export default class OHLCV_INDICATORS {
         const {
             trainingCols = [], 
             type = 'KNN',
-            lookback = 0, 
-            knn = null,
-            findGroups = []
+            lookback = 0,
+            findGroups = [],
+            yColumns = 2
         } = options
+
+        
+
+        const yCallback = options.yCallback ?? defaultYCallback
+
+        if(typeof yCallback !== 'function')
+        {
+            throw new Error(`"yCallback" must be a function in the following format:\n\n---\n\nconst yCallback = ${defaultYCallback.toString()}\n\n---\n\n`)
+        }
+
+        validateArrayOptions(Object.keys(validClassifiers), type, 'options.type', methodName)
 
         if (!this.ML.hasOwnProperty(type)) {
             throw new Error(
@@ -535,6 +555,7 @@ export default class OHLCV_INDICATORS {
 
         validateArray(trainingCols, 'options.trainingCols', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
+        validateNumber(yColumns, {min: 1, allowDecimals: false}, 'yColumns', methodName)
 
         if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
         {
@@ -547,7 +568,28 @@ export default class OHLCV_INDICATORS {
             }
         }
 
+        const prefix = `cla_${validClassifiers[type]}_${trainingSize}_prediction`
 
+        if(this.isAlreadyComputed.has(prefix))
+        {
+            throw new Error(
+            `Each classifier must have a unique pair of “type” and “trainingSize”.\n` +
+            `This rule ensures that your output columns are labeled unambiguously.\n` +
+            `You provided a duplicate: type="${type}" with trainingSize=${trainingSize}.`
+            );
+        }
+
+        const precompute = {
+            lookbackAbs: Math.abs(lookback) + 1,
+            flatY: univariableY.has(type),
+            prefix,
+            useTrainMethod: useTrainMethod.has(type)
+        }
+        
+        this.isAlreadyComputed.add(prefix)
+
+
+        return this
     }
 
     regressor(trainingSize = 50, options = {})
@@ -570,6 +612,8 @@ export default class OHLCV_INDICATORS {
             ff = null,
             findGroups = []
         } = options
+
+        validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
 
         if (!this.ML.hasOwnProperty(type)) {
             throw new Error(
@@ -596,7 +640,7 @@ export default class OHLCV_INDICATORS {
             }
         }
         
-        if(univariableRegressorsX.has(type)){
+        if(univariableX.has(type)){
             if(trainingCols.length > 0)
             {
                 throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
@@ -613,17 +657,17 @@ export default class OHLCV_INDICATORS {
                 trainingCols.push(target)
             }
         }
-        validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
+        
  
         let regressorArgs
 
         if(type === 'RandomForestRegression')
         {
-            regressorArgs = defaultRandomForestOptions
+            regressorArgs = defaultRandomForestRegressorOptions
         }
         else if(type === 'FeedForwardNeuralNetworks')
         {
-            regressorArgs = defaultFeedForwardOptions
+            regressorArgs = defaultFeedForwardRegressorOptions
         }
 
 
@@ -666,10 +710,10 @@ export default class OHLCV_INDICATORS {
 
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
-            flatX: univariableRegressorsX.has(type),
-            flatY: univariableRegressorsY.has(type),
+            flatX: univariableX.has(type),
+            flatY: univariableY.has(type),
             prefix: `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`,
-            useTrainMethod: regressorUseTrainMethod.has(type)
+            useTrainMethod: useTrainMethod.has(type)
         }
 
         
