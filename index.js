@@ -627,14 +627,15 @@ export default class OHLCV_INDICATORS {
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
         validateArray(trainingCols, 'options.trainingCols', methodName)
+        validateArray(findGroups, 'options.findGroups', methodName)
 
-        if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
+        if(findGroups.length > 0)
         {
             if(trainingCols.length > 0) throw new Error(`If "options.findGroups" array is not empty then leave "options.trainingCols" array empty.`)
             if(findGroups.some(o => !o.hasOwnProperty('size') || !o.hasOwnProperty('type'))) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
         } else
         {
-            if(trainingCols.length === 0)
+            if(trainingCols.length === 0 && univariableX.has(type) === false)
             {
                 throw new Error(`"trainingCols" array is empty in ${methodName}`)
             }
@@ -708,15 +709,26 @@ export default class OHLCV_INDICATORS {
             }
         }
 
+        const prefix = `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`
+
+        if(this.isAlreadyComputed.has(prefix))
+        {
+            throw new Error(
+            `Each regressor must have a unique "type", "trainingSize" and "target".\n` +
+            `This rule ensures that your output columns are labeled unambiguously.\n` +
+            `You provided a duplicate: type="${type}", trainingSize=${trainingSize} target=${target}.`
+            );
+        }
+
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
             flatX: univariableX.has(type),
             flatY: univariableY.has(type),
-            prefix: `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`,
+            prefix,
             useTrainMethod: useTrainMethod.has(type)
         }
 
-        
+        this.isAlreadyComputed.add(prefix)
 
         this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, lookback, trainingCols, findGroups, type,  regressorArgs, precompute}]})
 
