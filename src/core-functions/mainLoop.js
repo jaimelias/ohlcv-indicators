@@ -7,7 +7,7 @@ import { donchianChannels } from "../moving-averages/donchianChannel.js";
 import { bollingerBands } from "../moving-averages/bollingerBands.js";
 import { volumeOscillator } from "../oscillators/volumeOscillator.js";
 import { lag } from "../studies/lag.js";
-import { crossPairs } from "../studies/findCrosses.js";
+import { crossPairs, oneHotCrossPairsSecondLoop } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
 import { scaler } from "../machine-learning/scaler.js";
 import { atr } from "../volatility/atr.js";
@@ -33,14 +33,8 @@ const mainFunctions = {
   volumeOscillator
 };
 
-const secondaryFunctions = {
-  scalerSecondary: scaler,
-  lagSecondary: lag,
-  crossPairsSecondary: crossPairs
-}
-
 export const mainLoop = (input, main) => {
-  const { len, inputParams, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes, chunkProcess, notNumberKeys } = main;
+  const { len, inputParams, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes, chunkProcess, notNumberKeys, processSecondaryLoop } = main;
 
   validateInputParams(inputParams, len)
 
@@ -104,7 +98,8 @@ export const mainLoop = (input, main) => {
   const isSecondaryLoopNeeded = inputParams.some(({ key }) => key === 'regressor' || key === 'classifier')
   const isPcaNeeded = inputParams.some(({ key, params }) => key.startsWith('scaler') && params[2].pca !== null)
 
-  if(isSecondaryLoopNeeded)
+  
+  if(isSecondaryLoopNeeded || processSecondaryLoop)
   {
     secondaryLoop(main)
   }
@@ -118,28 +113,28 @@ export const mainLoop = (input, main) => {
 }
 
 export const secondaryLoop = main => {
-  const {inputParams, len} = main
+  const {inputParams, len, instances} = main
 
+  const crossPairMatrix = {}
+  let crossPairIsOneHot = false
 
-  for(const rowParams of inputParams)
+  for(const [crossName, obj] of Object.entries(instances.crossPairs))
   {
-    const {key: indicatorName, params} = rowParams
-
-    if(!['regressor', 'classifier'].includes(indicatorName)) continue
-
-    for(let index = 0; index < len; index++)
-    {
-      regressor(main, index, ...params)
-
-      //secondary params
-        for (const { key, params } of inputParams) {
-          if(key === 'scalerSecondary') scaler(main, index, ...params)
-          if(key === 'lagSecondary') lag(main, index, ...params)
-          if(key === 'crossPairsSecondary') crossPairs(main, index, ...params)
-        }
-    }
-
+    const {min, max, oneHotLimit} = obj
+    crossPairMatrix[crossName] = {min, max, oneHotLimit}
+    crossPairIsOneHot = true
   }
 
+  for(let index = 0; index < len; index++)
+  {
+    //secondary params
+      for (const { key, params } of inputParams) {
+        if(key === 'regressor') regressor(main, index, ...params)
+        if(key === 'scalerSecondary') scaler(main, index, ...params)
+        if(key === 'lagSecondary') lag(main, index, ...params)
+      }
+
+    if(crossPairIsOneHot) oneHotCrossPairsSecondLoop(main, index, crossPairMatrix)
+  }
 
 }

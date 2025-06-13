@@ -89,6 +89,7 @@ export default class OHLCV_INDICATORS {
         this.isAlreadyComputed = new Set()
         this.models = {}
         this.ML = ML
+        this.processSecondaryLoop = false
 
         this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
         
@@ -223,13 +224,19 @@ export default class OHLCV_INDICATORS {
     
     
 
-    crossPairs(arr = [])
+    crossPairs(arr = [], options = {})
     {
-        let methodName = 'crossPairs'
+        const methodName = 'crossPairs'
 
         isAlreadyComputed(this)
 
         validateArray(arr, 'arr', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {oneHot, oneHotLimit = 100} = options
+
+        validateBoolean(oneHot, 'oneHot', methodName)
+        validateNumber(oneHotLimit, {min: 5, allowDecimals: false}, 'options.oneHotLimit', methodName)
 
         for (const [i, pair] of arr.entries()) {
             const { fast, slow } = pair || {};
@@ -242,13 +249,32 @@ export default class OHLCV_INDICATORS {
 
         this.crossPairsList = [...this.crossPairsList, ...arr]
 
-
-        if(arr.some(({fast, slow}) => `${fast}`.includes('_prediction_') || `${slow}`.includes('_prediction_')))
+        if(this.crossPairsList.some(({fast, slow}) => 
+            
+            `${fast}`.includes('_prediction_') || `${slow}`.includes('_prediction_')
+            `${fast}`.includes('_zscore_') || `${slow}`.includes('_zscore_')
+            `${fast}`.includes('_minmax_') || `${slow}`.includes('_minmax_')
+            `${fast}`.includes('_x_') || `${slow}`.includes('_x_')))
         {
-            methodName += 'Secondary'
+            throw new Error(`"${methodName}" can not be used with the the following strings: ${JSON.stringify(invalidKeyStrings)}`)
         }
 
-        this.inputParams.push({key: methodName, params: [this.crossPairsList]})
+        let prefix = ''
+
+        if(oneHot)
+        {
+            prefix = 'one_hot_'
+            this.processSecondaryLoop = true
+        }
+
+        if(this.isAlreadyComputed.has(methodName))
+        {
+            throw new Error(`You can only call the "${methodName}" method once.`)
+        }
+
+        this.isAlreadyComputed.add(methodName)
+
+        this.inputParams.push({key: methodName, params: [this.crossPairsList, {oneHot, oneHotLimit, prefix}]})
         
         return this
     }

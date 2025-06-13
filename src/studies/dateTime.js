@@ -1,3 +1,5 @@
+import {oneHotEncode} from '../machine-learning/ml-utilities.js'
+
 export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
     const {instances, verticalOhlcv, notNumberKeys} = main
@@ -10,8 +12,6 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
         const startYear = verticalOhlcv.date[0].getUTCFullYear()
         const currentYear = new Date().getUTCFullYear()
-
-        console.log({startYear, currentYear})
 
         Object.assign(instances, {
             dateTime: {
@@ -65,14 +65,7 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
 const getDateInfo = (date, oneHot, colKeySizes, prefix, startYear) => {
 
-    const encode = (value, size) => {
-        if (oneHot) {
-            const vec = new Uint8Array(size)
-            vec[value] = 1
-            return vec
-        }
-        return value
-    }
+    const encode = (value, size) => (oneHot) ? oneHotEncode(value, size) : value
 
     const output = {
         [`${prefix}year`]: date.getUTCFullYear(),

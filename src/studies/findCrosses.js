@@ -1,3 +1,5 @@
+import { oneHotEncode } from "../machine-learning/ml-utilities.js"
+
 const eq = (fast, slow) => fast === slow
 const gt = (fast, slow) => fast > slow
 const lt = (fast, slow) => fast < slow
@@ -130,21 +132,23 @@ class CrossInstance {
 
 }
 
-export const crossPairs = (main, index, crossPairsList) => {
+export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotLimit, prefix}) => {
   const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes, notNumberKeys} = main
 
   if(index === 0)
   {
+
     for (const { fast, slow } of crossPairsList)
     {
-        const crossName = `${fast}_x_${slow}`
+        const crossName = `${prefix}${fast}_x_${slow}`
 
         // allow numeric 'slow' as a constant column
         if (typeof slow === "number") {
-            const col = slow.toString()
+            const col = `${prefix}${slow.toString()}`
             verticalOhlcvTempCols.add(col)
             notNumberKeys.add(col)
-            verticalOhlcv[col] = new Int32Array(len).fill(slow)
+            verticalOhlcv[col] = (oneHot) ? new Array(len).fill(slow) : new Int32Array(len).fill(slow)
+            arrayTypes[col] = (oneHot) ? 'Array': 'Int32Array'
         }
 
         // sanity checks
@@ -155,13 +159,22 @@ export const crossPairs = (main, index, crossPairsList) => {
             throw new Error(`slow "${slow}" not found in crossPairs`)
         }
 
-        // create instance + output buffer
-        instances[crossName] = {
-            run: new CrossInstance()
+        if(!instances.hasOwnProperty('crossPairs'))
+        {
+            instances.crossPairs = {}
         }
-        verticalOhlcv[crossName] = new Int32Array(len).fill(NaN)
+
+        // create instance + output buffer
+        instances.crossPairs[crossName] = {
+            run: new CrossInstance(),
+            uniqueValues: new Set(),
+            min: Infinity,
+            max: -Infinity,
+            oneHotLimit
+        }
+        verticalOhlcv[crossName] = (oneHot) ? new Array(len).fill(NaN) : new Int32Array(len).fill(NaN)
         notNumberKeys.add(crossName)
-        arrayTypes[crossName] = "Int32Array"
+        arrayTypes[crossName] = (oneHot) ? 'Array' : 'Int32Array'
 
     }
   }
@@ -170,9 +183,9 @@ export const crossPairs = (main, index, crossPairsList) => {
 
   for (const { fast, slow } of crossPairsList) {
 
-    const crossName = `${fast}_x_${slow}`
+    const crossName = `${prefix}${fast}_x_${slow}`
 
-     const {run} = instances[crossName]
+     const {run, uniqueValues} = instances.crossPairs[crossName]
 
     // ——— Per-bar update ———
     if (fast === "price") {
@@ -190,13 +203,69 @@ export const crossPairs = (main, index, crossPairsList) => {
       run.update(index, { fast: fastVal, slow: slowVal })
     }
 
-    // push the result
-    main.pushToMain({
-      index,
-      key: crossName,
-      value: run.getResult(),
-    })
+    let value = run.getResult()
+
+    if(oneHot)
+    {
+        if(!uniqueValues.has(value))
+        {
+            if(value > instances.crossPairs[crossName].max)
+            {
+                instances.crossPairs[crossName].max = value
+            }
+            else if(value < instances.crossPairs[crossName].min)
+            {
+                instances.crossPairs[crossName].min = value
+            }
+            
+            uniqueValues.add(value)
+        }
+
+    }
+
+    main.pushToMain({index, key: crossName, value})
+
   }
 
   return true
 };
+
+
+
+
+export const oneHotCrossPairsSecondLoop = (main, index, crossPairMatrix) => {
+  const { verticalOhlcv } = main
+
+  for (const [key, obj] of Object.entries(crossPairMatrix)) {
+    const { oneHotLimit, min: rawMin, max: rawMax } = obj
+
+    console.log('here consider if to change the oneHotLimit to oneHotMin, oneHotMax and oneHotForceRows')
+
+    // derive half-width (floor so we stay in ints)
+    const numRows = Math.floor(oneHotLimit / 2)
+
+    // clamp the original bounds into [-numRows…+numRows]
+    const min = Math.max(rawMin, -numRows)
+    const max = Math.min(rawMax,  numRows)
+
+
+    // compute the total number of slots
+    const size = max - min + 1
+
+    // grab & clamp the raw value
+    const raw     = verticalOhlcv[key][index];
+    const clamped = raw < min ? min : raw > max ? max : raw
+
+    // shift into [0…size-1]
+    const idx = clamped - min
+
+    // one-hot encode and push
+    main.pushToMain({
+      index,
+      key,
+      value: oneHotEncode(idx, size)
+    })
+  }
+
+  return true
+}
