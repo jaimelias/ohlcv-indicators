@@ -22,7 +22,8 @@ import {
     useTrainMethod,
     univariableX, 
     univariableY,
-    validFeedForwardActivators
+    validFeedForwardActivators,
+    neuralNetworks
 } from './src/machine-learning/ml-config.js'
 
 import { 
@@ -725,7 +726,8 @@ export default class OHLCV_INDICATORS {
             flatX: univariableX.has(type),
             flatY: univariableY.has(type),
             prefix,
-            useTrainMethod: useTrainMethod.has(type)
+            useTrainMethod: useTrainMethod.has(type),
+            isNeuralNetwork: neuralNetworks.has(type)
         }
 
         this.isAlreadyComputed.add(prefix)

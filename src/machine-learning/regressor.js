@@ -26,7 +26,7 @@ export const defaultFeedForwardRegressorOptions = {
 
 export const regressor = (main, index, trainingSize, {target, predictions, lookback, trainingCols, findGroups, type, regressorArgs, precompute}) => {
 
-    const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
+    const {lookbackAbs, prefix, flatX, flatY, useTrainMethod, isNeuralNetwork} = precompute
     const {verticalOhlcv, len, instances, scaledGroups} = main
 
     if(index === 0)
@@ -69,24 +69,19 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
         instances.regressor[prefix] = {
             trainingColsLen: trainingCols.length,
             X: [],
-            Y: []
+            Y: [],
+            indexOfTarget: trainingCols.indexOf(target)
         }
 
         for(let x = 0; x < predictions; x++)
         {
             const predictionKey = `${prefix}_${(x+1)}`
             verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
-
-            if(flatY)
-            {
-                instances.regressor[prefix].X[x] = [];
-                instances.regressor[prefix].Y[x] = [];
-            }
         }
 
     }
 
-    const {X: xInstance, Y: yInstance, trainingColsLen} = instances.regressor[prefix]
+    const {X: xInstance, Y: yInstance, trainingColsLen, indexOfTarget} = instances.regressor[prefix]
     
 
     let trainX
@@ -115,28 +110,56 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
 
     if(flatY)
     {
-        //process single-column outputs
+        //process single-column outputs using the current value as the first datapoint and using futureValue as datapoint for the next predictions
+        const trainY = verticalOhlcv[target][index] 
+
+        yInstance.push(trainY)
+        xInstance.push(trainX)
+
+        if(yInstance.length > trainingSize) yInstance.shift()
+        if(xInstance.length > trainingSize) xInstance.shift()
+
+        const yRows = [...yInstance] //can be an array of number or 2d array with numbers
+        const xRows = [...xInstance] //can be an array of number or 2d array with numbers
+
         for(let x = 0; x < predictions; x++) {
             const predictionKey = `${prefix}_${(x+1)}`
             let model
 
             //predict from stored model in main
-            if(main.models.hasOwnProperty(predictionKey)){
+            if(main.models.hasOwnProperty(prefix)){
 
                 //current prediction should be extracted from the saved model in 
-                model = main.ML[type].load(main.models[predictionKey])
-
-                let futureValue = model.predict([trainX])
+                model = main.ML[type].load(main.models[prefix])
                 
+                // First prediction uses the original trainX; subsequent predictions use previous predicted values (futureValue) as datapoints
+
+                const newTrainX = xRows[xRows.length - 1] // can be an array or a number
+                const futureValueRow = model.predict([newTrainX]) //newTrainX needs to be wrapped in an array for predictions
+                const futureValue = futureValueRow[0] //predict needs to be unwrapped before pushing it to main
+
+                //flatX indicates training X features only accept 1 variable
+                if(flatX)
+                {
+                    xRows.push(futureValue)
+
+                    if(xRows.length > trainingSize) xRows.shift()
+
+                } else
+                {
+                    const prevX = xRows[xRows.length - 1]
+                    const nextX = prevX.slice(1).concat(futureValue) // shift window
+                    xRows.push(nextX)
+
+                    if (xRows.length > trainingSize) xRows.shift()
+                }
+
+
                 //the output pushed to main should be always a flat number
                 main.pushToMain({ index, key: predictionKey, value: futureValue})
             }
-            
-            const trainY = verticalOhlcv[target][index + (x + 1)] 
-            const yRows = yInstance[x]
-            const xRows = xInstance[x]
 
-            if(yRows.length === trainingSize && xRows.length === trainingSize){
+            if(x === 0 && yRows.length === trainingSize && xRows.length === trainingSize){
 
                 if(useTrainMethod)
                 {
@@ -148,22 +171,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
                     model = new main.ML[type](xRows, yRows)
                 }
 
-                main.models[predictionKey] = model.toJSON()
-            }
-
-            if(typeof trainY === 'undefined') continue
-
-            yRows.push(trainY)
-            xRows.push(trainX)
-
-            if(yRows.length > trainingSize)
-            {
-                yRows.shift()
-            }
-
-            if(xRows.length > trainingSize)
-            {
-                xRows.shift()
+                main.models[prefix] = model.toJSON()
             }
         }
 
@@ -179,20 +187,38 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
             //current prediction should be extracted from the saved model in 
             model = main.ML[type].load(main.models[prefix])
 
-            let futurePredictions = model.predict([trainX])[0]
+            const futurePredictionsRow = model.predict([trainX])
+            const futurePredictions = futurePredictionsRow[0]
+
 
             for(let x = 0; x < predictions; x++)
             {
                 const predictionKey = `${prefix}_${(x+1)}`
 
-                main.pushToMain({ index, key: predictionKey, value: futurePredictions[x] })
+                if(isNeuralNetwork)
+                {
+                    //3d array pushing the target value
+                    main.pushToMain({ index, key: predictionKey, value: futurePredictions[x][indexOfTarget] })
+                }
+                else{
+                    //2d array pushing the target value
+                    main.pushToMain({ index, key: predictionKey, value: futurePredictions[x] })
+                }
             }
         }
 
         //this conditionsl avoids undefined trainY items
         if((index + predictions + 1) > len) return
 
-        trainY = new Array(predictions).fill(NaN).map((_, i) => verticalOhlcv[target][index + (i + 1)] )
+        if(isNeuralNetwork)
+        {
+            //3d array
+            trainY = new Array(predictions).fill(NaN).map((_, i) => trainingCols.map(key => verticalOhlcv[key][index + (i + 1)]) )
+        }
+        else {
+            //2d array
+            trainY = new Array(predictions).fill(NaN).map((_, i) => verticalOhlcv[target][index + (i + 1)] )
+        }
 
         const yRows = yInstance
         const xRows = xInstance
