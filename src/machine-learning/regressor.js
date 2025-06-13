@@ -26,7 +26,7 @@ export const defaultFeedForwardRegressorOptions = {
 
 export const regressor = (main, index, trainingSize, {target, predictions, lookback, trainingCols, findGroups, type, regressorArgs, precompute}) => {
 
-    const {lookbackAbs, prefix, flatX, flatY, useTrainMethod, isNeuralNetwork} = precompute
+    const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
     const {verticalOhlcv, len, instances, scaledGroups} = main
 
     if(index === 0)
@@ -70,7 +70,6 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
             trainingColsLen: trainingCols.length,
             X: [],
             Y: [],
-            indexOfTarget: trainingCols.indexOf(target)
         }
 
         for(let x = 0; x < predictions; x++)
@@ -81,7 +80,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
 
     }
 
-    const {X: xInstance, Y: yInstance, trainingColsLen, indexOfTarget} = instances.regressor[prefix]
+    const {X: xInstance, Y: yInstance, trainingColsLen} = instances.regressor[prefix]
     
 
     let trainX
@@ -194,31 +193,16 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
             for(let x = 0; x < predictions; x++)
             {
                 const predictionKey = `${prefix}_${(x+1)}`
-
-                if(isNeuralNetwork)
-                {
-                    //3d array pushing the target value
-                    main.pushToMain({ index, key: predictionKey, value: futurePredictions[x][indexOfTarget] })
-                }
-                else{
-                    //2d array pushing the target value
-                    main.pushToMain({ index, key: predictionKey, value: futurePredictions[x] })
-                }
+                const currPrediction = futurePredictions[x]
+                main.pushToMain({ index, key: predictionKey, value: currPrediction })
             }
         }
 
         //this conditionsl avoids undefined trainY items
         if((index + predictions + 1) > len) return
 
-        if(isNeuralNetwork)
-        {
-            //3d array
-            trainY = new Array(predictions).fill(NaN).map((_, i) => trainingCols.map(key => verticalOhlcv[key][index + (i + 1)]) )
-        }
-        else {
-            //2d array
-            trainY = new Array(predictions).fill(NaN).map((_, i) => verticalOhlcv[target][index + (i + 1)] )
-        }
+        //2d array
+        trainY = new Array(predictions).fill(NaN).map((_, i) => verticalOhlcv[target][index + (i + 1)] )
 
         const yRows = yInstance
         const xRows = xInstance

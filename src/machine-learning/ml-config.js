@@ -2,4 +2,3 @@ export const univariableX = new Set(['SimpleLinearRegression', 'PolynomialRegres
 export const univariableY = new Set(['SimpleLinearRegression', 'PolynomialRegression', 'DecisionTreeRegression', 'RandomForestRegression'])
 export const useTrainMethod = new Set(['DecisionTreeRegression', 'RandomForestRegression', 'FeedForwardNeuralNetworks'])
 export const validFeedForwardActivators = ['tanh', 'identity', 'logistic', 'arctan', 'softsign', 'relu', 'softplus', 'bent', 'sinusoid', 'sinc', 'gaussian', 'parametric-relu', 'exponential-relu', 'soft-exponential']
-export const neuralNetworks = new Set(['FeedForwardNeuralNetworks'])
