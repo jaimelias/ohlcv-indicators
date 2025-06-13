@@ -7,6 +7,8 @@ export const buildArray = (arrayType, len) => {
   if(arrayType === 'Array') return new Array(len).fill(null)
   if(arrayType === 'Float64Array') return new Float64Array(len).fill(NaN)
   if(arrayType === 'Int32Array') return new Int32Array(len).fill(NaN)
+  if(arrayType === 'Uint8Array') return new Uint8Array(len).fill(NaN)
+  if(arrayType === 'Int16Array') return new Int16Array(len).fill(NaN)
 }
 
 export const assignTypes = main => {

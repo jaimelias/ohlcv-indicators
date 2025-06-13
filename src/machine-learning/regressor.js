@@ -91,18 +91,31 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
         trainX = verticalOhlcv[target][index]
     } else {
         if(index < lookbackAbs) return
-        
+        let shouldExit = false
+
+
         trainX = new Array(trainingColsLen *  lookbackAbs).fill(NaN)
 
         for(let l = 0; l < lookbackAbs; l++)
         {
+            if(shouldExit) break
+
             for(let t = 0; t < trainingColsLen; t++)
             {
                 const trainingKey = trainingCols[t]
                 const value = verticalOhlcv[trainingKey][index - l]
+
+                if(Number.isNaN(value))
+                {
+                    shouldExit = true
+                    break
+                }
+
                 trainX[l * trainingColsLen + t] = value
             }
         }
+
+        if(shouldExit) return
     }
 
    
@@ -140,7 +153,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
                 //flatX indicates training X features only accept 1 variable
                 if(flatX)
                 {
-                    xRows.push(futureValue)
+                    xRows.push(futureValue) //do not update yRows as xRows and yRows will end with the same values
 
                     if(xRows.length > trainingSize) xRows.shift()
 

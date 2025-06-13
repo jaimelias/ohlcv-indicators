@@ -1,103 +1,94 @@
-export const dateTime = (main, index, {lag}) => {
+export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
     const {instances, verticalOhlcv, notNumberKeys} = main
+    const {prefix} = precompute
 
-    const colKeys = ['day_of_the_week', 'day_of_the_month', 'week_of_the_month', 'minute', 'hour', 'month', 'year', 'session_daily_index', 'session_intraday_index']
-
- 
     if(index === 0)
     {
         const {len, dateType, arrayTypes} = main
         if(!dateType) throw Error('dateTime method found and invalid "date" in input ohlcv')
 
+        const startYear = verticalOhlcv.date[0].getUTCFullYear()
+        const currentYear = new Date().getUTCFullYear()
+
+        console.log({startYear, currentYear})
+
         Object.assign(instances, {
             dateTime: {
-                prevDateStr: verticalOhlcv.date[0],
-                sessionDailyIndexCount: 0,
-                sessionIntradayIndexCount: 0,
-                cachedDayInfo: verticalOhlcv.date[0]
+                colKeys: [...precompute.colKeys, `${prefix}year`],
+                colKeySizes: {
+                    ...precompute.colKeySizes,
+                    [`${prefix}year`]: (currentYear - startYear) + 1
+                }
+                ,startYear
             }
         })
 
-        
-        for(const key of colKeys)
-        {
-            arrayTypes[key] = 'Int32Array'
+        const { colKeys } = instances.dateTime
+
+        // choose your ctor, fill-value and type-name once
+        const ctor     = oneHot ? Array     : Int16Array
+        const fillVal  = oneHot ? null      : NaN
+        const typeName = oneHot ? 'Array'   : 'Int16Array'
+
+        // single loop instead of three
+        for (const key of colKeys) {
+        // 1) set the arrayType
+        arrayTypes[key] = typeName
+
+        // 2) allocate and fill the backing array
+        verticalOhlcv[key] = new ctor(len).fill(fillVal)
+
+        // 3) mark as non-numeric
+        notNumberKeys.add(key)
         }
 
-        Object.assign(verticalOhlcv, {...Object.fromEntries(colKeys.map(k => [k, new Int32Array(len).fill(NaN)]))})
-
-        if(lag > 0)
-        {
-            main.lag(colKeys, lag)
-        }
-
-        for(const k of colKeys)
-        {
-            notNumberKeys.add(k)
+        // finally, apply lag once
+        if (lag > 0) {
+        main.lag(colKeys, lag)
         }
     }
 
+    const {colKeySizes, startYear} = instances.dateTime
 
     const currDate = verticalOhlcv.date[index]
 
-    const {
-        day_of_the_week,
-        day_of_the_month,
-        week_of_the_month,
-        month,
-        year,
-        hour,
-        minute
-    } = getDateInfo(currDate)
+    const dateInfo = getDateInfo(currDate, oneHot, colKeySizes, prefix, startYear)
 
-
-    const currDateStr = currDate
-
-    if(currDateStr !== instances.dateTime.prevDateStr)
+    for(const [key, value] of Object.entries(dateInfo))
     {
-        instances.dateTime.prevDateStr = currDateStr
-        instances.dateTime.sessionDailyIndexCount++
-        instances.dateTime.sessionIntradayIndexCount = 0
-    }
-
-    
-
-    main.pushToMain({index, key: 'session_daily_index', value:  instances.dateTime.sessionDailyIndexCount})
-    main.pushToMain({index, key: 'session_intraday_index', value: instances.dateTime.sessionIntradayIndexCount})
-    main.pushToMain({index, key: 'day_of_the_week', value: day_of_the_week})
-    main.pushToMain({index, key: 'day_of_the_month', value: day_of_the_month})
-    main.pushToMain({index, key: 'week_of_the_month', value: week_of_the_month})
-    main.pushToMain({index, key: 'month', value: month})
-    main.pushToMain({index, key: 'year', value: year})
-    main.pushToMain({index, key: 'hour', value: hour})
-    main.pushToMain({index, key: 'minute', value: minute})
-
-
-    instances.dateTime.sessionIntradayIndexCount++
-
-}
-
-
-
-const getDateInfo = date => {
-    const month = date.getMonth()
-    const year = date.getFullYear()
-    const hour = date.getHours()
-    const minute = date.getMinutes()
-    const day_of_the_week = date.getDay();
-    const day_of_the_month = date.getDate();
-    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1)
-    const dayOffset = firstDayOfMonth.getDay();
-    const week_of_the_month = Math.ceil((day_of_the_month + dayOffset) / 7)
-
-    return {
-        month,
-        year,
-        hour,
-        minute,
-        day_of_the_week,
-        day_of_the_month,
-        week_of_the_month,
+        main.pushToMain({index, key, value})
     }
 }
+
+
+
+const getDateInfo = (date, oneHot, colKeySizes, prefix, startYear) => {
+
+    const encode = (value, size) => {
+        if (oneHot) {
+            const vec = new Uint8Array(size)
+            vec[value] = 1
+            return vec
+        }
+        return value
+    }
+
+    const output = {
+        [`${prefix}year`]: date.getUTCFullYear(),
+        [`${prefix}month`]: date.getUTCMonth(),
+        [`${prefix}hour`]: date.getUTCHours(),
+        [`${prefix}minute`]: date.getUTCMinutes(),
+        [`${prefix}day_of_the_week`]: date.getUTCDay(),
+        [`${prefix}day_of_the_month`]: date.getUTCDate() - 1,
+    }
+
+    for(const [key, size] of Object.entries(colKeySizes))
+    {
+        const value = (key === `${prefix}year`) ? output[key] - startYear: output[key]
+        output[key] = encode(value, size)
+    }
+
+    return output
+}
+

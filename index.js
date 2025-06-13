@@ -479,11 +479,29 @@ export default class OHLCV_INDICATORS {
 
         validateObject(options, 'options', methodName)
 
-        const {lag = 0} = options
+        const {lag = 0, oneHot = false} = options
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(oneHot, 'options.oneHot', methodName)
 
-        this.inputParams.push({key: methodName, params: [{lag}]})
+        const prefix = (oneHot) ? 'one_hot_' : ''
+
+
+        const colKeySizes = {
+            [`${prefix}month`]: 12,
+            [`${prefix}day_of_the_month`]: 31,
+            [`${prefix}day_of_the_week`]: 7,
+            [`${prefix}hour`]: 24,
+            [`${prefix}minute`]: 60
+        }
+
+        const precompute = {
+            prefix,
+            colKeySizes,
+            colKeys: Object.keys(colKeySizes)
+        }
+
+        this.inputParams.push({key: methodName, params: [{lag, oneHot, precompute}]})
         return this           
     }
 

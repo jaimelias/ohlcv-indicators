@@ -131,7 +131,7 @@ class CrossInstance {
 }
 
 export const crossPairs = (main, index, crossPairsList) => {
-  const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes} = main
+  const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes, notNumberKeys} = main
 
   if(index === 0)
   {
@@ -143,6 +143,7 @@ export const crossPairs = (main, index, crossPairsList) => {
         if (typeof slow === "number") {
             const col = slow.toString()
             verticalOhlcvTempCols.add(col)
+            notNumberKeys.add(col)
             verticalOhlcv[col] = new Int32Array(len).fill(slow)
         }
 
@@ -155,22 +156,29 @@ export const crossPairs = (main, index, crossPairsList) => {
         }
 
         // create instance + output buffer
-        instances[crossName] = new CrossInstance()
+        instances[crossName] = {
+            run: new CrossInstance()
+        }
         verticalOhlcv[crossName] = new Int32Array(len).fill(NaN)
+        notNumberKeys.add(crossName)
         arrayTypes[crossName] = "Int32Array"
 
     }
   }
 
+ 
+
   for (const { fast, slow } of crossPairsList) {
 
     const crossName = `${fast}_x_${slow}`
+
+     const {run} = instances[crossName]
 
     // ——— Per-bar update ———
     if (fast === "price") {
       const fastVal = verticalOhlcv.close[index]
       const slowVal = verticalOhlcv[slow][index]
-      instances[crossName].update(index, {
+      run.update(index, {
         fast: fastVal,
         slow: slowVal,
         high: verticalOhlcv.high[index],
@@ -179,14 +187,14 @@ export const crossPairs = (main, index, crossPairsList) => {
     } else {
       const fastVal = verticalOhlcv[fast][index]
       const slowVal = verticalOhlcv[slow][index]
-      instances[crossName].update(index, { fast: fastVal, slow: slowVal })
+      run.update(index, { fast: fastVal, slow: slowVal })
     }
 
     // push the result
     main.pushToMain({
       index,
       key: crossName,
-      value: instances[crossName].getResult(),
+      value: run.getResult(),
     })
   }
 
