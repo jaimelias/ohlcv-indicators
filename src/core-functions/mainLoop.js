@@ -120,8 +120,8 @@ export const secondaryLoop = main => {
 
   for(const [crossName, obj] of Object.entries(instances.crossPairs))
   {
-    const {min, max, oneHotLimit} = obj
-    crossPairMatrix[crossName] = {min, max, oneHotLimit}
+    const {min, max, oneHotCols} = obj
+    crossPairMatrix[crossName] = {min, max, oneHotCols}
     crossPairIsOneHot = true
   }
 

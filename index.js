@@ -233,10 +233,10 @@ export default class OHLCV_INDICATORS {
         validateArray(arr, 'arr', methodName)
         validateObject(options, 'options', methodName)
 
-        const {oneHot, oneHotLimit = 100} = options
+        const {oneHot, oneHotCols = null} = options
 
         validateBoolean(oneHot, 'oneHot', methodName)
-        validateNumber(oneHotLimit, {min: 5, allowDecimals: false}, 'options.oneHotLimit', methodName)
+        if(oneHotCols !== null) validateNumber(oneHotCols, {min: 5, allowDecimals: false}, 'options.oneHotCols', methodName)
 
         for (const [i, pair] of arr.entries()) {
             const { fast, slow } = pair || {};
@@ -274,7 +274,7 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(methodName)
 
-        this.inputParams.push({key: methodName, params: [this.crossPairsList, {oneHot, oneHotLimit, prefix}]})
+        this.inputParams.push({key: methodName, params: [this.crossPairsList, {oneHot, oneHotCols, prefix}]})
         
         return this
     }

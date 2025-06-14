@@ -132,7 +132,7 @@ class CrossInstance {
 
 }
 
-export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotLimit, prefix}) => {
+export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotCols, prefix}) => {
   const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes, notNumberKeys} = main
 
   if(index === 0)
@@ -170,7 +170,7 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotLimit, pr
             uniqueValues: new Set(),
             min: Infinity,
             max: -Infinity,
-            oneHotLimit
+            oneHotCols
         }
         verticalOhlcv[crossName] = (oneHot) ? new Array(len).fill(NaN) : new Int32Array(len).fill(NaN)
         notNumberKeys.add(crossName)
@@ -234,38 +234,39 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotLimit, pr
 
 
 export const oneHotCrossPairsSecondLoop = (main, index, crossPairMatrix) => {
-  const { verticalOhlcv } = main
+  const { verticalOhlcv } = main;
 
   for (const [key, obj] of Object.entries(crossPairMatrix)) {
-    const { oneHotLimit, min: rawMin, max: rawMax } = obj
+    const { oneHotCols, min: rawMin, max: rawMax } = obj;
 
-    console.log('here consider if to change the oneHotLimit to oneHotMin, oneHotMax and oneHotForceRows')
+    let min, max, size;
 
-    // derive half-width (floor so we stay in ints)
-    const numRows = Math.floor(oneHotLimit / 2)
+    if (oneHotCols == null) {
+      // no fixed column‐count: use the raw [rawMin…rawMax] bounds
+      min  = rawMin;
+      max  = rawMax;
+      size = max - min + 1;
+    } else {
+      // fixed column‐count: center a window of length oneHotCols
+      const half   = Math.floor(oneHotCols / 2);
+      min   = Math.max(rawMin, -half);
+      max   = Math.min(rawMax,  half);
+      size  = oneHotCols;
+    }
 
-    // clamp the original bounds into [-numRows…+numRows]
-    const min = Math.max(rawMin, -numRows)
-    const max = Math.min(rawMax,  numRows)
-
-
-    // compute the total number of slots
-    const size = max - min + 1
-
-    // grab & clamp the raw value
+    // grab & clamp the raw value into [min…max]
     const raw     = verticalOhlcv[key][index];
-    const clamped = raw < min ? min : raw > max ? max : raw
+    const clamped = raw < min ? min : raw > max ? max : raw;
 
     // shift into [0…size-1]
-    const idx = clamped - min
+    const idx = clamped - min;
 
-    // one-hot encode and push
     main.pushToMain({
       index,
       key,
       value: oneHotEncode(idx, size)
-    })
+    });
   }
 
-  return true
-}
+  return true;
+};
