@@ -233,10 +233,14 @@ export default class OHLCV_INDICATORS {
         validateArray(arr, 'arr', methodName)
         validateObject(options, 'options', methodName)
 
-        const {oneHot, oneHotCols = null} = options
+        const {oneHot = false} = options
 
-        validateBoolean(oneHot, 'oneHot', methodName)
-        if(oneHotCols !== null) validateNumber(oneHotCols, {min: 5, allowDecimals: false}, 'options.oneHotCols', methodName)
+        if(typeof oneHot !== 'boolean' && typeof oneHot !== 'number')
+        {
+            throw new Error(`"options.oneHot" must be a boolean or an integer with exact number of one-hot cols.`)
+        }
+
+        const oneHotCols = (typeof oneHot === 'number' && Number.isNaN(oneHot) === false && Number.isInteger(oneHot)) ? oneHot : null
 
         for (const [i, pair] of arr.entries()) {
             const { fast, slow } = pair || {};

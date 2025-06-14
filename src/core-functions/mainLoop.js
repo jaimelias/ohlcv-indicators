@@ -127,14 +127,14 @@ export const secondaryLoop = main => {
 
   for(let index = 0; index < len; index++)
   {
+    if(crossPairIsOneHot) oneHotCrossPairsSecondLoop(main, index, crossPairMatrix)
+
     //secondary params
       for (const { key, params } of inputParams) {
         if(key === 'regressor') regressor(main, index, ...params)
         if(key === 'scalerSecondary') scaler(main, index, ...params)
         if(key === 'lagSecondary') lag(main, index, ...params)
       }
-
-    if(crossPairIsOneHot) oneHotCrossPairsSecondLoop(main, index, crossPairMatrix)
   }
 
 }
