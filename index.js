@@ -23,6 +23,7 @@ import {
     univariableX, 
     univariableY,
     validFeedForwardActivators,
+    defaultYCallback,
 } from './src/machine-learning/ml-config.js'
 
 import { 
@@ -32,9 +33,10 @@ import {
 } from './src/machine-learning/regressor.js'
 
 import {
-    defaultYCallback,
     validClassifiers
 } from './src/machine-learning/classifier.js'
+
+import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
 
 //precomputed
 import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
@@ -447,11 +449,28 @@ export default class OHLCV_INDICATORS {
         validateObject(options, 'options', methodName)
         
         const {target = 'close', lag = 0} = options
-
+        let minmax = options.minmax
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [size, {target, lag}]})
+        let parseRsi = v => v
+        let prefix = ''
+
+        if(minmax !== null)
+        {
+            if(Array.isArray(minmax)){
+                validateArrayOfRanges(minmax, 'options.minmax', methodName)
+                parseRsi = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
+            } else
+            {
+                validateBoolean(minmax, 'options.minmax', methodName)
+                minmax = [0, 1]
+                parseRsi = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
+            }
+            prefix = 'minmax_'
+        }
+
+        this.inputParams.push({key: methodName, params: [size, {target, lag, parseRsi, prefix, minmax}]})
 
         return this
     }
@@ -581,10 +600,9 @@ export default class OHLCV_INDICATORS {
             type = 'KNN',
             lookback = 0,
             findGroups = [],
-            yColumns = 2
+            predictions = 2,
+            classifierArgs = {}
         } = options
-
-        
 
         const yCallback = options.yCallback ?? defaultYCallback
 
@@ -603,7 +621,7 @@ export default class OHLCV_INDICATORS {
 
         validateArray(trainingCols, 'options.trainingCols', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
-        validateNumber(yColumns, {min: 1, allowDecimals: false}, 'yColumns', methodName)
+        validateNumber(predictions, {min: 1, allowDecimals: false}, 'options.predictions', methodName)
 
         if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
         {
@@ -635,6 +653,8 @@ export default class OHLCV_INDICATORS {
         }
         
         this.isAlreadyComputed.add(prefix)
+
+        this.inputParams.push({key: methodName, params: [trainingSize, {yCallback, predictions, lookback, trainingCols, findGroups, type,  classifierArgs, precompute}]})
 
 
         return this

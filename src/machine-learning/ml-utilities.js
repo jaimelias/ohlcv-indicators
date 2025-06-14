@@ -4,6 +4,15 @@ export const oneHotEncode = (idx, size) => {
     return vec
 }
 
+export const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
+    const clamped = Math.min(Math.max(value, min), max)
+    return ((clamped - min) / (max - min)) * (validMax - validMin) + validMin
+}
+  
+export const normalizeZScore = (value, mean, std) => {
+    return std === 0 ? 0 : (value - mean) / std
+}
+
 export const findGroupsFunc = (findGroups, scaledGroups) => {
 
     const output = []
@@ -13,8 +22,9 @@ export const findGroupsFunc = (findGroups, scaledGroups) => {
         for(let g = 0; g < findGroups.length; g++)
         {
             const group = findGroups[g]
-            if(!scaledGroups.hasOwnProperty(`${group.type}_${group.size}`)) throw new Error(`Scaled group not found for ${type} regressor.options.findGroups[${g}]: ${JSON.stringify(group)}`)
-            output.push(...scaledGroups[`${group.type}_${group.size}`])
+            const {type, size} = group
+            if(!scaledGroups.hasOwnProperty(`${type}_${size}`)) throw new Error(`Scaled group (${`${type}_${size}`}) not found for regressor.options.findGroups[${g}]: ${JSON.stringify(group)}`)
+            output.push(...scaledGroups[`${type}_${size}`])
         }
     }
 

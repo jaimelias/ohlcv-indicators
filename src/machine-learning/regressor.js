@@ -99,6 +99,8 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
             verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
         }
 
+        console.log(`Training ${type} with ${flatFeaturesColLen} features: ${JSON.stringify(featureCols)}\n\n`)
+
     }
 
     const {X, Y, flatFeaturesColLen, featureCols} = instances.regressor[prefix]
@@ -190,7 +192,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
             if(main.models.hasOwnProperty(prefix)){
 
                 //current prediction should be extracted from the saved model in 
-                model = main.ML[type].load(main.models[prefix])
+                model = main.models[prefix]
                 
                 // First prediction uses the original trainX; subsequent predictions use previous predicted values (futureValue) as datapoints
 
@@ -231,7 +233,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
                     model = new main.ML[type](xRows, yRows)
                 }
 
-                main.models[prefix] = model.toJSON()
+                main.models[prefix] = model
             }
         }
 
@@ -245,7 +247,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
         if(main.models.hasOwnProperty(prefix)){
 
             //current prediction should be extracted from the saved model in 
-            model = main.ML[type].load(main.models[prefix])
+            model = main.models[prefix]
 
             const futurePredictionsRow = model.predict([trainX])
             const futurePredictions = futurePredictionsRow[0]
@@ -297,7 +299,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
             {
                 model = new main.ML[type](xRows, yRows)
             }
-            main.models[prefix] = model.toJSON()
+            main.models[prefix] = model
         }
 
         xRows.push(trainX)

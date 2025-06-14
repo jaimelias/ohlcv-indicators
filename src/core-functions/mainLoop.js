@@ -18,6 +18,7 @@ import { dateFormaters } from "../utilities/dateUtilities.js";
 
 import { pca } from "../machine-learning/pca.js";
 import { regressor } from "../machine-learning/regressor.js";
+import { classifier } from "../machine-learning/classifier.js";
 
 // Map indicator keys to their respective functions
 const mainFunctions = {
@@ -136,6 +137,7 @@ export const secondaryLoop = main => {
     //secondary params
       for (const { key, params } of inputParams) {
         if(key === 'regressor') regressor(main, index, ...params)
+        if(key === 'classifier') classifier(main, index, ...params)
         if(key === 'scalerSecondary') scaler(main, index, ...params)
         if(key === 'lagSecondary') lag(main, index, ...params)
       }

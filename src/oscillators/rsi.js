@@ -2,12 +2,12 @@ import { FasterRSI } from 'trading-signals';
 import { FasterSMA } from 'trading-signals';
 
 const defaultTarget = 'close'
-export const rsi = (main, index, size, { target, lag }) => {
-  const { verticalOhlcv, instances } = main;
+export const rsi = (main, index, size, { target, lag, parseRsi, prefix, minmax }) => {
+  const { verticalOhlcv, instances, scaledGroups } = main;
 
   const suffix = target === defaultTarget ? '' : `_${target}`;
-  const rsiKey = `rsi_${size}${suffix}`;
-  const rsiSmaKey = `rsi_sma_${size}${suffix}`;
+  const rsiKey = `${prefix}rsi_${size}${suffix}`;
+  const rsiSmaKey = `${prefix}rsi_sma_${size}${suffix}`;
 
   // Initialization on the first index.
   if (index === 0) {
@@ -23,20 +23,30 @@ export const rsi = (main, index, size, { target, lag }) => {
     Object.assign(instances, {
       [rsiKey]: new FasterRSI(size),
       [rsiSmaKey]: new FasterSMA(size)
-    });
+    })
 
     Object.assign(verticalOhlcv, {
       [rsiKey]: new Float64Array(len).fill(NaN),
       [rsiSmaKey]: new Float64Array(len).fill(NaN),
-    });
+    })
 
+    const baseKeys = [rsiKey, rsiSmaKey]
 
+    if (lag > 0) {
+      main.lag(baseKeys, lag);
+    }
 
-    const keyNames = [rsiKey, rsiSmaKey]
+    //[key, key_lag_1, …, key_lag_n] for each key
+    const keyNames = lag > 0
+      ? baseKeys.flatMap(key => [
+          key,
+          ...Array.from({ length: lag }, (_, i) => `${key}_lag_${i + 1}`)
+        ])
+      : baseKeys;
 
-    if(lag > 0)
-    {
-      main.lag(keyNames, lag)
+    if (minmax !== null) {
+      const group = main.scaledGroups.minmax_rsi ??= [];
+      group.push(...keyNames);
     }
 
     for(const key of keyNames)
@@ -61,7 +71,7 @@ export const rsi = (main, index, size, { target, lag }) => {
 
 
   // Always push the RSI value, using NaN as a fallback.
-  main.pushToMain({ index, key: rsiKey, value: currentRsi });
+  main.pushToMain({ index, key: rsiKey, value: (Number.isNaN(currentRsi)) ? NaN : parseRsi(currentRsi) });
 
   // Update the SMA indicator only if a valid RSI value is available.
   if (!Number.isNaN(currentRsi)) {
@@ -75,5 +85,5 @@ export const rsi = (main, index, size, { target, lag }) => {
   }
 
   // Always push the smoothed RSI value.
-  main.pushToMain({ index, key: rsiSmaKey, value: smoothedRsi });
+  main.pushToMain({ index, key: rsiSmaKey, value: (Number.isNaN(smoothedRsi)) ? NaN : parseRsi(smoothedRsi) });
 };

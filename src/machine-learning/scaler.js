@@ -1,17 +1,5 @@
 import { roundDecimalPlaces } from "../utilities/numberUtilities.js";
-
-/* General scaler: supports "minmax" and "zscore" types */
-
-
-
-const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
-    const clamped = Math.min(Math.max(value, min), max);
-    return ((clamped - min) / (max - min)) * (validMax - validMin) + validMin;
-  };
-  
-  const normalizeZScore = (value, mean, std) => {
-    return std === 0 ? 0 : (value - mean) / std;
-  };
+import { normalizeMinMax, normalizeZScore } from "./ml-utilities.js";
   
 export const scaler = (main, index, size, colKeys, {type, group, range, lag, precomputed, decimals}) => {
     const {groupKey, groupKeyLen} = precomputed
