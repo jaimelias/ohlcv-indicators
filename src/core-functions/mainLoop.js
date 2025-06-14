@@ -118,12 +118,16 @@ export const secondaryLoop = main => {
   const crossPairMatrix = {}
   let crossPairIsOneHot = false
 
-  for(const [crossName, obj] of Object.entries(instances.crossPairs))
+  if(instances.hasOwnProperty('crossPairs'))
   {
-    const {min, max, oneHotCols} = obj
-    crossPairMatrix[crossName] = {min, max, oneHotCols}
-    crossPairIsOneHot = true
+    for(const [crossName, obj] of Object.entries(instances.crossPairs))
+    {
+      const {min, max, oneHotCols} = obj
+      crossPairMatrix[crossName] = {min, max, oneHotCols}
+      crossPairIsOneHot = true
+    }
   }
+
 
   for(let index = 0; index < len; index++)
   {

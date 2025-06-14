@@ -1,3 +1,4 @@
+import { findGroupsFunc } from "./ml-utilities.js"
 
 export const validRegressors = {
     'SimpleLinearRegression': 'linear', 
@@ -31,23 +32,25 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
 
     if(index === 0)
     {
+        const featureCols = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
+
         if(findGroups.length > 0)
         {
             for(let g = 0; g < findGroups.length; g++)
             {
                 const group = findGroups[g]
                 if(!scaledGroups.hasOwnProperty(`${group.type}_${group.size}`)) throw new Error(`Scaled group not found for ${type} regressor.options.findGroups[${g}]: ${JSON.stringify(group)}`)
-                trainingCols.push(...scaledGroups[`${group.type}_${group.size}`])
+                featureCols.push(...scaledGroups[`${group.type}_${group.size}`])
             }
         }
 
-        if(flatX === false && trainingCols.length === 0) throw new Error(`Param "options.trainingCols" must have at least 2 cols for ${type}.`)
+        if(featureCols.length === 0) throw new Error(`There are not "featureCols" available in regressor "${type}"`)
 
         if(!verticalOhlcv.hasOwnProperty(target))
         {
             throw new Error(`Target property "${target}" not found in verticalOhlcv for regressor.`)
         }
-        if(!trainingCols.includes(target))
+        if(!featureCols.includes(target))
         {
             throw new Error(`Target property "${target}" not found in options.trainingCols: ${JSON.stringify(trainingCols)}`)
         }
@@ -59,31 +62,33 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
             }
         }
 
-        for(const trainingKey of trainingCols)
+        for(const trainingKey of featureCols)
         {
             if(!verticalOhlcv.hasOwnProperty(trainingKey)) throw new Error(`Target property ${trainingKey} not found in verticalOhlcv for regressor.`)
         }
 
-       let trainingColsLen = 0
+       let flatFeaturesColLen = 0
 
-        for(const key of trainingCols)
+        for(const key of featureCols)
         {
             if(key.startsWith('one_hot_'))
             {
-                
+                if(!instances.hasOwnProperty('crossPairs')) throw new Error(`Property "instances.crossPairs" not found in regressor ${type}`)
+                if(!instances.crossPairs.hasOwnProperty(key)) throw new Error(`Property "instances.crossPairs[${key}]" not found in regressor ${type}`)
                 const {oneHotCols, uniqueValues} = instances.crossPairs[key]
                 const {size} = uniqueValues
                 const colSize = (typeof oneHotCols === 'number') ? oneHotCols : size
 
-                trainingColsLen = trainingColsLen + colSize
+                flatFeaturesColLen = flatFeaturesColLen + colSize
             }
             else {
-                trainingColsLen++
+                flatFeaturesColLen++
             }
         }
 
         instances.regressor[prefix] = {
-            trainingColsLen,
+            featureCols,
+            flatFeaturesColLen,
             X: [],
             Y: [],
         }
@@ -96,9 +101,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
 
     }
 
-    const {X: xInstance, Y: yInstance, trainingColsLen} = instances.regressor[prefix]
-    
-
+    const {X, Y, flatFeaturesColLen, featureCols} = instances.regressor[prefix]
     let trainX
     let trainY
 
@@ -111,11 +114,11 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
         let shouldExit = false;
 
         // --- BUILD A FLATTENED LIST OF “COLUMN SLOTS” ---
-        // at init-time you already computed trainingColsLen;
+        // at init-time you already computed flatFeaturesColLen;
         // here we expand each 'one_hot_' key into [0..size-1] bit-slots
         const slots = []
 
-        for (const key of trainingCols) {
+        for (const key of featureCols) {
             if (key.startsWith('one_hot_')) {
                 // pull the size from your CrossInstance metadata:
                 const {oneHotCols, uniqueValues} = instances.crossPairs[key]
@@ -131,12 +134,12 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
             }
         }
 
-        if (slots.length !== trainingColsLen) {
-            throw new Error(`slots (${slots.length}) ≠ trainingColsLen (${trainingColsLen}) in ${type} index ${index}`)
+        if (slots.length !== flatFeaturesColLen) {
+            throw new Error(`slots (${slots.length}) ≠ flatFeaturesColLen (${flatFeaturesColLen}) in ${type} index ${index}`)
         }
 
         // --- ALLOCATE AND FILL trainX ---
-        trainX = new Array(trainingColsLen * lookbackAbs).fill(NaN);
+        trainX = new Array(flatFeaturesColLen * lookbackAbs).fill(NaN);
 
         for (let lag = 0; lag < lookbackAbs; lag++) {
         const tIdx = index - lag;
@@ -147,11 +150,11 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
             const cell = verticalOhlcv[key][tIdx];
             const value = (bit != null) ? cell[bit] : cell;
 
-            if (Number.isNaN(value) || typeof value !== 'number') {
+            if (!Number.isFinite(value)) {
                 shouldExit = true;
                 break;
             }
-            trainX[lag * trainingColsLen + s] = value;
+            trainX[lag * flatFeaturesColLen + s] = value;
         }
 
         if (shouldExit) break;
@@ -167,16 +170,17 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
         //process single-column outputs using the current value as the first datapoint and using futureValue as datapoint for the next predictions
         const trainY = verticalOhlcv[target][index] 
 
-        if(Number.isNaN(trainY) || typeof trainY !== 'number') throw new Error(`At index ${index} the value of ${type} "trainY" is not numeric.`)
+        if(!Number.isFinite(trainY)) throw new Error(`At index ${index} the value of ${type} "trainY" is not numeric.`)
 
-        yInstance.push(trainY)
-        xInstance.push(trainX)
+        Y.push(trainY)
+        X.push(trainX)
 
-        if(yInstance.length > trainingSize) yInstance.shift()
-        if(xInstance.length > trainingSize) xInstance.shift()
+        if(Y.length > trainingSize) Y.shift()
+        if(X.length > trainingSize) X.shift()
 
-        const yRows = [...yInstance] //can be an array of number or 2d array with numbers
-        const xRows = [...xInstance] //can be an array of number or 2d array with numbers
+        //can be an array of number or 2d array with numbers
+        const yRows = [...Y] //we must spread here because predictions are used as datapoints
+        const xRows = [...X] //we must spread here because predictions are used as datapoints
 
         for(let x = 0; x < predictions; x++) {
             const predictionKey = `${prefix}_${(x+1)}`
@@ -266,7 +270,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
         for (let i = 0; i < predictions; i++) {
             const v = verticalOhlcv[target][index + i + 1]
 
-            if (typeof v !== 'number' || Number.isNaN(v)) {
+            if (!Number.isFinite(v)) {
                 break
             }
 
@@ -278,8 +282,9 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
             return
         }
 
-        const yRows = yInstance
-        const xRows = xInstance
+        //can be an array of number or 2d array with numbers
+        const yRows = Y //we must not spread here because here predictions are not used as datapoints
+        const xRows = X //we must not spread here because here predictions are not used as datapoints
 
         if(yRows.length === trainingSize && xRows.length === trainingSize)
         {
