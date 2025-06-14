@@ -172,6 +172,7 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotCols, pre
             max: -Infinity,
             oneHotCols
         }
+        
         verticalOhlcv[crossName] = (oneHot) ? new Array(len).fill(NaN) : new Int32Array(len).fill(NaN)
         notNumberKeys.add(crossName)
         arrayTypes[crossName] = (oneHot) ? 'Array' : 'Int32Array'

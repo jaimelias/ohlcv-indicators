@@ -670,7 +670,6 @@ export default class OHLCV_INDICATORS {
         }
         
         //regressor
-
         validateString(target, 'options.target', methodName)
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
@@ -679,7 +678,6 @@ export default class OHLCV_INDICATORS {
 
         if(findGroups.length > 0)
         {
-            if(trainingCols.length > 0) throw new Error(`If "options.findGroups" array is not empty then leave "options.trainingCols" array empty.`)
             if(findGroups.some(o => !o.hasOwnProperty('size') || !o.hasOwnProperty('type'))) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
         } else
         {

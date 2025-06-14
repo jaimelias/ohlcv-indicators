@@ -24,7 +24,7 @@ export const defaultFeedForwardRegressorOptions = {
     activation: 'relu',
 }
 
-export const regressor = (main, index, trainingSize, {target, predictions, lookback, trainingCols, findGroups, type, regressorArgs, precompute}) => {
+export const regressor = (main, index, trainingSize, {target, predictions, trainingCols, findGroups, type, regressorArgs, precompute}) => {
 
     const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
     const {verticalOhlcv, len, instances, scaledGroups} = main
@@ -64,10 +64,26 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
             if(!verticalOhlcv.hasOwnProperty(trainingKey)) throw new Error(`Target property ${trainingKey} not found in verticalOhlcv for regressor.`)
         }
 
+       let trainingColsLen = 0
 
+        for(const key of trainingCols)
+        {
+            if(key.startsWith('one_hot_'))
+            {
+                
+                const {oneHotCols, uniqueValues} = instances.crossPairs[key]
+                const {size} = uniqueValues
+                const colSize = (typeof oneHotCols === 'number') ? oneHotCols : size
+
+                trainingColsLen = trainingColsLen + colSize
+            }
+            else {
+                trainingColsLen++
+            }
+        }
 
         instances.regressor[prefix] = {
-            trainingColsLen: trainingCols.length,
+            trainingColsLen,
             X: [],
             Y: [],
         }
@@ -90,32 +106,58 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
     {
         trainX = verticalOhlcv[target][index]
     } else {
-        if(index < lookbackAbs) return
-        let shouldExit = false
+        // --- EARLY EXIT IF NOT ENOUGH HISTORY ---
+        if (index < lookbackAbs) return;
+        let shouldExit = false;
 
+        // --- BUILD A FLATTENED LIST OF “COLUMN SLOTS” ---
+        // at init-time you already computed trainingColsLen;
+        // here we expand each 'one_hot_' key into [0..size-1] bit-slots
+        const slots = []
 
-        trainX = new Array(trainingColsLen *  lookbackAbs).fill(NaN)
+        for (const key of trainingCols) {
+            if (key.startsWith('one_hot_')) {
+                // pull the size from your CrossInstance metadata:
+                const {oneHotCols, uniqueValues} = instances.crossPairs[key]
+                const {size} = uniqueValues
+                const colSize = (typeof oneHotCols === 'number') ? oneHotCols : size
 
-        for(let l = 0; l < lookbackAbs; l++)
-        {
-            if(shouldExit) break
-
-            for(let t = 0; t < trainingColsLen; t++)
-            {
-                const trainingKey = trainingCols[t]
-                const value = verticalOhlcv[trainingKey][index - l]
-
-                if(Number.isNaN(value))
-                {
-                    shouldExit = true
-                    break
+                for (let bit = 0; bit < colSize; bit++) {
+                    slots.push({ key, bit })
                 }
-
-                trainX[l * trainingColsLen + t] = value
+            }
+            else {
+                slots.push({ key })
             }
         }
 
-        if(shouldExit) return
+        if (slots.length !== trainingColsLen) {
+            throw new Error(`slots (${slots.length}) ≠ trainingColsLen (${trainingColsLen}) in ${type} index ${index}`)
+        }
+
+        // --- ALLOCATE AND FILL trainX ---
+        trainX = new Array(trainingColsLen * lookbackAbs).fill(NaN);
+
+        for (let lag = 0; lag < lookbackAbs; lag++) {
+        const tIdx = index - lag;
+
+        for (let s = 0; s < slots.length; s++) {
+            const { key, bit } = slots[s];
+            // get either the raw value or the specific one-hot bit
+            const cell = verticalOhlcv[key][tIdx];
+            const value = (bit != null) ? cell[bit] : cell;
+
+            if (Number.isNaN(value) || typeof value !== 'number') {
+                shouldExit = true;
+                break;
+            }
+            trainX[lag * trainingColsLen + s] = value;
+        }
+
+        if (shouldExit) break;
+        }
+
+        if (shouldExit) return;
     }
 
    
@@ -124,6 +166,8 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
     {
         //process single-column outputs using the current value as the first datapoint and using futureValue as datapoint for the next predictions
         const trainY = verticalOhlcv[target][index] 
+
+        if(Number.isNaN(trainY) || typeof trainY !== 'number') throw new Error(`At index ${index} the value of ${type} "trainY" is not numeric.`)
 
         yInstance.push(trainY)
         xInstance.push(trainX)
@@ -215,7 +259,24 @@ export const regressor = (main, index, trainingSize, {target, predictions, lookb
         if((index + predictions + 1) > len) return
 
         //2d array
-        trainY = new Array(predictions).fill(NaN).map((_, i) => verticalOhlcv[target][index + (i + 1)] )
+
+
+        trainY = []
+
+        for (let i = 0; i < predictions; i++) {
+            const v = verticalOhlcv[target][index + i + 1]
+
+            if (typeof v !== 'number' || Number.isNaN(v)) {
+                break
+            }
+
+            trainY.push(v)
+        }
+
+        if(trainY.length !== predictions)
+        {
+            return
+        }
 
         const yRows = yInstance
         const xRows = xInstance
