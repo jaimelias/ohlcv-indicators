@@ -614,7 +614,7 @@ export default class OHLCV_INDICATORS {
 
         validateArrayOptions(Object.keys(validClassifiers), type, 'options.type', methodName)
 
-        if (!this.ML.hasOwnProperty(type)) {
+        if (!this.ML.classes.hasOwnProperty(type)) {
             throw new Error(
                 `"${type}" isn’t available because its library wasn’t imported into OHLCV_INDICATORS.ML.`
             )
@@ -688,7 +688,7 @@ export default class OHLCV_INDICATORS {
 
         validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
 
-        if (!this.ML.hasOwnProperty(type)) {
+        if (!this.ML.classes.hasOwnProperty(type)) {
             throw new Error(
                 `"${type}" isn’t available because its library wasn’t imported into OHLCV_INDICATORS.ML.`
             )

@@ -1,5 +1,8 @@
 export const validClassifiers = {
     'KNN': 'knn',
+    'FeedForwardNeuralNetworks': 'feed_forward',
+    'GaussianNB': 'naive-bayes',
+    'MultinomialNB': 'naive-bayes',
 }
 
 export const classifier = (
@@ -195,12 +198,12 @@ export const classifier = (
   if (shouldTrainModel && Xrows.length === trainingSize && Yrows.length === trainingSize) {
     let model
     if (useTrainMethod) {
-      model = new main.ML[type](classifierArgs)
+      model = new main.ML.classes[type](classifierArgs)
       
       model.train(Xrows, Yrows)
     } else {
 
-      model = new main.ML[type](Xrows, Yrows, {k: 2})
+      model = new main.ML.classes[type](Xrows, Yrows, {k: 2})
     }
     main.models[prefix] = model
     instances.classifier[prefix].isTrained = true

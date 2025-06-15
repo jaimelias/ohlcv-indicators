@@ -231,12 +231,12 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
 
                 if(useTrainMethod)
                 {
-                    model = new main.ML[type](regressorArgs)
+                    model = new main.ML.classes[type](regressorArgs)
                     model.train(xRows, yRows)
                 }
                 else
                 {
-                    model = new main.ML[type](xRows, yRows)
+                    model = new main.ML.classes[type](xRows, yRows)
                 }
 
                 main.models[prefix] = model
@@ -302,12 +302,12 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
         {
             if(useTrainMethod)
             {
-                model = new main.ML[type](regressorArgs)
+                model = new main.ML.classes[type](regressorArgs)
                 model.train(xRows, yRows)
             }
             else
             {
-                model = new main.ML[type](xRows, yRows)
+                model = new main.ML.classes[type](xRows, yRows)
             }
             main.models[prefix] = model
             instances.regressor[prefix].isTrained = true
