@@ -1,4 +1,4 @@
-import { findGroupsFunc } from "./ml-utilities.js"
+import { findGroupsFunc, computeFlatFeaturesLen } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 
 export const validRegressors = {
@@ -66,24 +66,8 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
             if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for regressor.`)
         }
 
-       let flatFeaturesColLen = 0
-
-        for(const key of featureCols)
-        {
-            if(key.startsWith('one_hot_'))
-            {
-                if(!instances.hasOwnProperty('crossPairs')) throw new Error(`Property "instances.crossPairs" not found in regressor ${type}`)
-                if(!instances.crossPairs.hasOwnProperty(key)) throw new Error(`Property "instances.crossPairs[${key}]" not found in regressor ${type}`)
-                const {oneHotCols, uniqueValues} = instances.crossPairs[key]
-                const {size} = uniqueValues
-                const colSize = (typeof oneHotCols === 'number') ? oneHotCols : size
-
-                flatFeaturesColLen = flatFeaturesColLen + colSize
-            }
-            else {
-                flatFeaturesColLen++
-            }
-        }
+        // compute flattened feature‐length (expanding one-hots)
+        const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
 
         instances.regressor[prefix] = {
             isTrained: false,

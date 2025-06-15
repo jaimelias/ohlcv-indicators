@@ -30,3 +30,35 @@ export const findGroupsFunc = (findGroups, scaledGroups) => {
 
     return output
 }
+
+export const computeFlatFeaturesLen = (featureCols, instances, type) => {
+  if (!instances.hasOwnProperty('crossPairs')) {
+    throw new Error(`Property "instances.crossPairs" not found for ${type}`);
+  }
+
+  let flatFeaturesColLen = 0;
+
+  for (const key of featureCols) {
+    if (key.startsWith('one_hot_')) {
+      const pairInfo = instances.crossPairs[key];
+      if (!pairInfo) {
+        throw new Error(
+          `Property "instances.crossPairs['${key}']" not found for ${type}`
+        );
+      }
+
+      const { oneHotCols, uniqueValues } = pairInfo;
+      const size = uniqueValues && typeof uniqueValues.size === 'number'
+        ? uniqueValues.size
+        : 0;
+
+      // Si oneHotCols es un número, lo usamos; si no, usamos uniqueValues.size.
+      const colSize = typeof oneHotCols === 'number' ? oneHotCols : size;
+      flatFeaturesColLen += colSize;
+    } else {
+      flatFeaturesColLen += 1;
+    }
+  }
+
+  return flatFeaturesColLen;
+}

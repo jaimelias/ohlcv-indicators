@@ -1,4 +1,4 @@
-import { findGroupsFunc } from "./ml-utilities.js"
+import { findGroupsFunc, computeFlatFeaturesLen } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 
 export const validClassifiers = {
@@ -48,24 +48,7 @@ export const classifier = (
     if(!instances.classifier.hasOwnProperty(prefix)) instances.classifier[prefix] = {}
 
     // compute flattened feature‐length (expanding one-hots)
-    let flatFeaturesColLen = 0
-
-    for(const key of featureCols)
-    {
-        if(key.startsWith('one_hot_'))
-        {
-            if(!instances.hasOwnProperty('crossPairs')) throw new Error(`Property "instances.crossPairs" not found in regressor ${type}`)
-            if(!instances.crossPairs.hasOwnProperty(key)) throw new Error(`Property "instances.crossPairs[${key}]" not found in regressor ${type}`)
-            const {oneHotCols, uniqueValues} = instances.crossPairs[key]
-            const {size} = uniqueValues
-            const colSize = (typeof oneHotCols === 'number') ? oneHotCols : size
-
-            flatFeaturesColLen = flatFeaturesColLen + colSize
-        }
-        else {
-            flatFeaturesColLen++
-        }
-    }
+    const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
 
     instances.classifier[prefix] = {
       isTrained: false,
