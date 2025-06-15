@@ -29,6 +29,8 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
 
     const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
     const {verticalOhlcv, len, instances, scaledGroups} = main
+    const mlClass = main.ML.classes[type]
+    const allModels = main.models
 
     if(index === 0)
     {
@@ -191,10 +193,10 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
             let model
 
             //predict from stored model in main
-            if(main.models.hasOwnProperty(prefix)){
+            if(allModels.hasOwnProperty(prefix)){
 
                 //current prediction should be extracted from the saved model in 
-                model = main.models[prefix]
+                model = allModels[prefix]
                 
                 // First prediction uses the original trainX; subsequent predictions use previous predicted values (futureValue) as datapoints
 
@@ -231,15 +233,15 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
 
                 if(useTrainMethod)
                 {
-                    model = new main.ML.classes[type](regressorArgs)
+                    model = new mlClass(regressorArgs)
                     model.train(xRows, yRows)
                 }
                 else
                 {
-                    model = new main.ML.classes[type](xRows, yRows)
+                    model = new mlClass(xRows, yRows)
                 }
 
-                main.models[prefix] = model
+                allModels[prefix] = model
                 instances.regressor[prefix].isTrained = true
             }
         }
@@ -251,10 +253,10 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
         let model
 
         //process multi-column outputs
-        if(main.models.hasOwnProperty(prefix)){
+        if(allModels.hasOwnProperty(prefix)){
 
             //current prediction should be extracted from the saved model in 
-            model = main.models[prefix]
+            model = allModels[prefix]
 
             const futurePredictionsRow = model.predict([trainX])
             const futurePredictions = futurePredictionsRow[0]
@@ -309,7 +311,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
             {
                 model = new main.ML.classes[type](xRows, yRows)
             }
-            main.models[prefix] = model
+            allModels[prefix] = model
             instances.regressor[prefix].isTrained = true
         }
 

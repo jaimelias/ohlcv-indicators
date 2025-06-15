@@ -22,6 +22,8 @@ export const classifier = (
 ) => {
   const { lookbackAbs, prefix, useTrainMethod } = precompute
   const { verticalOhlcv, len, instances, scaledGroups } = main
+  const mlClass = main.ML.classes[type]
+  const allModels = main.models
 
   // ─── INITIALIZATION ───────────────────────────────────────────────
   if (index === 0) {
@@ -148,8 +150,8 @@ export const classifier = (
 
 
   // ─── PREDICT WITH EXISTING MODEL ───────────────────────────────────
-  if (main.models.hasOwnProperty(prefix)) {
-    const model = main.models[prefix]
+  if (allModels.hasOwnProperty(prefix)) {
+    const model = allModels[prefix]
 
     const futureRow = model.predict([trainX])[0]   
 
@@ -159,13 +161,10 @@ export const classifier = (
       );
     }
 
-    futureRow.forEach((val, i) => {
-      main.pushToMain({
-        index,
-        key: `${prefix}_${i + 1}`,
-        value: val,
-      })
-    })
+    for (let i = 0; i < futureRow.length; i++) {
+      const val = futureRow[i];
+      main.pushToMain({index, key: `${prefix}_${i + 1}`, value: val});
+    }
   }
 
 
@@ -198,14 +197,15 @@ export const classifier = (
   if (shouldTrainModel && Xrows.length === trainingSize && Yrows.length === trainingSize) {
     let model
     if (useTrainMethod) {
-      model = new main.ML.classes[type](classifierArgs)
+      model = new mlClass(classifierArgs)
       
       model.train(Xrows, Yrows)
     } else {
 
-      model = new main.ML.classes[type](Xrows, Yrows, {k: 2})
+      model = new mlClass(Xrows, Yrows)
     }
-    main.models[prefix] = model
+
+    allModels[prefix] = model
     instances.classifier[prefix].isTrained = true
   }
 }
