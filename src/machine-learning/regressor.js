@@ -1,4 +1,4 @@
-import { findGroupsFunc, computeFlatFeaturesLen } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 
 export const validRegressors = {
@@ -35,19 +35,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
 
     if(index === 0)
     {
-        const featureCols = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
-
-        if(findGroups.length > 0)
-        {
-            for(let g = 0; g < findGroups.length; g++)
-            {
-                const group = findGroups[g]
-                if(!scaledGroups.hasOwnProperty(`${group.type}_${group.size}`)) throw new Error(`Scaled group not found for ${type} regressor.options.findGroups[${g}]: ${JSON.stringify(group)}`)
-                featureCols.push(...scaledGroups[`${group.type}_${group.size}`])
-            }
-        }
-
-        if(featureCols.length === 0) throw new Error(`There are not "featureCols" available in regressor "${type}"`)
+        const featureCols = getFeaturedKeys({trainingCols, findGroups, verticalOhlcv, scaledGroups, type})
 
         if(!verticalOhlcv.hasOwnProperty(target))
         {
@@ -183,7 +171,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
                 }
                 else
                 {
-                    model = new mlClass(xRows, yRows)
+                    model = new mlClass(xRows, yRows, regressorArgs)
                 }
 
                 allModels[prefix] = model

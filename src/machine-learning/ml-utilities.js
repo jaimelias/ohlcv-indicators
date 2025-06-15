@@ -62,3 +62,37 @@ export const computeFlatFeaturesLen = (featureCols, instances, type) => {
 
   return flatFeaturesColLen;
 }
+
+
+export const countKnnLabels = Y => {
+
+  const nCols = Y[0].length
+
+  // Sum unique values in each column
+  
+  let totalLabels = 0
+  for (let col = 0; col < nCols; col++) {
+    const colValues = Y.map(row => row[col])
+    const uniques = new Set(colValues)
+    totalLabels += uniques.size
+  }
+
+  return totalLabels + 1
+}
+
+export const getFeaturedKeys = ({trainingCols, findGroups, verticalOhlcv, scaledGroups, type}) => {
+
+  const featureCols = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
+
+    if (featureCols.length === 0) {
+      throw new Error(`No "featureCols" available in "${type}"`)
+    }
+
+    // sanity‐check that all features exist
+    for(const featureKey of featureCols)
+    {
+      if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for "${type}".`)
+    }
+
+    return featureCols
+}

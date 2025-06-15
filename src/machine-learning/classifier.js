@@ -1,4 +1,4 @@
-import { findGroupsFunc, computeFlatFeaturesLen } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen, countKnnLabels } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 
 export const validClassifiers = {
@@ -31,17 +31,7 @@ export const classifier = (
   // ─── INITIALIZATION ───────────────────────────────────────────────
   if (index === 0) {
     // build featureCols
-    const featureCols = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
-
-    if (featureCols.length === 0) {
-      throw new Error(`No featureCols available in classifier "${type}"`);
-    }
-
-    // sanity‐check that all features exist
-    for(const featureKey of featureCols)
-    {
-      if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for regressor.`)
-    }
+    const featureCols = getFeaturedKeys({trainingCols, findGroups, verticalOhlcv, scaledGroups, type})
 
     // prepare instance storage
     if (!instances.hasOwnProperty('classifier')) instances.classifier = {}
@@ -138,8 +128,6 @@ export const classifier = (
   if (Xrows.length > trainingSize) Xrows.shift()
   if (Yrows.length > trainingSize) Yrows.shift()
 
-  console.log({index, trainingSize, XrowsLen: Xrows.length})
-
   const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
 
   // ─── TRAIN WHEN READY ───────────────────────────────────────────────
@@ -149,10 +137,24 @@ export const classifier = (
       model = new mlClass(classifierArgs)
       
       model.train(Xrows, Yrows)
+
     } else {
 
 
-      model = new mlClass(Xrows, Yrows)
+      if(type === 'KNN')
+      {
+        if(isTrained === false)
+        {
+          instances.classifier[prefix].numberOfKnnLabels = countKnnLabels(Yrows)
+        }
+        
+        classifierArgs = {
+          ...classifierArgs, 
+          k: instances.classifier[prefix].numberOfKnnLabels
+        }
+      }
+
+      model = new mlClass(Xrows, Yrows, classifierArgs)
     }
 
     allModels[prefix] = model
