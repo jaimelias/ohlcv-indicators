@@ -25,7 +25,7 @@ export const defaultFeedForwardRegressorOptions = {
     activation: 'relu',
 }
 
-export const regressor = (main, index, trainingSize, {target, predictions, trainingCols, findGroups, type, regressorArgs, precompute}) => {
+export const regressor = (main, index, trainingSize, {target, predictions, retrain, trainingCols, findGroups, type, regressorArgs, precompute}) => {
 
     const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
     const {verticalOhlcv, len, instances, scaledGroups} = main
@@ -87,6 +87,8 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
         }
 
         instances.regressor[prefix] = {
+            isTrained: false,
+            retrainOnEveryIndex: retrain,
             featureCols,
             flatFeaturesColLen,
             X: [],
@@ -103,7 +105,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
 
     }
 
-    const {X, Y, flatFeaturesColLen, featureCols} = instances.regressor[prefix]
+    const {X, Y, flatFeaturesColLen, featureCols, isTrained, retrainOnEveryIndex} = instances.regressor[prefix]
     let trainX
     let trainY
 
@@ -221,7 +223,11 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
                 main.pushToMain({ index, key: predictionKey, value: futureValue})
             }
 
-            if(x === 0 && yRows.length === trainingSize && xRows.length === trainingSize){
+            const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
+
+            
+
+            if(x === 0 && shouldTrainModel && yRows.length === trainingSize && xRows.length === trainingSize){
 
                 if(useTrainMethod)
                 {
@@ -234,6 +240,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
                 }
 
                 main.models[prefix] = model
+                instances.regressor[prefix].isTrained = true
             }
         }
 
@@ -288,7 +295,10 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
         const yRows = Y //we must not spread here because here predictions are not used as datapoints
         const xRows = X //we must not spread here because here predictions are not used as datapoints
 
-        if(yRows.length === trainingSize && xRows.length === trainingSize)
+        const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
+
+
+        if(shouldTrainModel && yRows.length === trainingSize && xRows.length === trainingSize)
         {
             if(useTrainMethod)
             {
@@ -300,6 +310,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, train
                 model = new main.ML[type](xRows, yRows)
             }
             main.models[prefix] = model
+            instances.regressor[prefix].isTrained = true
         }
 
         xRows.push(trainX)

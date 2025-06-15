@@ -586,16 +586,17 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    classifier(trainingSize = 50, options = {})
+    classifier(trainingSplit = 0.8, options = {})
     {
         isAlreadyComputed(this)
 
         const methodName = 'classifier'
 
-        validateNumber(trainingSize, {min: 1, max: this.len, allowDecimals: false}, 'trainingSize', methodName)
+        validateNumber(trainingSplit, {min: 0.001, max: 0.999, allowDecimals: true}, 'trainingSplit', methodName)
         validateObject(options, 'options', methodName)
 
         const {
+            retrain = true,
             trainingCols = [], 
             type = 'KNN',
             lookback = 0,
@@ -619,6 +620,7 @@ export default class OHLCV_INDICATORS {
             )
         }
 
+        validateBoolean(retrain, 'options.retrain', methodName)
         validateArray(trainingCols, 'options.trainingCols', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'options.predictions', methodName)
@@ -634,16 +636,18 @@ export default class OHLCV_INDICATORS {
             }
         }
 
-        const prefix = `cla_${validClassifiers[type]}_${trainingSize}_prediction`
+        const prefix = `cla_${validClassifiers[type]}_${trainingSplit}_prediction`
 
         if(this.isAlreadyComputed.has(prefix))
         {
             throw new Error(
-            `Each classifier must have a unique pair of “type” and “trainingSize”.\n` +
+            `Each classifier must have a unique pair of “type” and trainingSplit.\n` +
             `This rule ensures that your output columns are labeled unambiguously.\n` +
-            `You provided a duplicate: type="${type}" with trainingSize=${trainingSize}.`
+            `You provided a duplicate: type="${type}" with trainingSplit=${trainingSplit}.`
             );
         }
+
+        const trainingSize = Math.floor(this.len * trainingSplit)
 
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
@@ -654,23 +658,24 @@ export default class OHLCV_INDICATORS {
         
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {yCallback, predictions, lookback, trainingCols, findGroups, type,  classifierArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSize, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  classifierArgs, precompute}]})
 
 
         return this
     }
 
-    regressor(trainingSize = 50, options = {})
+    regressor(trainingSplit = 0.80, options = {})
     {
          isAlreadyComputed(this)
 
         const methodName = 'regressor'
         
 
-        validateNumber(trainingSize, {min: 1, max: this.len, allowDecimals: false}, 'trainingSize', methodName)
+        validateNumber(trainingSplit, {min: 0.001, max: 0.999, allowDecimals: true}, 'trainingSplit', methodName)
         validateObject(options, 'options', methodName)
 
         const {
+            retrain = true,
             target = 'close', 
             predictions =  1, 
             trainingCols = [], 
@@ -690,6 +695,7 @@ export default class OHLCV_INDICATORS {
         }
         
         //regressor
+        validateBoolean(retrain, 'options.retrain', methodName)
         validateString(target, 'options.target', methodName)
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
@@ -775,16 +781,18 @@ export default class OHLCV_INDICATORS {
             }
         }
 
-        const prefix = `reg_${validRegressors[type]}_${trainingSize}_${target}_prediction`
+        const prefix = `reg_${validRegressors[type]}_${trainingSplit}_${target}_prediction`
 
         if(this.isAlreadyComputed.has(prefix))
         {
             throw new Error(
-            `Each regressor must have a unique "type", "trainingSize" and "target".\n` +
+            `Each regressor must have a unique "type", "trainingSplit" and "target".\n` +
             `This rule ensures that your output columns are labeled unambiguously.\n` +
-            `You provided a duplicate: type="${type}", trainingSize=${trainingSize} target=${target}.`
+            `You provided a duplicate: type="${type}", trainingSplit=${trainingSplit} target=${target}.`
             );
         }
+
+        const trainingSize = Math.floor(this.len * trainingSplit)
 
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
@@ -796,7 +804,7 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, lookback, trainingCols, findGroups, type,  regressorArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  regressorArgs, precompute}]})
 
         return this
     }

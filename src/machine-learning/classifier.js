@@ -10,6 +10,7 @@ export const classifier = (
     yCallback,
     trainingCols,
     findGroups = [],
+    retrain,
     type,
     classifierArgs,
     precompute,
@@ -67,6 +68,8 @@ export const classifier = (
     });
 
     instances.classifier[prefix] = {
+      isTrained: false,
+      retrainOnEveryIndex: retrain,
       featureCols,
       flatFeaturesColLen,
       X: [],
@@ -91,6 +94,8 @@ export const classifier = (
     flatFeaturesColLen,
     X: Xrows,
     Y: Yrows,
+    isTrained,
+    retrainOnEveryIndex
   } = instances.classifier[prefix]
 
   // ─── EARLY EXIT IF NOT ENOUGH HISTORY ─────────────────────────────
@@ -138,41 +143,19 @@ export const classifier = (
 
    if (shouldExit) return
 
-  // ─── BUILD TRAINING Y VIA CALLBACK ─────────────────────────────────
-  const trainY = yCallback(index, verticalOhlcv)[0]
-
-  if (trainY == null) return // future not defined
-
-  /*if (!Array.isArray(trainY)) {
-    throw new Error(
-      `yCallback must return an array, got ${typeof trainY} at index ${index}`
-    )
-  }
-   if (trainY.length !== predictions) {
-    throw new Error(
-      `yCallback length (${trainY.length}) ≠ predictions (${predictions}) for classifier "${type}"`
-    )
-  }
- */
-  // enqueue
-  Xrows.push(trainX)
-  Yrows.push(trainY)
-  
-  if (Xrows.length > trainingSize) Xrows.shift()
-  if (Yrows.length > trainingSize) Yrows.shift()
 
   // ─── PREDICT WITH EXISTING MODEL ───────────────────────────────────
   if (main.models.hasOwnProperty(prefix)) {
-    const model = main.ML[type].load(main.models[prefix])
+    const model = main.models[prefix]
 
-    const futureRow = model.predict([trainX])[0]
-    
+    const futureRow = model.predict([trainX])[0]   
 
     if (!Array.isArray(futureRow) || futureRow.length < predictions) {
       throw new Error(
         `Model.predict returned invalid output for classifier "${type}" at index ${index}`
       );
     }
+
     futureRow.forEach((val, i) => {
       main.pushToMain({
         index,
@@ -182,8 +165,34 @@ export const classifier = (
     })
   }
 
+
+  // ─── BUILD TRAINING Y VIA CALLBACK ─────────────────────────────────
+  const trainY = yCallback(index, verticalOhlcv)
+
+  if (trainY == null) return // future not defined
+
+  if (!Array.isArray(trainY)) {
+    throw new Error(
+      `yCallback must return an array, got ${typeof trainY} at index ${index}`
+    )
+  }
+   if (trainY.length !== predictions) {
+    throw new Error(
+      `yCallback length (${trainY.length}) ≠ predictions (${predictions}) for classifier "${type}"`
+    )
+  }
+
+  // enqueue
+  Xrows.push(trainX)
+  Yrows.push(trainY)
+  
+  if (Xrows.length > trainingSize) Xrows.shift()
+  if (Yrows.length > trainingSize) Yrows.shift()
+
+  const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
+
   // ─── TRAIN WHEN READY ───────────────────────────────────────────────
-  if (Xrows.length === trainingSize && Yrows.length === trainingSize) {
+  if (shouldTrainModel && Xrows.length === trainingSize && Yrows.length === trainingSize) {
     let model
     if (useTrainMethod) {
       model = new main.ML[type](classifierArgs)
@@ -193,6 +202,7 @@ export const classifier = (
 
       model = new main.ML[type](Xrows, Yrows, {k: 2})
     }
-    main.models[prefix] = model.toJSON()
+    main.models[prefix] = model
+    instances.classifier[prefix].isTrained = true
   }
 }
