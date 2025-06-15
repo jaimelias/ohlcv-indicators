@@ -596,7 +596,7 @@ export default class OHLCV_INDICATORS {
         validateObject(options, 'options', methodName)
 
         const {
-            retrain = true,
+            retrain = false,
             trainingCols = [], 
             type = 'KNN',
             lookback = 0,
@@ -675,7 +675,7 @@ export default class OHLCV_INDICATORS {
         validateObject(options, 'options', methodName)
 
         const {
-            retrain = true,
+            retrain = false,
             target = 'close', 
             predictions =  1, 
             trainingCols = [], 

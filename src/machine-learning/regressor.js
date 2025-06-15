@@ -1,4 +1,5 @@
 import { findGroupsFunc } from "./ml-utilities.js"
+import { buildTrainX } from "./trainX.js"
 
 export const validRegressors = {
     'SimpleLinearRegression': 'linear', 
@@ -57,16 +58,12 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
             throw new Error(`Target property "${target}" not found in options.trainingCols: ${JSON.stringify(trainingCols)}`)
         }
 
-        if(!instances.hasOwnProperty('regressor'))
-        {
-            instances.regressor = {
-                [prefix]: {}
-            }
-        }
+        if (!instances.hasOwnProperty('regressor')) instances.regressor = {}
+        if(!instances.regressor.hasOwnProperty(prefix)) instances.regressor[prefix] = {}
 
-        for(const trainingKey of featureCols)
+        for(const featureKey of featureCols)
         {
-            if(!verticalOhlcv.hasOwnProperty(trainingKey)) throw new Error(`Target property ${trainingKey} not found in verticalOhlcv for regressor.`)
+            if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for regressor.`)
         }
 
        let flatFeaturesColLen = 0
@@ -117,56 +114,19 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
     } else {
         // --- EARLY EXIT IF NOT ENOUGH HISTORY ---
         if (index < lookbackAbs) return;
-        let shouldExit = false;
 
-        // --- BUILD A FLATTENED LIST OF “COLUMN SLOTS” ---
-        // at init-time you already computed flatFeaturesColLen;
-        // here we expand each 'one_hot_' key into [0..size-1] bit-slots
-        const slots = []
+        // ─── BUILD TRAINING X ──────────────────────────────────────────────
+        trainX = buildTrainX({
+            featureCols,
+            instances,
+            flatFeaturesColLen,
+            type,
+            index,
+            lookbackAbs,
+            verticalOhlcv
+        })
 
-        for (const key of featureCols) {
-            if (key.startsWith('one_hot_')) {
-                // pull the size from your CrossInstance metadata:
-                const {oneHotCols, uniqueValues} = instances.crossPairs[key]
-                const {size} = uniqueValues
-                const colSize = (typeof oneHotCols === 'number') ? oneHotCols : size
-
-                for (let bit = 0; bit < colSize; bit++) {
-                    slots.push({ key, bit })
-                }
-            }
-            else {
-                slots.push({ key })
-            }
-        }
-
-        if (slots.length !== flatFeaturesColLen) {
-            throw new Error(`slots (${slots.length}) ≠ flatFeaturesColLen (${flatFeaturesColLen}) in ${type} index ${index}`)
-        }
-
-        // --- ALLOCATE AND FILL trainX ---
-        trainX = new Array(flatFeaturesColLen * lookbackAbs).fill(NaN);
-
-        for (let lag = 0; lag < lookbackAbs; lag++) {
-        const tIdx = index - lag;
-
-        for (let s = 0; s < slots.length; s++) {
-            const { key, bit } = slots[s];
-            // get either the raw value or the specific one-hot bit
-            const cell = verticalOhlcv[key][tIdx];
-            const value = (bit != null) ? cell[bit] : cell;
-
-            if (!Number.isFinite(value)) {
-                shouldExit = true;
-                break;
-            }
-            trainX[lag * flatFeaturesColLen + s] = value;
-        }
-
-        if (shouldExit) break;
-        }
-
-        if (shouldExit) return;
+        if(!trainX) return 
     }
 
    

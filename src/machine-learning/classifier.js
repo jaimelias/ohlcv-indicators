@@ -1,3 +1,6 @@
+import { findGroupsFunc } from "./ml-utilities.js"
+import { buildTrainX } from "./trainX.js"
+
 export const validClassifiers = {
     'KNN': 'knn',
     'FeedForwardNeuralNetworks': 'feed_forward',
@@ -28,49 +31,41 @@ export const classifier = (
   // ─── INITIALIZATION ───────────────────────────────────────────────
   if (index === 0) {
     // build featureCols
-    const featureCols = [...trainingCols]
-    findGroups.forEach((group, gi) => {
-      const key = `${group.type}_${group.size}`
-      if (!scaledGroups[key]) {
-        throw new Error(
-          `Scaled group not found for classifier.options.findGroups[${gi}]: ${JSON.stringify(
-            group
-          )}`
-        )
-      }
-      featureCols.push(...scaledGroups[key])
-    });
+    const featureCols = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
 
     if (featureCols.length === 0) {
       throw new Error(`No featureCols available in classifier "${type}"`);
     }
+
     // sanity‐check that all features exist
-    featureCols.forEach((col) => {
-      if (!(col in verticalOhlcv)) {
-        throw new Error(
-          `Feature column "${col}" not found in verticalOhlcv for classifier "${type}"`
-        )
-      }
-    })
+    for(const featureKey of featureCols)
+    {
+      if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for regressor.`)
+    }
 
     // prepare instance storage
-    if (!instances.classifier) instances.classifier = {}
+    if (!instances.hasOwnProperty('classifier')) instances.classifier = {}
+    if(!instances.classifier.hasOwnProperty(prefix)) instances.classifier[prefix] = {}
+
     // compute flattened feature‐length (expanding one-hots)
     let flatFeaturesColLen = 0
-    featureCols.forEach((key) => {
-      if (key.startsWith("one_hot_")) {
-        const cp = instances.crossPairs?.[key]
-        if (!cp) {
-          throw new Error(`Missing crossPairs metadata for "${key}"`);
+
+    for(const key of featureCols)
+    {
+        if(key.startsWith('one_hot_'))
+        {
+            if(!instances.hasOwnProperty('crossPairs')) throw new Error(`Property "instances.crossPairs" not found in regressor ${type}`)
+            if(!instances.crossPairs.hasOwnProperty(key)) throw new Error(`Property "instances.crossPairs[${key}]" not found in regressor ${type}`)
+            const {oneHotCols, uniqueValues} = instances.crossPairs[key]
+            const {size} = uniqueValues
+            const colSize = (typeof oneHotCols === 'number') ? oneHotCols : size
+
+            flatFeaturesColLen = flatFeaturesColLen + colSize
         }
-        const { oneHotCols, uniqueValues } = cp;
-        const size = uniqueValues.size
-        flatFeaturesColLen +=
-          typeof oneHotCols === "number" ? oneHotCols : size;
-      } else {
-        flatFeaturesColLen++
-      }
-    });
+        else {
+            flatFeaturesColLen++
+        }
+    }
 
     instances.classifier[prefix] = {
       isTrained: false,
@@ -106,48 +101,17 @@ export const classifier = (
   // ─── EARLY EXIT IF NOT ENOUGH HISTORY ─────────────────────────────
   if (index < lookbackAbs) return
 
-  // ─── BUILD TRAINING X ──────────────────────────────────────────────
-  const slots = []
-  featureCols.forEach((key) => {
-    if (key.startsWith("one_hot_")) {
-      const cp = instances.crossPairs[key]
-      const { oneHotCols, uniqueValues } = cp
-      const size = uniqueValues.size
-      const colSize = typeof oneHotCols === "number" ? oneHotCols : size
-      for (let bit = 0; bit < colSize; bit++) slots.push({ key, bit })
-    } else {
-      slots.push({ key })
-    }
+  const trainX = buildTrainX({
+    featureCols,
+    instances,
+    flatFeaturesColLen,
+    type,
+    index,
+    lookbackAbs,
+    verticalOhlcv
   })
-  if (slots.length !== flatFeaturesColLen) {
-    throw new Error(
-      `slots (${slots.length}) ≠ flatFeaturesColLen (${flatFeaturesColLen}) in classifier "${type}" at index ${index}`
-    )
-  }
-  let shouldExit = false
-  const trainX = new Array(flatFeaturesColLen * lookbackAbs)
 
-  for (let lag = 0; lag < lookbackAbs; lag++) {
-
-    const tIdx = index - lag
-
-    for (let s = 0; s < slots.length; s++) {
-
-      const { key, bit } = slots[s]
-      const cell = verticalOhlcv[key][tIdx]
-      const value = bit != null ? cell[bit] : cell
-      if (!Number.isFinite(value)){
-          shouldExit = true // skip if any feature is NaN
-          break
-      }
-      trainX[lag * flatFeaturesColLen + s] = value
-      
-    }
-    if (shouldExit) break
-  }
-
-   if (shouldExit) return
-
+  if(!trainX) return 
 
   // ─── PREDICT WITH EXISTING MODEL ───────────────────────────────────
   if (allModels.hasOwnProperty(prefix)) {
@@ -201,6 +165,7 @@ export const classifier = (
       
       model.train(Xrows, Yrows)
     } else {
+
 
       model = new mlClass(Xrows, Yrows)
     }
