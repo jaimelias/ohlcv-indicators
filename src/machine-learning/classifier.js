@@ -11,7 +11,7 @@ export const validClassifiers = {
 export const classifier = (
   main,
   index,
-  trainingSize,
+  trainingSplit,
   {
     yCallback,
     trainingCols,
@@ -24,7 +24,7 @@ export const classifier = (
   }
 ) => {
   const { lookbackAbs, prefix, useTrainMethod } = precompute
-  const { verticalOhlcv, len, instances, scaledGroups } = main
+  const { verticalOhlcv, len, instances, scaledGroups, invalidValueIndex } = main
   const mlClass = main.ML.classes[type]
   const allModels = main.models
 
@@ -51,6 +51,7 @@ export const classifier = (
     const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
 
     instances.classifier[prefix] = {
+      trainingSize: Math.floor((len - invalidValueIndex) * trainingSplit),
       isTrained: false,
       retrainOnEveryIndex: retrain,
       featureCols,
@@ -66,13 +67,12 @@ export const classifier = (
     }
 
     console.log(
-      `Initialized classifier "${type}" with ${flatFeaturesColLen} features:\n${JSON.stringify(
-        featureCols
-      )}`
+      `---\n\nInitialized classifier "${type}" with ${flatFeaturesColLen} features: \n${JSON.stringify(featureCols)}\n\n---`
     )
   }
 
   const {
+    trainingSize,
     featureCols,
     flatFeaturesColLen,
     X: Xrows,
@@ -137,6 +137,8 @@ export const classifier = (
   
   if (Xrows.length > trainingSize) Xrows.shift()
   if (Yrows.length > trainingSize) Yrows.shift()
+
+  console.log({index, trainingSize, XrowsLen: Xrows.length})
 
   const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
 

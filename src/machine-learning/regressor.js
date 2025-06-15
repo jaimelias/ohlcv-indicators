@@ -26,10 +26,10 @@ export const defaultFeedForwardRegressorOptions = {
     activation: 'relu',
 }
 
-export const regressor = (main, index, trainingSize, {target, predictions, retrain, trainingCols, findGroups, type, regressorArgs, precompute}) => {
+export const regressor = (main, index, trainingSplit, {target, predictions, retrain, trainingCols, findGroups, type, regressorArgs, precompute}) => {
 
     const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
-    const {verticalOhlcv, len, instances, scaledGroups} = main
+    const {verticalOhlcv, len, instances, scaledGroups, invalidValueIndex} = main
     const mlClass = main.ML.classes[type]
     const allModels = main.models
 
@@ -70,6 +70,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
         const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
 
         instances.regressor[prefix] = {
+            trainingSize: Math.floor((len - invalidValueIndex) * trainingSplit),
             isTrained: false,
             retrainOnEveryIndex: retrain,
             featureCols,
@@ -84,11 +85,11 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
             verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
         }
 
-        console.log(`Training ${type} with ${flatFeaturesColLen} features: ${JSON.stringify(featureCols)}\n\n`)
+        console.log(`---\n\nInitialized classifier "${type}" with ${flatFeaturesColLen} features: \n${JSON.stringify(featureCols)}\n\n---`)
 
     }
 
-    const {X, Y, flatFeaturesColLen, featureCols, isTrained, retrainOnEveryIndex} = instances.regressor[prefix]
+    const {trainingSize, X, Y, flatFeaturesColLen, featureCols, isTrained, retrainOnEveryIndex} = instances.regressor[prefix]
     let trainX
     let trainY
 

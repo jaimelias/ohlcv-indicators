@@ -627,7 +627,6 @@ export default class OHLCV_INDICATORS {
 
         if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
         {
-            if(trainingCols.length > 0) throw new Error(`If "options.findGroups" array is not empty then leave "options.trainingCols" array empty.`)
             if(findGroups.some(o => !o.hasOwnProperty('size') || !o.hasOwnProperty('type'))) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
         }  else {
             if(trainingCols.length === 0)
@@ -647,8 +646,6 @@ export default class OHLCV_INDICATORS {
             );
         }
 
-        const trainingSize = Math.floor(this.len * trainingSplit)
-
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
             flatY: univariableY.has(type),
@@ -658,7 +655,7 @@ export default class OHLCV_INDICATORS {
         
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  classifierArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSplit, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  classifierArgs, precompute}]})
 
 
         return this
@@ -792,8 +789,6 @@ export default class OHLCV_INDICATORS {
             );
         }
 
-        const trainingSize = Math.floor(this.len * trainingSplit)
-
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
             flatX: univariableX.has(type),
@@ -804,7 +799,7 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  regressorArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSplit, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  regressorArgs, precompute}]})
 
         return this
     }
