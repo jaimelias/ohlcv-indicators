@@ -159,6 +159,11 @@ export const classifier = (
       if(isTrained === false)
       {
         dataSetInstance.uniqueLabels = countUniqueLabels(Yrows)
+
+        if(dataSetInstance.uniqueLabels < 2)
+        {
+          throw new Error(`Invalid number or labels in ${type}. Check the logic of your "yCallback" function.`)
+        }
       }
 
       if (useTrainMethod) {
