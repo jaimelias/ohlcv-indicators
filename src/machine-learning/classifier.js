@@ -1,4 +1,4 @@
-import { getFeaturedKeys, computeFlatFeaturesLen, countKnnLabels, logMlTraining, univariablePredictions } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 
 export const validClassifiers = {
@@ -45,8 +45,10 @@ export const classifier = (
     const expectedLoops = (flatY) ? predictions : 1 //
 
     instances.classifier[prefix] = {
+
       expectedLoops,
       isTrained: new Array(expectedLoops).fill(false),
+      uniqueLabels: new Array(expectedLoops).fill(0),
       trainingSize,
       retrainOnEveryIndex: retrain,
       featureCols,
@@ -64,6 +66,8 @@ export const classifier = (
     logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
   }
 
+  const dataSetInstance = instances.classifier[prefix]
+
   const {
     expectedLoops,
     trainingSize,
@@ -71,7 +75,7 @@ export const classifier = (
     flatFeaturesColLen,
     retrainOnEveryIndex,
     X: Xrows
-  } = instances.classifier[prefix]
+  } = dataSetInstance
 
 
   // ─── EARLY EXIT IF NOT ENOUGH HISTORY ─────────────────────────────
@@ -95,9 +99,9 @@ export const classifier = (
   for(let loopIdx = 0; loopIdx < expectedLoops; loopIdx++)
   {
     const modelKey = `${prefix}_${(loopIdx+1)}`
-    const Yrows = instances.classifier[prefix].Y[loopIdx]
+    const Yrows = dataSetInstance.Y[loopIdx]
     const currTrainY =  (flatY) ? (trainY === null) ? null : [trainY[loopIdx]] : trainY
-    const isTrained = instances.classifier[prefix].isTrained[loopIdx]
+    const isTrained = dataSetInstance.isTrained[loopIdx]
 
     //train using previously saved models even if current currTrainY is null
     if(allModels.hasOwnProperty(modelKey))
@@ -151,6 +155,12 @@ export const classifier = (
     if (shouldTrainModel && Xrows.length === trainingSize && Yrows.length === trainingSize) {
 
       let model
+
+      if(isTrained === false)
+      {
+        dataSetInstance.uniqueLabels = countUniqueLabels(Yrows)
+      }
+
       if (useTrainMethod) {
         model = new mlClass()
         model.train(Xrows, Yrows)
@@ -159,24 +169,17 @@ export const classifier = (
 
         if(type === 'KNN')
         {
-          if(isTrained === false)
-          {
-            instances.classifier[prefix].numberOfKnnLabels = countKnnLabels(Yrows)
-          }
-          
           classifierArgs = {
             ...classifierArgs, 
-            k: instances.classifier[prefix].numberOfKnnLabels
+            k: dataSetInstance.uniqueLabels
           }
         }
-
-        
 
         model = new mlClass(Xrows, Yrows)
       }
 
       allModels[modelKey] = model
-      instances.classifier[prefix].isTrained[loopIdx] = true
+      dataSetInstance.isTrained[loopIdx] = true
     }
   }
 }

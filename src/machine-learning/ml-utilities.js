@@ -70,7 +70,7 @@ export const computeFlatFeaturesLen = (featureCols, instances, type) => {
 }
 
 
-export const countKnnLabels = Y => {
+export const countUniqueLabels = Y => {
 
   const nCols = Y[0].length
 
@@ -103,6 +103,3 @@ export const getFeaturedKeys = ({trainingCols, findGroups, verticalOhlcv, scaled
     return featureCols
 }
 
-export const univariablePredictions = ({main, type, index, trainX, prefix, flatY, predictions, modelKey, predictionIdx}) => {
-
-}
