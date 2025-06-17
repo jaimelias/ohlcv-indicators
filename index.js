@@ -295,12 +295,15 @@ export default class OHLCV_INDICATORS {
         validateArray(colKeys, 'colKeys', methodName)
         validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
 
+        let secondaryLoop = false
+
         if(colKeys.some(v => v.includes('_prediction_')))
         {
             methodName += 'Secondary'
+            secondaryLoop = true
         }
 
-        this.inputParams.push({key: methodName, params: [colKeys, lookback]})
+        this.inputParams.push({key: methodName, params: [colKeys, lookback, {secondaryLoop}]})
         
         return this;
     }
@@ -577,12 +580,15 @@ export default class OHLCV_INDICATORS {
         const groupKeyLen = colKeys.length
         const precomputed = {groupKey, groupKeyLen}
 
+        let secondaryLoop = false
+
         if(colKeys.some(v => v.includes('_prediction_')))
         {
             methodName += 'Secondary'
+            secondaryLoop = true
         }
 
-        this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed, decimals, pca}]})
+        this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed, decimals, pca, secondaryLoop}]})
         return this
     }
 

@@ -1,29 +1,26 @@
 import { buildArray } from "../utilities/assignTypes.js"
 
-export const lag = (main, index, colKeys, lookback) => {
-  const { verticalOhlcv, len, arrayTypes } = main
+export const lag = (main, index, colKeys, lookback, {secondaryLoop}) => {
+  const { verticalOhlcv, len, arrayTypes, invalidValueIndex } = main
 
-  if(index === 0)
+  if((index === 0 && secondaryLoop === false) || ((index + 1) === (invalidValueIndex + 1) && secondaryLoop === true))
   {
     for (const colKey of colKeys) {
+      if (!arrayTypes.hasOwnProperty(colKey)) {
+          throw new Error(
+          `Lag processing invoked by "${colKey}" expected arrayTypes to have a "${colKey}" property, but it wasn’t found.`
+          )
+      }
 
-        // On the very first pass, initialize the lagged arrays:
-        if (index === 0) {
-
-            if (!arrayTypes.hasOwnProperty(colKey)) {
-                throw new Error(
-                `Lag processing invoked by "${colKey}" expected arrayTypes to have a "${colKey}" property, but it wasn’t found.`
-                )
-            }
-
-            for (let step = 1; step <= lookback; step++) {
-                const key = `${colKey}_lag_${step}`
-                verticalOhlcv[key] = buildArray(arrayTypes[colKey], len)
-                arrayTypes[key] = arrayTypes[colKey]
-            }
-        }       
+      for (let step = 1; step <= lookback; step++) {
+          const key = `${colKey}_lag_${step}`
+          verticalOhlcv[key] = buildArray(arrayTypes[colKey], len)
+          arrayTypes[key] = arrayTypes[colKey]
+      }   
     }
   }
+  
+  if(secondaryLoop === true && index <= invalidValueIndex) true
 
 
   for (const colKey of colKeys) {

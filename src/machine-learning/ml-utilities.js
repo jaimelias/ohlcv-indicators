@@ -4,6 +4,12 @@ export const oneHotEncode = (idx, size) => {
     return vec
 }
 
+export const logMlTraining = ({featureCols, flatFeaturesColLen, type, trainingSize}) => {
+
+    const oneHotTxt = (featureCols.length !== flatFeaturesColLen) ? ' (including flat one-hot encoded array values) ' : ''
+    console.log(`---\nInitialized "${type}" with ${flatFeaturesColLen} features ${oneHotTxt} and ${trainingSize} rows: \n${JSON.stringify(featureCols)}\n\n`)
+}
+
 export const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
     const clamped = Math.min(Math.max(value, min), max)
     return ((clamped - min) / (max - min)) * (validMax - validMin) + validMin
@@ -95,4 +101,8 @@ export const getFeaturedKeys = ({trainingCols, findGroups, verticalOhlcv, scaled
     }
 
     return featureCols
+}
+
+export const univariablePredictions = ({main, type, index, trainX, prefix, flatY, predictions, modelKey, predictionIdx}) => {
+
 }

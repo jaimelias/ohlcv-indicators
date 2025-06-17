@@ -114,7 +114,7 @@ export const mainLoop = (input, main) => {
 }
 
 export const secondaryLoop = main => {
-  const {inputParams, len, instances} = main
+  const {inputParams, len, instances, invalidValueIndex} = main
 
   const crossPairMatrix = {}
   let crossPairIsOneHot = false
@@ -130,7 +130,7 @@ export const secondaryLoop = main => {
   }
 
 
-  for(let index = 0; index < len; index++)
+  for(let index = invalidValueIndex; index < len; index++)
   {
     if(crossPairIsOneHot) oneHotCrossPairsSecondLoop(main, index, crossPairMatrix)
 

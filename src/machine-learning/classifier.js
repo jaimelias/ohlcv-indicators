@@ -1,4 +1,4 @@
-import { getFeaturedKeys, computeFlatFeaturesLen, countKnnLabels } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen, countKnnLabels, logMlTraining, univariablePredictions } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 
 export const validClassifiers = {
@@ -23,13 +23,13 @@ export const classifier = (
     predictions
   }
 ) => {
-  const { lookbackAbs, prefix, useTrainMethod } = precompute
+  const { lookbackAbs, prefix, useTrainMethod, flatY } = precompute
   const { verticalOhlcv, len, instances, scaledGroups, invalidValueIndex } = main
   const mlClass = main.ML.classes[type]
   const allModels = main.models
 
   // ─── INITIALIZATION ───────────────────────────────────────────────
-  if (index === 0) {
+  if((index + 1) === (invalidValueIndex + 1)) {
     // build featureCols
     const featureCols = getFeaturedKeys({trainingCols, findGroups, verticalOhlcv, scaledGroups, type})
 
@@ -40,14 +40,19 @@ export const classifier = (
     // compute flattened feature‐length (expanding one-hots)
     const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
 
+    const trainingSize = Math.floor((len - invalidValueIndex) * trainingSplit)
+
+    const expectedLoops = (flatY) ? predictions : 1 //
+
     instances.classifier[prefix] = {
-      trainingSize: Math.floor((len - invalidValueIndex) * trainingSplit),
-      isTrained: false,
+      expectedLoops,
+      isTrained: new Array(expectedLoops).fill(false),
+      trainingSize,
       retrainOnEveryIndex: retrain,
       featureCols,
       flatFeaturesColLen,
       X: [],
-      Y: [],
+      Y: Array.from({ length: expectedLoops }, () => []),
     }
 
     // create NaN‐filled output arrays
@@ -56,20 +61,18 @@ export const classifier = (
       verticalOhlcv[outKey] = new Float64Array(len).fill(NaN)
     }
 
-    console.log(
-      `---\n\nInitialized classifier "${type}" with ${flatFeaturesColLen} features: \n${JSON.stringify(featureCols)}\n\n---`
-    )
+    logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
   }
 
   const {
+    expectedLoops,
     trainingSize,
     featureCols,
     flatFeaturesColLen,
-    X: Xrows,
-    Y: Yrows,
-    isTrained,
-    retrainOnEveryIndex
+    retrainOnEveryIndex,
+    X: Xrows
   } = instances.classifier[prefix]
+
 
   // ─── EARLY EXIT IF NOT ENOUGH HISTORY ─────────────────────────────
   if (index < lookbackAbs) return
@@ -86,78 +89,94 @@ export const classifier = (
 
   if(!trainX) return 
 
-  // ─── PREDICT WITH EXISTING MODEL ───────────────────────────────────
-  if (allModels.hasOwnProperty(prefix)) {
-    const model = allModels[prefix]
-
-    const futureRow = model.predict([trainX])[0]   
-
-    if (!Array.isArray(futureRow) || futureRow.length < predictions) {
-      throw new Error(
-        `Model.predict returned invalid output for classifier "${type}" at index ${index}`
-      );
-    }
-
-    for (let i = 0; i < futureRow.length; i++) {
-      const val = futureRow[i];
-      main.pushToMain({index, key: `${prefix}_${i + 1}`, value: val});
-    }
-  }
-
-
   // ─── BUILD TRAINING Y VIA CALLBACK ─────────────────────────────────
   const trainY = yCallback(index, verticalOhlcv)
 
-  if (trainY == null) return // future not defined
+  for(let loopIdx = 0; loopIdx < expectedLoops; loopIdx++)
+  {
+    const modelKey = `${prefix}_${(loopIdx+1)}`
+    const Yrows = instances.classifier[prefix].Y[loopIdx]
+    const currTrainY =  (flatY) ? (trainY === null) ? null : [trainY[loopIdx]] : trainY
+    const isTrained = instances.classifier[prefix].isTrained[loopIdx]
 
-  if (!Array.isArray(trainY)) {
-    throw new Error(
-      `yCallback must return an array, got ${typeof trainY} at index ${index}`
-    )
-  }
-   if (trainY.length !== predictions) {
-    throw new Error(
-      `yCallback length (${trainY.length}) ≠ predictions (${predictions}) for classifier "${type}"`
-    )
-  }
+    //train using previously saved models even if current currTrainY is null
+    if(allModels.hasOwnProperty(modelKey))
+    {
+      const futureRow = allModels[modelKey].predict([trainX])[0]
 
-  // enqueue
-  Xrows.push(trainX)
-  Yrows.push(trainY)
-  
-  if (Xrows.length > trainingSize) Xrows.shift()
-  if (Yrows.length > trainingSize) Yrows.shift()
-
-  const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
-
-  // ─── TRAIN WHEN READY ───────────────────────────────────────────────
-  if (shouldTrainModel && Xrows.length === trainingSize && Yrows.length === trainingSize) {
-    let model
-    if (useTrainMethod) {
-      model = new mlClass(classifierArgs)
-      
-      model.train(Xrows, Yrows)
-
-    } else {
-
-
-      if(type === 'KNN')
+      if(flatY)
       {
-        if(isTrained === false)
-        {
-          instances.classifier[prefix].numberOfKnnLabels = countKnnLabels(Yrows)
+        if(Number.isNaN(futureRow)) throw new Error(`Prediction of ${type} at index ${index} was expecting a number.`)
+
+        main.pushToMain({index, key: modelKey, value: futureRow})
+      }
+      else {
+
+        if (!Array.isArray(futureRow) || futureRow.length !== predictions) {
+          throw new Error(
+            `Prediction output of "${type}" at index ${index} was expecting an array of values.`
+          )
         }
-        
-        classifierArgs = {
-          ...classifierArgs, 
-          k: instances.classifier[prefix].numberOfKnnLabels
+
+        for(let preIdx = 0; preIdx < predictions; preIdx++) {
+          main.pushToMain({index, key: `${prefix}_${(preIdx+1)}`, value: futureRow[loopIdx]})
         }
       }
-
-      model = new mlClass(Xrows, Yrows, classifierArgs)
     }
 
-    allModels[prefix] = model
-    instances.classifier[prefix].isTrained = true
+    if (currTrainY == null) continue // future not defined
+
+    if (!Array.isArray(currTrainY)) {
+      throw new Error(
+        `yCallback must return an array, got ${typeof currTrainY} at index ${index}`
+      )
+    }
+
+    if ((currTrainY.length !== predictions && flatY === false) || (currTrainY.length !== 1 && flatY === true)) {
+
+      throw new Error(
+        `yCallback length (${currTrainY.length}) ≠ "options.predictions" (${predictions}) for classifier "${type}"`
+      )
+    }
+
+    // enqueue
+    Xrows.push(trainX)
+    Yrows.push(currTrainY)
+
+    if (Xrows.length > trainingSize) Xrows.shift()
+    if (Yrows.length > trainingSize) Yrows.shift()
+
+    const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
+
+    if (shouldTrainModel && Xrows.length === trainingSize && Yrows.length === trainingSize) {
+
+      let model
+      if (useTrainMethod) {
+        model = new mlClass()
+        model.train(Xrows, Yrows)
+
+      } else {
+
+        if(type === 'KNN')
+        {
+          if(isTrained === false)
+          {
+            instances.classifier[prefix].numberOfKnnLabels = countKnnLabels(Yrows)
+          }
+          
+          classifierArgs = {
+            ...classifierArgs, 
+            k: instances.classifier[prefix].numberOfKnnLabels
+          }
+        }
+
+        
+
+        model = new mlClass(Xrows, Yrows)
+      }
+
+      allModels[modelKey] = model
+      instances.classifier[prefix].isTrained[loopIdx] = true
+    }
   }
 }

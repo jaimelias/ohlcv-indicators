@@ -1,4 +1,4 @@
-import { getFeaturedKeys, computeFlatFeaturesLen } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen, logMlTraining } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 
 export const validRegressors = {
@@ -33,7 +33,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
     const mlClass = main.ML.classes[type]
     const allModels = main.models
 
-    if(index === 0)
+    if((index + 1) === (invalidValueIndex + 1))
     {
         const featureCols = getFeaturedKeys({trainingCols, findGroups, verticalOhlcv, scaledGroups, type})
 
@@ -57,8 +57,10 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
         // compute flattened feature‐length (expanding one-hots)
         const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
 
+        const trainingSize = Math.floor((len - invalidValueIndex) * trainingSplit)
+
         instances.regressor[prefix] = {
-            trainingSize: Math.floor((len - invalidValueIndex) * trainingSplit),
+            trainingSize,
             isTrained: false,
             retrainOnEveryIndex: retrain,
             featureCols,
@@ -73,8 +75,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
             verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
         }
 
-        console.log(`---\n\nInitialized classifier "${type}" with ${flatFeaturesColLen} features: \n${JSON.stringify(featureCols)}\n\n---`)
-
+        logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
     }
 
     const {trainingSize, X, Y, flatFeaturesColLen, featureCols, isTrained, retrainOnEveryIndex} = instances.regressor[prefix]
@@ -183,17 +184,20 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
 
     } else
     {
-        let model
-
         //process multi-column outputs
         if(allModels.hasOwnProperty(prefix)){
 
             //current prediction should be extracted from the saved model in 
-            model = allModels[prefix]
+            const model = allModels[prefix]
 
             const futurePredictionsRow = model.predict([trainX])
             const futurePredictions = futurePredictionsRow[0]
 
+            if (!Array.isArray(futurePredictions) || futurePredictions.length < predictions) {
+                throw new Error(
+                `Model.predict returned invalid output for "${type}" at index ${index}`
+                );
+            }
 
             for(let x = 0; x < predictions; x++)
             {
@@ -235,6 +239,8 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
 
         if(shouldTrainModel && yRows.length === trainingSize && xRows.length === trainingSize)
         {
+            let model
+
             if(useTrainMethod)
             {
                 model = new main.ML.classes[type](regressorArgs)
@@ -244,6 +250,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
             {
                 model = new main.ML.classes[type](xRows, yRows)
             }
+            
             allModels[prefix] = model
             instances.regressor[prefix].isTrained = true
         }
