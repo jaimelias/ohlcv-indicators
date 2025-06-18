@@ -71,20 +71,22 @@ export const computeFlatFeaturesLen = (featureCols, instances, type) => {
 
 
 export const countUniqueLabels = Y => {
+  // If Y[0] isn't an array, treat Y as a single-column 2D array
+  const data = Array.isArray(Y[0]) ? Y : Y.map(v => [v]);
 
-  const nCols = Y[0].length
+  // Number of columns in our (possibly wrapped) data
+  const nCols = data[0].length;
 
-  // Sum unique values in each column
-  
-  let totalLabels = 0
-  for (let col = 0; col < nCols; col++) {
-    const colValues = Y.map(row => row[col])
-    const uniques = new Set(colValues)
-    totalLabels += uniques.size
-  }
+  // Sum up the unique values in each column
+  const totalLabels = Array.from({ length: nCols }).reduce((sum, _, col) => {
+    const uniques = new Set(data.map(row => row[col]));
+    return sum + uniques.size;
+  }, 0);
 
-  return totalLabels + 1
+  // Return count + 1 (same as before)
+  return totalLabels + 1;
 }
+
 
 export const getFeaturedKeys = ({trainingCols, findGroups, verticalOhlcv, scaledGroups, type}) => {
 

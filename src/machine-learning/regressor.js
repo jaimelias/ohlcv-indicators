@@ -32,16 +32,20 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
         // compute flattened feature‐length (expanding one-hots)
         const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
 
-        const trainingSize = Math.floor((len - invalidValueIndex) * trainingSplit)
+        const usable = (len - invalidValueIndex) - predictions
+        const trainingSize = Math.floor(usable * trainingSplit)
+
+        const expectedLoops = (flatY) ? predictions : 1 //
 
         instances.regressor[prefix] = {
+            expectedLoops,
             trainingSize,
-            isTrained: false,
+            isTrained: new Array(expectedLoops).fill(false),
             retrainOnEveryIndex: retrain,
             featureCols,
             flatFeaturesColLen,
             X: [],
-            Y: [],
+            Y: Array.from({ length: expectedLoops }, () => []),
         }
 
         for(let x = 0; x < predictions; x++)
@@ -53,169 +57,112 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
         logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
     }
 
-    const {trainingSize, X, Y, flatFeaturesColLen, featureCols, isTrained, retrainOnEveryIndex} = instances.regressor[prefix]
-    let trainX
-    let trainY
+    // --- EARLY EXIT IF NOT ENOUGH HISTORY ---
+    if (index < lookbackAbs) return;
 
-    if(flatX)
-    {
-        trainX = verticalOhlcv[target][index]
+    const dataSetInstance = instances.regressor[prefix]
+    const {
+        expectedLoops,
+        trainingSize, 
+        X: xRows, 
+        Y, 
+        flatFeaturesColLen, 
+        featureCols, 
+        retrainOnEveryIndex
+    } = dataSetInstance
+
+    
+    const trainX = (flatX) ? verticalOhlcv[target][index] : buildTrainX({featureCols, instances, flatFeaturesColLen, type, index, lookbackAbs, verticalOhlcv})
+
+    if (flatX) {
+        if (!Number.isFinite(trainX)) return;   // or `trainX == null`
     } else {
-        // --- EARLY EXIT IF NOT ENOUGH HISTORY ---
-        if (index < lookbackAbs) return;
-
-        // ─── BUILD TRAINING X ──────────────────────────────────────────────
-        trainX = buildTrainX({
-            featureCols,
-            instances,
-            flatFeaturesColLen,
-            type,
-            index,
-            lookbackAbs,
-            verticalOhlcv
-        })
-
-        if(!trainX) return 
+        if (trainX == null) return;
     }
 
-   
+    let trainY = []
 
-    if(flatY)
+    for (let i = 0; i < predictions; i++) {
+        const v = verticalOhlcv[target][index + i + 1]
+
+        if (!Number.isFinite(v)) {
+            break
+        }
+
+        trainY.push(v)
+    }
+
+    //if univariable Y (flatY) a model is created for each prediction
+    for(let loopIdx = 0; loopIdx < expectedLoops; loopIdx++)
     {
-        //process single-column outputs using the current value as the first datapoint and using futureValue as datapoint for the next predictions
-        const trainY = verticalOhlcv[target][index] 
+        const modelKey = `${prefix}_${(loopIdx+1)}`
+        const yRows = Y[loopIdx]
+        const currTrainY =  (flatY) ? (typeof trainY[loopIdx] === 'undefined') ? null : trainY[loopIdx] : trainY
+        const isTrained = dataSetInstance.isTrained[loopIdx]
 
-        if(!Number.isFinite(trainY)) throw new Error(`At index ${index} the value of ${type} "trainY" is not numeric.`)
+        //predicts using previously saved models even if current currTrainY is not available
+        if(allModels.hasOwnProperty(modelKey))
+        {
+            const futureRow = allModels[modelKey].predict([trainX])[0]
 
-        Y.push(trainY)
-        X.push(trainX)
+            if(flatY)
+            {
+                if(Number.isNaN(futureRow)) throw new Error(`Prediction of ${type} at index ${index} was expecting a number.`)
 
-        if(Y.length > trainingSize) Y.shift()
-        if(X.length > trainingSize) X.shift()
+                main.pushToMain({index, key: modelKey, value: futureRow})
+            }
+            else {
 
-        //can be an array of number or 2d array with numbers
-        const yRows = [...Y] //we must spread here because predictions are used as datapoints
-        const xRows = [...X] //we must spread here because predictions are used as datapoints
-
-        for(let x = 0; x < predictions; x++) {
-            const predictionKey = `${prefix}_${(x+1)}`
-            let model
-
-            //predict from stored model in main
-            if(allModels.hasOwnProperty(prefix)){
-
-                //current prediction should be extracted from the saved model in 
-                model = allModels[prefix]
-                
-                // First prediction uses the original trainX; subsequent predictions use previous predicted values (futureValue) as datapoints
-
-                const newTrainX = xRows[xRows.length - 1] // can be an array or a number
-                const futureValueRow = model.predict([newTrainX]) //newTrainX needs to be wrapped in an array for predictions
-                const futureValue = futureValueRow[0] //predict needs to be unwrapped before pushing it to main
-
-                //flatX indicates training X features only accept 1 variable
-                if(flatX)
-                {
-                    xRows.push(futureValue) //do not update yRows as xRows and yRows will end with the same values
-
-                    if(xRows.length > trainingSize) xRows.shift()
-
-                } else
-                {
-                    const prevX = xRows[xRows.length - 1]
-                    const nextX = prevX.slice(1).concat(futureValue) // shift window
-                    xRows.push(nextX)
-
-                    if (xRows.length > trainingSize) xRows.shift()
+                if (!Array.isArray(futureRow) || futureRow.length !== predictions) {
+                    throw new Error(
+                        `Prediction output of "${type}" at index ${index} was expecting an array of values.`
+                    )
                 }
 
-
-                //the output pushed to main should be always a flat number
-                main.pushToMain({ index, key: predictionKey, value: futureValue})
-            }
-
-            const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
-
-            
-
-            if(x === 0 && shouldTrainModel && yRows.length === trainingSize && xRows.length === trainingSize){
-
-                allModels[prefix] = allModels[prefix] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'regressor', uniqueLabels: 0}) 
-                instances.regressor[prefix].isTrained = true
+                for(let preIdx = 0; preIdx < predictions; preIdx++) {
+                    main.pushToMain({index, key: `${prefix}_${(preIdx+1)}`, value: futureRow[preIdx]})
+                }
             }
         }
 
-        
+        if((index + predictions + 1) > len) continue
+        if(trainY.length < predictions) continue
+        if(currTrainY === null) continue
 
-    } else
-    {
-        //process multi-column outputs
-        if(allModels.hasOwnProperty(prefix)){
-
-            //current prediction should be extracted from the saved model in 
-            const model = allModels[prefix]
-
-            const futurePredictionsRow = model.predict([trainX])
-            const futurePredictions = futurePredictionsRow[0]
-
-            if (!Array.isArray(futurePredictions) || futurePredictions.length < predictions) {
-                throw new Error(
-                `Model.predict returned invalid output for "${type}" at index ${index}`
-                );
-            }
-
-            for(let x = 0; x < predictions; x++)
+        if(flatY)
+        {
+            if (typeof currTrainY !== 'number' || Number.isNaN(currTrainY))
             {
-                const predictionKey = `${prefix}_${(x+1)}`
-                const currPrediction = futurePredictions[x]
-                main.pushToMain({ index, key: predictionKey, value: currPrediction })
+                throw new Error(`currTrainY must return number, got ${typeof currTrainY} at index ${index}`)
             }
-        }
-
-        //this conditionsl avoids undefined trainY items
-        if((index + predictions + 1) > len) return
-
-        //2d array
-
-
-        trainY = []
-
-        for (let i = 0; i < predictions; i++) {
-            const v = verticalOhlcv[target][index + i + 1]
-
-            if (!Number.isFinite(v)) {
-                break
+        } else {
+            if (!Array.isArray(currTrainY)) {
+                throw new Error(`currTrainY must return an array, got ${typeof currTrainY} at index ${index}`)
             }
 
-            trainY.push(v)
+            if ((currTrainY.length !== predictions)) {
+
+                throw new Error(`currTrainY length (${currTrainY.length}) ≠ "options.predictions" (${predictions}) for classifier "${type}"`)
+            }           
         }
 
-        if(trainY.length !== predictions)
+        // enqueue
+        yRows.push(currTrainY)
+        if (yRows.length > trainingSize) yRows.shift()
+
+        if(loopIdx === 0)
         {
-            return
+            xRows.push(trainX)
+            if (xRows.length > trainingSize) xRows.shift()
         }
 
-        //can be an array of number or 2d array with numbers
-        const yRows = Y //we must not spread here because here predictions are not used as datapoints
-        const xRows = X //we must not spread here because here predictions are not used as datapoints
+        const shouldTrainModel = retrainOnEveryIndex || !isTrained
 
-        const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
+        if (shouldTrainModel && xRows.length === trainingSize && yRows.length === trainingSize) {
 
-
-        if(shouldTrainModel && yRows.length === trainingSize && xRows.length === trainingSize)
-        {
-            allModels[prefix] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'regressor', uniqueLabels: 0}) 
-            instances.regressor[prefix].isTrained = true
+            allModels[modelKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'regressor', uniqueLabels: 0})
+            dataSetInstance.isTrained[loopIdx] = true
         }
 
-        xRows.push(trainX)
-        yRows.push(trainY)
-
-        if(xRows.length > trainingSize)
-        {
-            xRows.shift()
-            yRows.shift()
-        }
-        
     }
 }

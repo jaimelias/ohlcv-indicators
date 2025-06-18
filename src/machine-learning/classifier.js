@@ -22,7 +22,7 @@ export const classifier = (
   const { lookbackAbs, prefix, useTrainMethod, flatY } = precompute
   const { verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML } = main
   const allModels = ML.models
-
+  
   // ─── INITIALIZATION ───────────────────────────────────────────────
   if((index + 1) === (invalidValueIndex + 1)) {
     // build featureCols
@@ -35,7 +35,8 @@ export const classifier = (
     // compute flattened feature‐length (expanding one-hots)
     const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
 
-    const trainingSize = Math.floor((len - invalidValueIndex) * trainingSplit)
+    const usable = (len - invalidValueIndex) - predictions
+    const trainingSize = Math.floor(usable * trainingSplit)
 
     const expectedLoops = (flatY) ? predictions : 1 //
 
@@ -61,9 +62,13 @@ export const classifier = (
     logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
   }
 
+  // ─── EARLY EXIT IF NOT ENOUGH HISTORY ─────────────────────────────
+  if (index < lookbackAbs) return
+
   const dataSetInstance = instances.classifier[prefix]
 
   const {
+    uniqueLabels,
     expectedLoops,
     trainingSize,
     featureCols,
@@ -71,10 +76,6 @@ export const classifier = (
     retrainOnEveryIndex,
     X: xRows
   } = dataSetInstance
-
-
-  // ─── EARLY EXIT IF NOT ENOUGH HISTORY ─────────────────────────────
-  if (index < lookbackAbs) return
 
   const trainX = buildTrainX({
     featureCols,
@@ -88,17 +89,22 @@ export const classifier = (
 
   if(!trainX) return 
 
-  // ─── BUILD TRAINING Y VIA CALLBACK ─────────────────────────────────
+   //if univariable Y (flatY) a model is created for each prediction
   const trainY = yCallback(index, verticalOhlcv)
+
+  if(!Array.isArray(trainY))
+  {
+    throw new Error(`trainY must return an array, got ${trainY} at index ${index} ${type}`)
+  }
 
   for(let loopIdx = 0; loopIdx < expectedLoops; loopIdx++)
   {
     const modelKey = `${prefix}_${(loopIdx+1)}`
     const yRows = dataSetInstance.Y[loopIdx]
-    const currTrainY =  (flatY) ? (trainY === null) ? null : [trainY[loopIdx]] : trainY
+    const currTrainY =  (flatY) ? trainY[loopIdx] : trainY
     const isTrained = dataSetInstance.isTrained[loopIdx]
 
-    //train using previously saved models even if current currTrainY is null
+    //predicts using previously saved models even if current currTrainY is not available
     if(allModels.hasOwnProperty(modelKey))
     {
       const futureRow = allModels[modelKey].predict([trainX])[0]
@@ -118,48 +124,59 @@ export const classifier = (
         }
 
         for(let preIdx = 0; preIdx < predictions; preIdx++) {
-          main.pushToMain({index, key: `${prefix}_${(preIdx+1)}`, value: futureRow[loopIdx]})
+          main.pushToMain({index, key: `${prefix}_${(preIdx+1)}`, value: futureRow[preIdx]})
         }
       }
     }
 
-    if (currTrainY == null) continue // future not defined
+    if((index + predictions + 1) > len) continue 
+    if(flatY === true && typeof currTrainY === 'undefined') continue // future not defined
+    if(flatY === false && currTrainY.length === 0) continue // future not defined
 
-    if (!Array.isArray(currTrainY)) {
-      throw new Error(
-        `yCallback must return an array, got ${typeof currTrainY} at index ${index}`
-      )
-    }
+    if(flatY)
+    {
+        if (typeof currTrainY !== 'number' || Number.isNaN(currTrainY))
+        {
+            throw new Error(`currTrainY must return number, got ${typeof currTrainY} at index ${index}`)
+        }
+    } else {
 
-    if ((currTrainY.length !== predictions && flatY === false) || (currTrainY.length !== 1 && flatY === true)) {
+        if ((currTrainY.length !== predictions)) {
 
-      throw new Error(
-        `yCallback length (${currTrainY.length}) ≠ "options.predictions" (${predictions}) for classifier "${type}"`
-      )
+          throw new Error(
+            `The number of label columns returned (${currTrainY.length}) doesn’t match the options.predictions (${predictions}) setting for the "${type}" classifier. ` +
+            `Please update your yCallback function so its output array items align with options.predictions.`
+          );
+
+        }           
     }
 
     // enqueue
-    xRows.push(trainX)
+    
     yRows.push(currTrainY)
-
-    if (xRows.length > trainingSize) xRows.shift()
     if (yRows.length > trainingSize) yRows.shift()
 
-    const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
+    if(loopIdx === 0)
+    {
+      xRows.push(trainX)
+      if (xRows.length > trainingSize) xRows.shift()
+    }
+
+    const shouldTrainModel = retrainOnEveryIndex || !isTrained
 
     if (shouldTrainModel && xRows.length === trainingSize && yRows.length === trainingSize) {
 
       if(isTrained === false)
       {
-        dataSetInstance.uniqueLabels = countUniqueLabels(yRows)
+        uniqueLabels[loopIdx] = countUniqueLabels(yRows)
 
-        if(dataSetInstance.uniqueLabels < 2)
+        if(uniqueLabels[loopIdx] < 2)
         {
           throw new Error(`Invalid number or labels in ${type}. Check the logic of your "yCallback" function.`)
         }
       }
 
-      allModels[modelKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'classifier', uniqueLabels: dataSetInstance.uniqueLabels})
+      allModels[modelKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'classifier', uniqueLabels: uniqueLabels[loopIdx]})
       dataSetInstance.isTrained[loopIdx] = true
     }
   }
