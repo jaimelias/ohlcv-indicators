@@ -608,8 +608,10 @@ export default class OHLCV_INDICATORS {
             lookback = 0,
             findGroups = [],
             predictions = 2,
-            classifierArgs = {}
+            modelArgs = undefined
         } = options
+
+        if (modelArgs !== undefined && (typeof modelArgs !== 'object' || modelArgs === null || Array.isArray(modelArgs))) throw new TypeError(`"modelArgs" must be either undefined or a plain object in ${type}`);
 
         const yCallback = options.yCallback ?? defaultYCallback
 
@@ -661,7 +663,7 @@ export default class OHLCV_INDICATORS {
         
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSplit, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  classifierArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSplit, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  modelArgs, precompute}]})
 
 
         return this
@@ -686,7 +688,8 @@ export default class OHLCV_INDICATORS {
             lookback = 0, 
             rf = null,
             ff = null,
-            findGroups = []
+            findGroups = [],
+            modelArgs = undefined
         } = options
 
         validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
@@ -735,15 +738,13 @@ export default class OHLCV_INDICATORS {
         }
         
  
-        let regressorArgs
-
         if(type === 'RandomForestRegression')
         {
-            regressorArgs = defaultRandomForestRegressorOptions
+            modelArgs = defaultRandomForestRegressorOptions
         }
         else if(type === 'FeedForwardNeuralNetworks')
         {
-            regressorArgs = defaultFeedForwardRegressorOptions
+            modelArgs = defaultFeedForwardRegressorOptions
         }
 
 
@@ -757,8 +758,8 @@ export default class OHLCV_INDICATORS {
             if(rf.hasOwnProperty('replacement')) validateBoolean(rf.replacement, 'options.rf.replacement', methodName)
             if(rf.hasOwnProperty('nEstimators')) validateNumber(rf.nEstimators, {min: 5, allowDecimals: false}, 'options.rf.nEstimators', methodName)
 
-            regressorArgs = {
-                ...regressorArgs,
+            modelArgs = {
+                ...modelArgs,
                 ...rf
             }
         }
@@ -778,8 +779,8 @@ export default class OHLCV_INDICATORS {
             if(ff.hasOwnProperty('activationParam')) validateNumber(ff.activationParam, {min: 0, allowDecimals: false}, 'options.ff.activationParam', methodName)
             if(ff.hasOwnProperty('activation')) validateArrayOptions(validFeedForwardActivators, ff.activation, 'options.ff.activation', methodName)
             
-            regressorArgs = {
-                ...regressorArgs,
+            modelArgs = {
+                ...modelArgs,
                 ...ff
             }
         }
@@ -805,7 +806,7 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSplit, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  regressorArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSplit, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute}]})
 
         return this
     }

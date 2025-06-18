@@ -1,5 +1,6 @@
 import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
+import { modelTrain } from "./train-utilities.js"
 
 export const validClassifiers = {
     'KNN': 'knn',
@@ -18,7 +19,7 @@ export const classifier = (
     findGroups = [],
     retrain,
     type,
-    classifierArgs,
+    modelArgs,
     precompute,
     predictions
   }
@@ -74,7 +75,7 @@ export const classifier = (
     featureCols,
     flatFeaturesColLen,
     retrainOnEveryIndex,
-    X: Xrows
+    X: xRows
   } = dataSetInstance
 
 
@@ -99,7 +100,7 @@ export const classifier = (
   for(let loopIdx = 0; loopIdx < expectedLoops; loopIdx++)
   {
     const modelKey = `${prefix}_${(loopIdx+1)}`
-    const Yrows = dataSetInstance.Y[loopIdx]
+    const yRows = dataSetInstance.Y[loopIdx]
     const currTrainY =  (flatY) ? (trainY === null) ? null : [trainY[loopIdx]] : trainY
     const isTrained = dataSetInstance.isTrained[loopIdx]
 
@@ -144,21 +145,19 @@ export const classifier = (
     }
 
     // enqueue
-    Xrows.push(trainX)
-    Yrows.push(currTrainY)
+    xRows.push(trainX)
+    yRows.push(currTrainY)
 
-    if (Xrows.length > trainingSize) Xrows.shift()
-    if (Yrows.length > trainingSize) Yrows.shift()
+    if (xRows.length > trainingSize) xRows.shift()
+    if (yRows.length > trainingSize) yRows.shift()
 
     const shouldTrainModel = retrainOnEveryIndex || retrainOnEveryIndex === false && isTrained === false
 
-    if (shouldTrainModel && Xrows.length === trainingSize && Yrows.length === trainingSize) {
-
-      let model
+    if (shouldTrainModel && xRows.length === trainingSize && yRows.length === trainingSize) {
 
       if(isTrained === false)
       {
-        dataSetInstance.uniqueLabels = countUniqueLabels(Yrows)
+        dataSetInstance.uniqueLabels = countUniqueLabels(yRows)
 
         if(dataSetInstance.uniqueLabels < 2)
         {
@@ -166,24 +165,7 @@ export const classifier = (
         }
       }
 
-      if (useTrainMethod) {
-        model = new mlClass()
-        model.train(Xrows, Yrows)
-
-      } else {
-
-        if(type === 'KNN')
-        {
-          classifierArgs = {
-            ...classifierArgs, 
-            k: dataSetInstance.uniqueLabels
-          }
-        }
-
-        model = new mlClass(Xrows, Yrows)
-      }
-
-      allModels[modelKey] = model
+      allModels[modelKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'classifier', uniqueLabels: dataSetInstance.uniqueLabels})
       dataSetInstance.isTrained[loopIdx] = true
     }
   }

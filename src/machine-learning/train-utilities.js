@@ -1,35 +1,44 @@
-import { countUniqueLabels } from "./ml-utilities.js"
-export const modelTrain = ({main, type, Xrows, Yrows, useTrainMethod, args, algo, uniqueLabels = 0}) => {
+export const modelTrain = ({main, type, xRows, yRows, useTrainMethod, modelArgs, algo, uniqueLabels = 0}) => {
 
     let model
     const validAlgos = ['classifier', 'regressor']
     const mlClass = main.ML.classes[type]
 
-    if(useTrainMethod)
-    {
-        if(type === 'FeedForwardNeuralNetworks')
-        {
-            if(!args) args = {}
+    if(!validAlgos.includes(algo.toString())) throw new Error(`Invalid "algo" para in "modelTrain" function.`)
 
-            if(!args.hasOwnProperty('activation'))
+    if(type === 'FeedForwardNeuralNetworks')
+    {
+        if(!modelArgs) modelArgs = {}
+
+        if(!modelArgs.hasOwnProperty('activation'))
+        {
+            if(algo === 'regressor')
             {
-                args.activation = ()
+                modelArgs.activation = 'identity'
+            }
+            else if(algo === 'classifier')
+            {
+                modelArgs.activation = (uniqueLabels) ? 'logistic' : 'identity'
             }
         }
-
-        model = new mlClass(args)
-        model.train(Xrows, Yrows)
+    } 
+    else if(type === 'KNN')
+    {
+        if(!modelArgs) modelArgs = {}
+        modelArgs.uniqueLabels = uniqueLabels
     }
-    else {
-        if(type === 'KNN')
-        {
-            if(!args) args = {}
+    else if(type === 'RandomForestRegression')
+    {
+        if(!modelArgs) modelArgs = {}
 
+    }
 
-            args.uniqueLabels = uniqueLabels
-        }
-        
-        model = new mlClass(Xrows, Yrows, args)
+    if(useTrainMethod)
+    {
+        model = new mlClass(modelArgs)
+        model.train(xRows, yRows)
+    } else {
+        model = new mlClass(xRows, yRows, modelArgs)
     }
 
     return model

@@ -1,5 +1,6 @@
 import { getFeaturedKeys, computeFlatFeaturesLen, logMlTraining } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
+import { modelTrain } from "./train-utilities.js"
 
 export const validRegressors = {
     'SimpleLinearRegression': 'linear', 
@@ -26,11 +27,10 @@ export const defaultFeedForwardRegressorOptions = {
     activation: 'relu',
 }
 
-export const regressor = (main, index, trainingSplit, {target, predictions, retrain, trainingCols, findGroups, type, regressorArgs, precompute}) => {
+export const regressor = (main, index, trainingSplit, {target, predictions, retrain, trainingCols, findGroups, type, modelArgs, precompute}) => {
 
     const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
     const {verticalOhlcv, len, instances, scaledGroups, invalidValueIndex} = main
-    const mlClass = main.ML.classes[type]
     const allModels = main.models
 
     if((index + 1) === (invalidValueIndex + 1))
@@ -165,17 +165,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
 
             if(x === 0 && shouldTrainModel && yRows.length === trainingSize && xRows.length === trainingSize){
 
-                if(useTrainMethod)
-                {
-                    model = new mlClass(regressorArgs)
-                    model.train(xRows, yRows)
-                }
-                else
-                {
-                    model = new mlClass(xRows, yRows, regressorArgs)
-                }
-
-                allModels[prefix] = model
+                allModels[prefix] = allModels[prefix] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'regressor', uniqueLabels: 0}) 
                 instances.regressor[prefix].isTrained = true
             }
         }
@@ -239,19 +229,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
 
         if(shouldTrainModel && yRows.length === trainingSize && xRows.length === trainingSize)
         {
-            let model
-
-            if(useTrainMethod)
-            {
-                model = new main.ML.classes[type](regressorArgs)
-                model.train(xRows, yRows)
-            }
-            else
-            {
-                model = new main.ML.classes[type](xRows, yRows)
-            }
-            
-            allModels[prefix] = model
+            allModels[prefix] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'regressor', uniqueLabels: 0}) 
             instances.regressor[prefix].isTrained = true
         }
 
