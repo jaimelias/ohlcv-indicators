@@ -2,20 +2,7 @@ import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraini
 import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
 
-export const validClassifiers = {
-    'KNN': {
-      shortName: 'knn'
-    },
-    'FeedForwardNeuralNetworks': {
-      shortName: 'feed_forward'
-    },
-    'GaussianNB': {
-      shortName: 'naive-bayes'
-    },
-    'MultinomialNB': {
-      shortName: 'naive-bayes'
-    },
-}
+
 
 export const classifier = (
   main,
@@ -33,9 +20,8 @@ export const classifier = (
   }
 ) => {
   const { lookbackAbs, prefix, useTrainMethod, flatY } = precompute
-  const { verticalOhlcv, len, instances, scaledGroups, invalidValueIndex } = main
-  const mlClass = main.ML.classes[type]
-  const allModels = main.models
+  const { verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML } = main
+  const allModels = ML.models
 
   // ─── INITIALIZATION ───────────────────────────────────────────────
   if((index + 1) === (invalidValueIndex + 1)) {

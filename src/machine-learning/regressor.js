@@ -2,48 +2,11 @@ import { getFeaturedKeys, computeFlatFeaturesLen, logMlTraining } from "./ml-uti
 import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
 
-export const validRegressors = {
-    'SimpleLinearRegression': {
-        shortName: 'linear'
-    }, 
-    'PolynomialRegression': {
-        shortName: 'polynomial'
-    },
-    'MultivariateLinearRegression': {
-        shortName: 'multivariable'
-    }, 
-    'DecisionTreeRegression': {
-        shortName: 'decision_tree'
-    },
-    'RandomForestRegression': {
-        shortName: 'random_forest'
-    },
-    'FeedForwardNeuralNetworks': {
-        shortName: 'feed_forward'
-    }
-}
-
-export const defaultRandomForestRegressorOptions = {
-    seed: 3,
-    maxFeatures: 2,
-    replacement: false,
-    nEstimators: 30,
-}
-
-export const defaultFeedForwardRegressorOptions = {
-    hiddenLayers: [10],
-    iterations: 20,
-    learningRate: 0.01,
-    regularization: 0.01,
-    activationParam: 1,
-    activation: 'relu',
-}
-
 export const regressor = (main, index, trainingSplit, {target, predictions, retrain, trainingCols, findGroups, type, modelArgs, precompute}) => {
 
     const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
-    const {verticalOhlcv, len, instances, scaledGroups, invalidValueIndex} = main
-    const allModels = main.models
+    const {verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML} = main
+    const allModels = ML.models
 
     if((index + 1) === (invalidValueIndex + 1))
     {

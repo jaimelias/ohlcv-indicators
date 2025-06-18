@@ -19,22 +19,10 @@ import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 
 import {
-    useTrainMethod,
-    univariableX, 
-    univariableY,
-    validFeedForwardActivators,
     defaultYCallback,
-} from './src/machine-learning/ml-config.js'
-
-import { 
     validRegressors,
-    defaultRandomForestRegressorOptions,
-    defaultFeedForwardRegressorOptions
-} from './src/machine-learning/regressor.js'
-
-import {
     validClassifiers
-} from './src/machine-learning/classifier.js'
+} from './src/machine-learning/ml-config.js'
 
 import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
 
@@ -89,8 +77,15 @@ export default class OHLCV_INDICATORS {
         this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.scaledGroups = {}
         this.isAlreadyComputed = new Set()
-        this.models = {}
-        this.ML = ML
+
+        const {classes: mlClasses} = ML
+
+        if(typeof mlClasses !== 'undefined') validateObject(mlClasses, 'ML.classes', 'constructor')
+
+        this.ML = {
+            models: {},
+            classes: mlClasses
+        }
         this.processSecondaryLoop = false
 
         this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
@@ -643,7 +638,7 @@ export default class OHLCV_INDICATORS {
             }
         }
 
-        const {shortName} = validClassifiers[type]
+        const {shortName, flatY, useTrainMethod} = validClassifiers[type]
 
         const prefix = `cla_${shortName}_${trainingSplit}_prediction`
 
@@ -658,9 +653,9 @@ export default class OHLCV_INDICATORS {
 
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
-            flatY: univariableY.has(type),
+            flatY,
             prefix,
-            useTrainMethod: useTrainMethod.has(type)
+            useTrainMethod
         }
         
         this.isAlreadyComputed.add(prefix)
@@ -673,7 +668,7 @@ export default class OHLCV_INDICATORS {
 
     regressor(trainingSplit = 0.80, options = {})
     {
-         isAlreadyComputed(this)
+        isAlreadyComputed(this)
 
         const methodName = 'regressor'
         
@@ -687,9 +682,7 @@ export default class OHLCV_INDICATORS {
             predictions =  1, 
             trainingCols = [], 
             type = 'SimpleLinearRegression', 
-            lookback = 0, 
-            rf = null,
-            ff = null,
+            lookback = 0,
             findGroups = [],
             modelArgs = undefined
         } = options
@@ -710,18 +703,21 @@ export default class OHLCV_INDICATORS {
         validateArray(trainingCols, 'options.trainingCols', methodName)
         validateArray(findGroups, 'options.findGroups', methodName)
 
+        const {shortName, flatX, flatY, useTrainMethod} = validRegressors[type]
+        const prefix = `reg_${shortName}_${trainingSplit}_${target}_prediction`
+
         if(findGroups.length > 0)
         {
             if(findGroups.some(o => !o.hasOwnProperty('size') || !o.hasOwnProperty('type'))) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
         } else
         {
-            if(trainingCols.length === 0 && univariableX.has(type) === false)
+            if(trainingCols.length === 0 && flatX === false)
             {
                 throw new Error(`"trainingCols" array is empty in ${methodName}`)
             }
         }
-        
-        if(univariableX.has(type)){
+
+        if(flatX) {
             if(trainingCols.length > 0)
             {
                 throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
@@ -738,57 +734,6 @@ export default class OHLCV_INDICATORS {
                 trainingCols.push(target)
             }
         }
-        
- 
-        if(type === 'RandomForestRegression')
-        {
-            modelArgs = defaultRandomForestRegressorOptions
-        }
-        else if(type === 'FeedForwardNeuralNetworks')
-        {
-            modelArgs = defaultFeedForwardRegressorOptions
-        }
-
-
-        if(rf !== null){
-
-            if(type !== 'RandomForestRegression') (`If regressor type is not ${type} then leave "options.rf" value null.`)
-
-            validateObject(rf, 'options.rf')
-            if(rf.hasOwnProperty('seed')) validateNumber(rf.seed, {min: 1, allowDecimals: false}, 'options.rf.seed', methodName)
-            if(rf.hasOwnProperty('maxFeatures')) validateNumber(rf.maxFeatures, {min: 1, allowDecimals: false}, 'options.rf.maxFeatures', methodName)
-            if(rf.hasOwnProperty('replacement')) validateBoolean(rf.replacement, 'options.rf.replacement', methodName)
-            if(rf.hasOwnProperty('nEstimators')) validateNumber(rf.nEstimators, {min: 5, allowDecimals: false}, 'options.rf.nEstimators', methodName)
-
-            modelArgs = {
-                ...modelArgs,
-                ...rf
-            }
-        }
-
-        if(ff !== null)
-        {
-            if(type !== 'FeedForwardNeuralNetworks') (`If regressor type is not ${type} then leave "options.ff" value null.`)
-            validateObject(ff, 'options.ff')
-
-            if(ff.hasOwnProperty('hiddenLayers')){
-                validateArray(ff.hiddenLayers, 'options.ff.hiddenLayers', methodName)
-                validateNumber(ff.hiddenLayers[0], {min: 1, allowDecimals: false}, 'options.ff.hiddenLayers[0]', methodName)
-            }
-            if(ff.hasOwnProperty('iterations')) validateNumber(ff.iterations, {min: 1, allowDecimals: false}, 'options.ff.iterations', methodName)
-            if(ff.hasOwnProperty('learningRate')) validateNumber(ff.learningRate, {min: 0.0001, allowDecimals: true}, 'options.ff.learningRate', methodName)
-            if(ff.hasOwnProperty('regularization')) validateNumber(ff.regularization, {min: 0.0001, allowDecimals: true}, 'options.ff.regularization', methodName)
-            if(ff.hasOwnProperty('activationParam')) validateNumber(ff.activationParam, {min: 0, allowDecimals: false}, 'options.ff.activationParam', methodName)
-            if(ff.hasOwnProperty('activation')) validateArrayOptions(validFeedForwardActivators, ff.activation, 'options.ff.activation', methodName)
-            
-            modelArgs = {
-                ...modelArgs,
-                ...ff
-            }
-        }
-
-        const {shortName} = validRegressors[type]
-        const prefix = `reg_${shortName}_${trainingSplit}_${target}_prediction`
 
         if(this.isAlreadyComputed.has(prefix))
         {
@@ -801,10 +746,10 @@ export default class OHLCV_INDICATORS {
 
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
-            flatX: univariableX.has(type),
-            flatY: univariableY.has(type),
+            flatX,
+            flatY,
             prefix,
-            useTrainMethod: useTrainMethod.has(type),
+            useTrainMethod
         }
 
         this.isAlreadyComputed.add(prefix)

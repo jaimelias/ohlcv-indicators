@@ -17,7 +17,7 @@ export const pca = main => {
 
         if(!group || pcaOptions === null) continue
 
-        if (!ML.hasOwnProperty('PCA')) {
+        if (!ML.classes.hasOwnProperty('PCA')) {
             throw new Error(
                 `"PCA" isn’t available because its library wasn’t imported into OHLCV_INDICATORS.ML.`
             )
@@ -84,7 +84,7 @@ export const pca = main => {
 
         main.notNumberKeys.add(verticalKey)
 
-        const pca = new ML.PCA(tempArr, {
+        const pca = new ML.classes.PCA(tempArr, {
             isCovarianceMatrix,
             method,
             center,
@@ -95,7 +95,7 @@ export const pca = main => {
 
         if(storeModel)
         {
-            main.models[verticalKey] = pca.toJSON()
+            ML.models[verticalKey] = pca.toJSON()
         }
         
         const predictions = pca.predict(tempArr).to2DArray()

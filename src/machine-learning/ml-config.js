@@ -1,8 +1,3 @@
-export const univariableX = new Set(['SimpleLinearRegression', 'PolynomialRegression'])
-export const univariableY = new Set(['SimpleLinearRegression', 'PolynomialRegression', 'DecisionTreeRegression', 'RandomForestRegression', 'GaussianNB', 'MultinomialNB'])
-export const useTrainMethod = new Set(['DecisionTreeRegression', 'RandomForestRegression', 'FeedForwardNeuralNetworks', 'GaussianNB', 'MultinomialNB'])
-export const validFeedForwardActivators = ['tanh', 'identity', 'logistic', 'arctan', 'softsign', 'relu', 'softplus', 'bent', 'sinusoid', 'sinc', 'gaussian', 'parametric-relu', 'exponential-relu', 'soft-exponential']
-
 export const defaultYCallback = (index, verticalOhlcv) => {
 
     //this function will be executed inside a secondary loop after most of the indicates are calculated
@@ -20,4 +15,76 @@ export const defaultYCallback = (index, verticalOhlcv) => {
 
     //the total length of item is this output must be equal to "options.yColumns" property
     return [Number(nextClose > nextOpen), Number(nextNextClose > nextNextOpen)]
+}
+
+export const validClassifiers = {
+    'KNN': {
+      shortName: 'knn',
+      flatY: false,
+      useTrainMethod: false,
+    },
+    'FeedForwardNeuralNetworks': {
+      shortName: 'feed_forward',
+      flatY: false,
+      useTrainMethod: true,
+    },
+    'GaussianNB': {
+      shortName: 'naive-bayes',
+      flatY: true,
+      useTrainMethod: true,
+    },
+    'MultinomialNB': {
+      shortName: 'naive-bayes',
+      flatY: true,
+      useTrainMethod: true,
+    },
+    'DecisionTreeClassifier': {
+      shortName: 'naive-bayes',
+      flatY: true,
+      useTrainMethod: true,
+    },
+    'RandomForestClassifier': {
+      shortName: 'naive-bayes',
+      flatY: true,
+      useTrainMethod: true,
+    },
+}
+
+export const validRegressors = {
+    'SimpleLinearRegression': {
+        shortName: 'linear',
+        flatX: true,
+        flatY: true,
+        useTrainMethod: false
+    }, 
+    'PolynomialRegression': {
+        shortName: 'polynomial',
+        flatX: true,
+        flatY: true,
+        useTrainMethod: false
+    },
+    'MultivariateLinearRegression': {
+        shortName: 'multivariable',
+        flatX: false,
+        flatY: false,
+        useTrainMethod: false
+    }, 
+    'DecisionTreeRegression': {
+        shortName: 'decision_tree',
+        flatX: false,
+        flatY: true,
+        useTrainMethod: true
+    },
+    'RandomForestRegression': {
+        shortName: 'random_forest',
+        flatX: false,
+        flatY: true,
+        useTrainMethod: true
+    },
+    'FeedForwardNeuralNetworks': {
+        shortName: 'feed_forward',
+        flatX: false,
+        flatY: false,
+        useTrainMethod: true
+    }
 }
