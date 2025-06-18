@@ -92,16 +92,16 @@ export const classifier = (
    //if univariable Y (flatY) a model is created for each prediction
   const trainY = yCallback(index, verticalOhlcv)
 
-  if(!Array.isArray(trainY))
-  {
-    throw new Error(`trainY must return an array, got ${trainY} at index ${index} ${type}`)
+  if (trainY !== null && (!Array.isArray(trainY) || trainY.length !== predictions)) {
+
+    throw new Error(`trainY must be null or an array with ${predictions} items, got "${JSON.stringify(trainY)}" at index ${index} for ${type}`);
   }
 
   for(let loopIdx = 0; loopIdx < expectedLoops; loopIdx++)
   {
     const modelKey = `${prefix}_${(loopIdx+1)}`
     const yRows = dataSetInstance.Y[loopIdx]
-    const currTrainY =  (flatY) ? trainY[loopIdx] : trainY
+    const currTrainY =  (flatY) ? (trainY === null) ? null : trainY[loopIdx] : trainY
     const isTrained = dataSetInstance.isTrained[loopIdx]
 
     //predicts using previously saved models even if current currTrainY is not available
@@ -130,8 +130,7 @@ export const classifier = (
     }
 
     if((index + predictions + 1) > len) continue 
-    if(flatY === true && typeof currTrainY === 'undefined') continue // future not defined
-    if(flatY === false && currTrainY.length === 0) continue // future not defined
+    if(currTrainY === null) continue // future not defined
 
     if(flatY)
     {

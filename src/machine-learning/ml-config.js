@@ -6,12 +6,12 @@ export const defaultYCallback = (index, verticalOhlcv) => {
     const nextClose = verticalOhlcv.close[index + 1]
     const nextOpen = verticalOhlcv.open[index + 1]
 
-    if(typeof nextClose === 'undefined') return [] //return empty array if the future value is undefined
+    if(typeof nextClose === 'undefined') return null //return null if the future value is undefined
 
     const nextNextClose = verticalOhlcv.close[index + 2]
     const nextNextOpen = verticalOhlcv.open[index + 2]
 
-    if(typeof nextNextClose === 'undefined') return [] //return empty array if the future value is undefined
+    if(typeof nextNextClose === 'undefined') return null //return null if the future value is undefined
 
     //the total length of item is this output must be equal to "options.yColumns" property
     return [Number(nextClose > nextOpen), Number(nextNextClose > nextNextOpen)]
