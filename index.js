@@ -643,7 +643,9 @@ export default class OHLCV_INDICATORS {
             }
         }
 
-        const prefix = `cla_${validClassifiers[type]}_${trainingSplit}_prediction`
+        const {shortName} = validClassifiers[type]
+
+        const prefix = `cla_${shortName}_${trainingSplit}_prediction`
 
         if(this.isAlreadyComputed.has(prefix))
         {
@@ -785,7 +787,8 @@ export default class OHLCV_INDICATORS {
             }
         }
 
-        const prefix = `reg_${validRegressors[type]}_${trainingSplit}_${target}_prediction`
+        const {shortName} = validRegressors[type]
+        const prefix = `reg_${shortName}_${trainingSplit}_${target}_prediction`
 
         if(this.isAlreadyComputed.has(prefix))
         {

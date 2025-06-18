@@ -3,12 +3,24 @@ import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
 
 export const validRegressors = {
-    'SimpleLinearRegression': 'linear', 
-    'PolynomialRegression': 'polynomial',
-    'MultivariateLinearRegression': 'multivariable', 
-    'DecisionTreeRegression': 'decision_tree',
-    'RandomForestRegression': 'random_forest',
-    'FeedForwardNeuralNetworks': 'feed_forward'
+    'SimpleLinearRegression': {
+        shortName: 'linear'
+    }, 
+    'PolynomialRegression': {
+        shortName: 'polynomial'
+    },
+    'MultivariateLinearRegression': {
+        shortName: 'multivariable'
+    }, 
+    'DecisionTreeRegression': {
+        shortName: 'decision_tree'
+    },
+    'RandomForestRegression': {
+        shortName: 'random_forest'
+    },
+    'FeedForwardNeuralNetworks': {
+        shortName: 'feed_forward'
+    }
 }
 
 export const defaultRandomForestRegressorOptions = {

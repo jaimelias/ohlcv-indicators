@@ -3,10 +3,18 @@ import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
 
 export const validClassifiers = {
-    'KNN': 'knn',
-    'FeedForwardNeuralNetworks': 'feed_forward',
-    'GaussianNB': 'naive-bayes',
-    'MultinomialNB': 'naive-bayes',
+    'KNN': {
+      shortName: 'knn'
+    },
+    'FeedForwardNeuralNetworks': {
+      shortName: 'feed_forward'
+    },
+    'GaussianNB': {
+      shortName: 'naive-bayes'
+    },
+    'MultinomialNB': {
+      shortName: 'naive-bayes'
+    },
 }
 
 export const classifier = (
