@@ -14,27 +14,33 @@ export const modelTrain = ({main, type, xRows, yRows, useTrainMethod, modelArgs,
         {
             if(algo === 'regressor')
             {
-                modelArgs.activation = 'identity'
+                modelArgs = {
+                    ...modelArgs, 
+                    activation: 'identity', 
+                    hiddenLayers: [20]
+                }
             }
             else if(algo === 'classifier')
             {
-                modelArgs.activation = (uniqueLabels) ? 'logistic' : 'identity'
+                modelArgs = {
+                    ...modelArgs, 
+                    activation: (uniqueLabels === 2) ? 'logistic' : 'identity',
+                    hiddenLayers: [20]
+                } 
             }
         }
+
+        
     } 
     else if(type === 'KNN')
     {
         if(!modelArgs) modelArgs = {}
-        modelArgs.uniqueLabels = uniqueLabels
-    }
-    else if(type === 'RandomForestRegression')
-    {
-        if(!modelArgs) modelArgs = {}
-
+        modelArgs.k = uniqueLabels
     }
 
     if(useTrainMethod)
     {
+        console.log(type, modelArgs)
         model = new mlClass(modelArgs)
         model.train(xRows, yRows)
     } else {

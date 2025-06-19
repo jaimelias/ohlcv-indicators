@@ -21,13 +21,11 @@ import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import {
     defaultYCallback,
     validRegressors,
-    validClassifiers
+    validClassifiers,
+    exportTrainedModels
 } from './src/machine-learning/ml-config.js'
 
 import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
-
-//precomputed
-import { precomputeMovingAverages } from './src/moving-averages/movingAverages.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -50,7 +48,10 @@ export default class OHLCV_INDICATORS {
 
         this.notNumberKeys = new Set()
         this.chunkProcess = chunkProcess
-        this.firstRow = input[0]
+        
+        this.input = [...input]
+        this.len = this.input.length
+        this.firstRow = this.input[0]
         
         const {inputTypes, arrayTypes} = assignTypes(this)
 
@@ -60,8 +61,7 @@ export default class OHLCV_INDICATORS {
 
         this.dateType = this.inputTypes.date ? this.inputTypes.date : null;
         this.isComputed = false
-        this.input = input
-        this.len = input.length
+
         this.instances = {}
         this.crossPairsList = []
         this.verticalOhlcv = {}
@@ -96,6 +96,7 @@ export default class OHLCV_INDICATORS {
             this.inputParams = inputParams
             this.compute()
         }
+        else
         {
             this.inputParams = []
         }
@@ -260,13 +261,7 @@ export default class OHLCV_INDICATORS {
             throw new Error(`"${methodName}" can not be used with the the following strings: ${JSON.stringify(invalidKeyStrings)}`)
         }
 
-        let prefix = ''
-
-        if(oneHot)
-        {
-            prefix = 'one_hot_'
-            this.processSecondaryLoop = true
-        }
+        const prefix = (oneHot) ? 'one_hot_' : ''
 
         if(this.isAlreadyComputed.has(methodName))
         {
@@ -361,9 +356,7 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        const precomputed = precomputeMovingAverages({main: this, size, target, lag, methodName})
-
-        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag, precomputed}]})
+        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -381,10 +374,7 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-
-        const precomputed = precomputeMovingAverages({main: this, size, target, lag, methodName})
-
-        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag, precomputed}]})
+        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -757,5 +747,10 @@ export default class OHLCV_INDICATORS {
         this.inputParams.push({key: methodName, params: [trainingSplit, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute}]})
 
         return this
+    }
+
+    exportTrainedModels()
+    {
+        return exportTrainedModels(this)
     }
 }

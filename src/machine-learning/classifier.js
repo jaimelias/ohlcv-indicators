@@ -168,7 +168,7 @@ export const classifier = (
       if(isTrained === false)
       {
         uniqueLabels[loopIdx] = countUniqueLabels(yRows)
-
+        
         if(uniqueLabels[loopIdx] < 2)
         {
           throw new Error(`Invalid number or labels in ${type}. Check the logic of your "yCallback" function.`)

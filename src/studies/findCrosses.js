@@ -138,6 +138,11 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotCols, pre
   if(index === 0)
   {
 
+    if(oneHot)
+    {
+         main.processSecondaryLoop = true
+    }
+
     for (const { fast, slow } of crossPairsList)
     {
         const crossName = `${prefix}${fast}_x_${slow}`
