@@ -79,13 +79,13 @@ export const validClassifiers = {
       exportModel: m => m.toJSON()
     },
     'DecisionTreeClassifier': {
-      shortName: 'naive_bayes',
+      shortName: 'decision_tree',
       flatY: true,
       useTrainMethod: true,
       exportModel: m => m.toJSON()
     },
     'RandomForestClassifier': {
-      shortName: 'naive_bayes',
+      shortName: 'random_forest',
       flatY: true,
       useTrainMethod: true,
       exportModel: m => m.toJSON()

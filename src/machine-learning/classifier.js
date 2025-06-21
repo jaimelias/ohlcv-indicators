@@ -1,4 +1,4 @@
-import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining, updateClassifierMetrics } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
 
@@ -33,7 +33,7 @@ export const classifier = (
     if(!instances.classifier.hasOwnProperty(prefix)) instances.classifier[prefix] = {}
 
     // compute flattened feature‐length (expanding one-hots)
-    const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
+    const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type, verticalOhlcv, index)
 
     const usable = (len - invalidValueIndex) - predictions
     const trainingSize = Math.floor(usable * trainingSplit)
@@ -53,10 +53,13 @@ export const classifier = (
       Y: Array.from({ length: expectedLoops }, () => []),
     }
 
+
     // create NaN‐filled output arrays
     for (let i = 0; i < predictions; i++) {
-      const outKey = `${prefix}_${i + 1}`
-      verticalOhlcv[outKey] = new Float64Array(len).fill(NaN)
+      const predictionKey = `${prefix}_${i + 1}`
+      verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
+      ML.metrics[predictionKey] = {accuracy: {}, total: 0, correct: 0, labels: {}}
+      ML.featureCols[predictionKey] = featureCols
     }
 
     logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
@@ -79,7 +82,6 @@ export const classifier = (
 
   const trainX = buildTrainX({
     featureCols,
-    instances,
     flatFeaturesColLen,
     type,
     index,
@@ -99,21 +101,30 @@ export const classifier = (
 
   for(let loopIdx = 0; loopIdx < expectedLoops; loopIdx++)
   {
-    const modelKey = `${prefix}_${(loopIdx+1)}`
+    const predictionKey = `${prefix}_${(loopIdx+1)}`
     const yRows = dataSetInstance.Y[loopIdx]
     const currTrainY =  (flatY) ? (trainY === null) ? null : trainY[loopIdx] : trainY
     const isTrained = dataSetInstance.isTrained[loopIdx]
 
     //predicts using previously saved models even if current currTrainY is not available
-    if(allModels.hasOwnProperty(modelKey))
+    if(allModels.hasOwnProperty(predictionKey))
     {
-      const futureRow = allModels[modelKey].predict([trainX])[0]
+      const futureRow = allModels[predictionKey].predict([trainX])[0]
 
       if(flatY)
       {
         if(Number.isNaN(futureRow)) throw new Error(`Prediction of ${type} at index ${index} was expecting a number.`)
 
-        main.pushToMain({index, key: modelKey, value: futureRow})
+        main.pushToMain({index, key: predictionKey, value: futureRow})
+
+        if(!Number.isNaN(currTrainY))
+        {
+          updateClassifierMetrics({
+            metrics: ML.metrics[predictionKey], 
+            trueLabel: currTrainY, 
+            predictedLabel: futureRow
+          })
+        }
       }
       else {
 
@@ -125,6 +136,16 @@ export const classifier = (
 
         for(let preIdx = 0; preIdx < predictions; preIdx++) {
           main.pushToMain({index, key: `${prefix}_${(preIdx+1)}`, value: futureRow[preIdx]})
+
+          if(Array.isArray(currTrainY) && currTrainY.length === predictions)
+          {
+            updateClassifierMetrics({
+              metrics: ML.metrics[`${prefix}_${(preIdx+1)}`], 
+              trueLabel: currTrainY[preIdx], 
+              predictedLabel: futureRow[preIdx]
+            })
+          }
+
         }
       }
     }
@@ -175,7 +196,7 @@ export const classifier = (
         }
       }
 
-      allModels[modelKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'classifier', uniqueLabels: uniqueLabels[loopIdx]})
+      allModels[predictionKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'classifier', uniqueLabels: uniqueLabels[loopIdx]})
       dataSetInstance.isTrained[loopIdx] = true
     }
   }

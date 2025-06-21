@@ -7,7 +7,7 @@ import { donchianChannels } from "../moving-averages/donchianChannel.js";
 import { bollingerBands } from "../moving-averages/bollingerBands.js";
 import { volumeOscillator } from "../oscillators/volumeOscillator.js";
 import { lag } from "../studies/lag.js";
-import { crossPairs, oneHotCrossPairsSecondLoop } from "../studies/findCrosses.js";
+import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
 import { scaler } from "../machine-learning/scaler.js";
 import { atr } from "../volatility/atr.js";
@@ -114,27 +114,10 @@ export const mainLoop = (input, main) => {
 }
 
 export const secondaryLoop = main => {
-  const {inputParams, len, instances, invalidValueIndex} = main
-
-  const crossPairMatrix = {}
-  let crossPairIsOneHot = false
-
-  if(instances.hasOwnProperty('crossPairs'))
-  {
-    for(const [crossName, obj] of Object.entries(instances.crossPairs))
-    {
-      const {min, max, oneHotCols} = obj
-      crossPairMatrix[crossName] = {min, max, oneHotCols}
-      crossPairIsOneHot = true
-    }
-  }
-
+  const {inputParams, len, invalidValueIndex, ML} = main
 
   for(let index = invalidValueIndex; index < len; index++)
   {
-    if(crossPairIsOneHot) oneHotCrossPairsSecondLoop(main, index, crossPairMatrix)
-
-    //secondary params
       for (const { key, params } of inputParams) {
         if(key === 'regressor') regressor(main, index, ...params)
         if(key === 'classifier') classifier(main, index, ...params)

@@ -12,7 +12,6 @@
  */
 export const buildTrainX = ({
   featureCols,
-  instances,
   flatFeaturesColLen,
   type,
   index,
@@ -25,9 +24,9 @@ export const buildTrainX = ({
   const slots = [];
   for (const key of featureCols) {
     if (key.startsWith('one_hot_')) {
-      const { oneHotCols, uniqueValues } = instances.crossPairs[key];
-      const { size } = uniqueValues;
-      const colSize = (typeof oneHotCols === 'number') ? oneHotCols : size;
+
+      const colSize = verticalOhlcv[key][index].length
+
       for (let bit = 0; bit < colSize; bit++) {
         slots.push({ key, bit });
       }

@@ -132,36 +132,32 @@ class CrossInstance {
 
 }
 
-export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotCols, prefix}) => {
+export const crossPairs = (main, index, crossPairsList, {limit}) => {
   const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes, notNumberKeys} = main
 
   if(index === 0)
   {
-
-    if(oneHot)
-    {
-         main.processSecondaryLoop = true
-    }
-
     for (const { fast, slow } of crossPairsList)
     {
-        const crossName = `${prefix}${fast}_x_${slow}`
+        const crossName = `${fast}_x_${slow}`
 
         // allow numeric 'slow' as a constant column
+
         if (typeof slow === "number") {
-            const col = `${prefix}${slow.toString()}`
+
+            const col = slow.toString()
             verticalOhlcvTempCols.add(col)
             notNumberKeys.add(col)
-            verticalOhlcv[col] = (oneHot) ? new Array(len).fill(slow) : new Int32Array(len).fill(slow)
-            arrayTypes[col] = (oneHot) ? 'Array': 'Int32Array'
+            verticalOhlcv[col] =  new Uint8Array(len).fill(slow)
+            arrayTypes[col] = 'Uint8Array'
         }
 
         // sanity checks
         if (fast !== "price" && !verticalOhlcv.hasOwnProperty(fast)) {
-            throw new Error(`fast "${fast}" not found in crossPairs`)
+            throw new Error(`fast "${fast}" not found in crossPairs "${crossName}"`)
         }
         if (!verticalOhlcv.hasOwnProperty(slow)) {
-            throw new Error(`slow "${slow}" not found in crossPairs`)
+            throw new Error(`slow "${slow}" not found in crossPairs "${crossName}"`)
         }
 
         if(!instances.hasOwnProperty('crossPairs'))
@@ -172,15 +168,13 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotCols, pre
         // create instance + output buffer
         instances.crossPairs[crossName] = {
             run: new CrossInstance(),
-            uniqueValues: new Set(),
             min: Infinity,
-            max: -Infinity,
-            oneHotCols
+            max: -Infinity
         }
         
-        verticalOhlcv[crossName] = (oneHot) ? new Array(len).fill(NaN) : new Int32Array(len).fill(NaN)
+        verticalOhlcv[crossName] = new Int32Array(len).fill(NaN)
         notNumberKeys.add(crossName)
-        arrayTypes[crossName] = (oneHot) ? 'Array' : 'Int32Array'
+        arrayTypes[crossName] = 'Int32Array'
 
     }
   }
@@ -189,9 +183,9 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotCols, pre
 
   for (const { fast, slow } of crossPairsList) {
 
-    const crossName = `${prefix}${fast}_x_${slow}`
+    const crossName = `${fast}_x_${slow}`
 
-     const {run, uniqueValues} = instances.crossPairs[crossName]
+     const {run} = instances.crossPairs[crossName]
 
     // ——— Per-bar update ———
     if (fast === "price") {
@@ -209,70 +203,13 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, oneHotCols, pre
       run.update(index, { fast: fastVal, slow: slowVal })
     }
 
-    let value = run.getResult()
+    const rawValue = run.getResult()
 
-    if(oneHot)
-    {
-        if(!uniqueValues.has(value))
-        {
-            if(value > instances.crossPairs[crossName].max)
-            {
-                instances.crossPairs[crossName].max = value
-            }
-            else if(value < instances.crossPairs[crossName].min)
-            {
-                instances.crossPairs[crossName].min = value
-            }
-            
-            uniqueValues.add(value)
-        }
-
-    }
+    const value = limit === null ? rawValue : Math.max(-limit, Math.min(limit, rawValue))
 
     main.pushToMain({index, key: crossName, value})
 
   }
 
   return true
-};
-
-
-
-
-export const oneHotCrossPairsSecondLoop = (main, index, crossPairMatrix) => {
-  const { verticalOhlcv } = main;
-
-  for (const [key, obj] of Object.entries(crossPairMatrix)) {
-    const { oneHotCols, min: rawMin, max: rawMax } = obj;
-
-    let min, max, size;
-
-    if (oneHotCols == null) {
-      // no fixed column‐count: use the raw [rawMin…rawMax] bounds
-      min  = rawMin;
-      max  = rawMax;
-      size = max - min + 1;
-    } else {
-      // fixed column‐count: center a window of length oneHotCols
-      const half   = Math.floor(oneHotCols / 2);
-      min   = Math.max(rawMin, -half);
-      max   = Math.min(rawMax,  half);
-      size  = oneHotCols;
-    }
-
-    // grab & clamp the raw value into [min…max]
-    const raw     = verticalOhlcv[key][index];
-    const clamped = raw < min ? min : raw > max ? max : raw;
-
-    // shift into [0…size-1]
-    const idx = clamped - min;
-
-    main.pushToMain({
-      index,
-      key,
-      value: oneHotEncode(idx, size)
-    });
-  }
-
-  return true;
-};
+}

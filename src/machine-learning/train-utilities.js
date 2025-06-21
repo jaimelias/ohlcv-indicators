@@ -40,9 +40,9 @@ export const modelTrain = ({main, type, xRows, yRows, useTrainMethod, modelArgs,
 
     if(useTrainMethod)
     {
-        console.log(type, modelArgs)
         model = new mlClass(modelArgs)
         model.train(xRows, yRows)
+
     } else {
         model = new mlClass(xRows, yRows, modelArgs)
     }

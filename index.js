@@ -84,7 +84,9 @@ export default class OHLCV_INDICATORS {
 
         this.ML = {
             models: {},
-            classes: mlClasses
+            classes: mlClasses,
+            metrics: {},
+            featureCols: {}
         }
         this.processSecondaryLoop = false
 
@@ -231,14 +233,9 @@ export default class OHLCV_INDICATORS {
         validateArray(arr, 'arr', methodName)
         validateObject(options, 'options', methodName)
 
-        const {oneHot = false} = options
-
-        if(typeof oneHot !== 'boolean' && typeof oneHot !== 'number')
-        {
-            throw new Error(`"options.oneHot" must be a boolean or an integer with exact number of one-hot cols.`)
-        }
-
-        const oneHotCols = (typeof oneHot === 'number' && Number.isNaN(oneHot) === false && Number.isInteger(oneHot)) ? oneHot : null
+        const {limit = null} = options
+        
+        if(limit !== null) validateNumber(limit, {}, 'options.limit', methodName)
 
         for (const [i, pair] of arr.entries()) {
             const { fast, slow } = pair || {};
@@ -261,8 +258,6 @@ export default class OHLCV_INDICATORS {
             throw new Error(`"${methodName}" can not be used with the the following strings: ${JSON.stringify(invalidKeyStrings)}`)
         }
 
-        const prefix = (oneHot) ? 'one_hot_' : ''
-
         if(this.isAlreadyComputed.has(methodName))
         {
             throw new Error(`You can only call the "${methodName}" method once.`)
@@ -270,7 +265,7 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(methodName)
 
-        this.inputParams.push({key: methodName, params: [this.crossPairsList, {oneHot, oneHotCols, prefix}]})
+        this.inputParams.push({key: methodName, params: [this.crossPairsList, {limit}]})
         
         return this
     }
@@ -620,7 +615,9 @@ export default class OHLCV_INDICATORS {
 
         if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
         {
-            if(findGroups.some(o => !o.hasOwnProperty('size') || !o.hasOwnProperty('type'))) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
+            if(findGroups.some(o => !o.hasOwnProperty('type') || (!o.hasOwnProperty('size') && !o.hasOwnProperty('groupName')) || (o.hasOwnProperty('size') && o.hasOwnProperty('groupName')))) {
+                throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`)
+            }
         }  else {
             if(trainingCols.length === 0)
             {
@@ -691,19 +688,19 @@ export default class OHLCV_INDICATORS {
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
         validateArray(trainingCols, 'options.trainingCols', methodName)
-        validateArray(findGroups, 'options.findGroups', methodName)
 
         const {shortName, flatX, flatY, useTrainMethod} = validRegressors[type]
         const prefix = `reg_${shortName}_${trainingSplit}_${target}_prediction`
 
-        if(findGroups.length > 0)
+        if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
         {
-            if(findGroups.some(o => !o.hasOwnProperty('size') || !o.hasOwnProperty('type'))) throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "size" and "type" properties used to locate previously scaled (minmax or zscore) groups.`)
-        } else
-        {
+            if(findGroups.some(o => !o.hasOwnProperty('type') || (!o.hasOwnProperty('size') && !o.hasOwnProperty('groupName')) || (o.hasOwnProperty('size') && o.hasOwnProperty('groupName')))) {
+                throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`)
+            }
+        }  else {
             if(trainingCols.length === 0 && flatX === false)
             {
-                throw new Error(`"trainingCols" array is empty in ${methodName}`)
+                throw new Error(`"trainingCols" array is empty in ${methodName} ${type}`)
             }
         }
 

@@ -28,45 +28,44 @@ export const findGroupsFunc = (findGroups, scaledGroups) => {
         for(let g = 0; g < findGroups.length; g++)
         {
             const group = findGroups[g]
-            const {type, size} = group
-            if(!scaledGroups.hasOwnProperty(`${type}_${size}`)) throw new Error(`Scaled group (${`${type}_${size}`}) not found for regressor.options.findGroups[${g}]: ${JSON.stringify(group)}`)
-            output.push(...scaledGroups[`${type}_${size}`])
+            const {type, size = null, groupName = null} = group
+
+            let groupKey = (size !== null) ? `${type}_${size}` : `${type}_${groupName}`
+
+            if(!scaledGroups.hasOwnProperty(groupKey)) throw new Error(`Scaled group (${groupKey}) not found for regressor.options.findGroups[${g}]: ${JSON.stringify(group)}`)
+            output.push(...scaledGroups[groupKey])
         }
     }
 
     return output
 }
 
-export const computeFlatFeaturesLen = (featureCols, instances, type) => {
+export const computeFlatFeaturesLen = (featureCols, instances, type, verticalOhlcv, index) => {
+  
   if (!instances.hasOwnProperty('crossPairs')) {
-    throw new Error(`Property "instances.crossPairs" not found for ${type}`);
+
+    throw new Error(`Property "instances.crossPairs" not found for ${type}`)
+
   }
 
-  let flatFeaturesColLen = 0;
+  let flatFeaturesColLen = 0
 
   for (const key of featureCols) {
+
     if (key.startsWith('one_hot_')) {
-      const pairInfo = instances.crossPairs[key];
-      if (!pairInfo) {
-        throw new Error(
-          `Property "instances.crossPairs['${key}']" not found for ${type}`
-        );
-      }
 
-      const { oneHotCols, uniqueValues } = pairInfo;
-      const size = uniqueValues && typeof uniqueValues.size === 'number'
-        ? uniqueValues.size
-        : 0;
+      const colSize = verticalOhlcv[key][index].length
 
-      // Si oneHotCols es un número, lo usamos; si no, usamos uniqueValues.size.
-      const colSize = typeof oneHotCols === 'number' ? oneHotCols : size;
-      flatFeaturesColLen += colSize;
+      flatFeaturesColLen += colSize
+
     } else {
-      flatFeaturesColLen += 1;
+
+      flatFeaturesColLen += 1
+
     }
   }
 
-  return flatFeaturesColLen;
+  return flatFeaturesColLen
 }
 
 
@@ -105,3 +104,21 @@ export const getFeaturedKeys = ({trainingCols, findGroups, verticalOhlcv, scaled
     return featureCols
 }
 
+export const updateClassifierMetrics = ({metrics, trueLabel, predictedLabel}) => {
+
+  metrics.total++
+
+  const labelKey = `label_${predictedLabel.toString()}`
+
+  if(!metrics.labels.hasOwnProperty(labelKey))
+  {
+    metrics.labels[labelKey] = 0
+  }
+
+  if(predictedLabel === trueLabel){
+    metrics.correct++
+    metrics.labels[labelKey]++
+  }
+
+  metrics.accuracy = metrics.correct / metrics.total
+}

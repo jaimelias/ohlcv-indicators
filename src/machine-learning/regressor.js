@@ -18,7 +18,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
         }
         if(!featureCols.includes(target))
         {
-            throw new Error(`Target property "${target}" not found in options.trainingCols: ${JSON.stringify(trainingCols)}`)
+            throw new Error(`Target property "${target}" not found in ${type} features: ${JSON.stringify(featureCols)}`)
         }
 
         if (!instances.hasOwnProperty('regressor')) instances.regressor = {}
@@ -30,7 +30,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
         }
 
         // compute flattened feature‐length (expanding one-hots)
-        const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type)
+        const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type, verticalOhlcv, index)
 
         const usable = (len - invalidValueIndex) - predictions
         const trainingSize = Math.floor(usable * trainingSplit)
@@ -52,6 +52,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
         {
             const predictionKey = `${prefix}_${(x+1)}`
             verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
+            ML.featureCols[predictionKey] = featureCols
         }
 
         logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
@@ -72,7 +73,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
     } = dataSetInstance
 
     
-    const trainX = (flatX) ? verticalOhlcv[target][index] : buildTrainX({featureCols, instances, flatFeaturesColLen, type, index, lookbackAbs, verticalOhlcv})
+    const trainX = (flatX) ? verticalOhlcv[target][index] : buildTrainX({featureCols, flatFeaturesColLen, type, index, lookbackAbs, verticalOhlcv})
 
     if (flatX) {
         if (!Number.isFinite(trainX)) return;   // or `trainX == null`
@@ -95,21 +96,21 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
     //if univariable Y (flatY) a model is created for each prediction
     for(let loopIdx = 0; loopIdx < expectedLoops; loopIdx++)
     {
-        const modelKey = `${prefix}_${(loopIdx+1)}`
+        const predictionKey = `${prefix}_${(loopIdx+1)}`
         const yRows = Y[loopIdx]
         const currTrainY =  (flatY) ? (typeof trainY[loopIdx] === 'undefined') ? null : trainY[loopIdx] : trainY
         const isTrained = dataSetInstance.isTrained[loopIdx]
 
         //predicts using previously saved models even if current currTrainY is not available
-        if(allModels.hasOwnProperty(modelKey))
+        if(allModels.hasOwnProperty(predictionKey))
         {
-            const futureRow = allModels[modelKey].predict([trainX])[0]
+            const futureRow = allModels[predictionKey].predict([trainX])[0]
 
             if(flatY)
             {
                 if(Number.isNaN(futureRow)) throw new Error(`Prediction of ${type} at index ${index} was expecting a number.`)
 
-                main.pushToMain({index, key: modelKey, value: futureRow})
+                main.pushToMain({index, key: predictionKey, value: futureRow})
             }
             else {
 
@@ -160,7 +161,7 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
 
         if (shouldTrainModel && xRows.length === trainingSize && yRows.length === trainingSize) {
 
-            allModels[modelKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'regressor', uniqueLabels: 0})
+            allModels[predictionKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'regressor', uniqueLabels: 0})
             dataSetInstance.isTrained[loopIdx] = true
         }
 
