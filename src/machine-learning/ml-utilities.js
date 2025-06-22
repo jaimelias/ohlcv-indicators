@@ -104,21 +104,35 @@ export const getFeaturedKeys = ({trainingCols, findGroups, verticalOhlcv, scaled
     return featureCols
 }
 
-export const updateClassifierMetrics = ({metrics, trueLabel, predictedLabel}) => {
+export const updateClassifierMetrics = ({ metrics, trueLabel, predictedLabel }) => {
+  // Increment overall counters
+  metrics.total = (metrics.total || 0) + 1
+  metrics.correct = (metrics.correct || 0)
 
-  metrics.total++
+  // Initialize per‐label stats container if needed
+  metrics.labels = metrics.labels || {}
 
-  const labelKey = `label_${predictedLabel.toString()}`
-
-  if(!metrics.labels.hasOwnProperty(labelKey))
-  {
-    metrics.labels[labelKey] = 0
+  const labelKey = predictedLabel.toString()
+  // Ensure we have a slot for this label
+  if (!metrics.labels[labelKey]) {
+    metrics.labels[labelKey] = { total: 0, correct: 0, accuracy: 0 }
   }
 
-  if(predictedLabel === trueLabel){
+  // Update this label’s total predictions
+  metrics.labels[labelKey].total++
+
+  // If correct, bump both overall and per-label correct counters
+  if (predictedLabel === trueLabel) {
     metrics.correct++
-    metrics.labels[labelKey]++
+    metrics.labels[labelKey].correct++
   }
 
+  // Recompute overall accuracy
   metrics.accuracy = metrics.correct / metrics.total
+
+  // Recompute accuracy for each label
+  for (const key in metrics.labels) {
+    const stats = metrics.labels[key]
+    stats.accuracy = stats.correct / stats.total
+  }
 }

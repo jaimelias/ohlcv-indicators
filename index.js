@@ -17,6 +17,7 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
+import { defaultMapColsCallback } from './src/studies/mapCols.js'
 
 import {
     defaultYCallback,
@@ -374,6 +375,43 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
+    stochastic(kPeriod = 14, kSlowingPeriod = 3, dPeriod = 3, options = {}){
+        const methodName = 'stochastic'
+
+        const {len: max} = this
+
+        validateNumber(kPeriod, {min: 1, max, allowDecimals: false}, 'kPeriod', methodName)
+        validateNumber(kSlowingPeriod, {min: 1, max, allowDecimals: false}, 'kSlowingPeriod', methodName)
+        validateNumber(dPeriod, {min: 1, max, allowDecimals: false}, 'dPeriod', methodName)
+        validateObject(options, 'options', methodName)
+
+        let parser = v => v
+        let prefix = ''
+
+        const {lag = 0} = options
+
+        validateNumber(lag, {min: 0, max, allowDecimals: false}, 'options.lag', methodName)
+
+        let minmax = options.minmax
+
+        if(Array.isArray(minmax) || (typeof minmax === 'boolean' && minmax === true))
+        {
+            if(Array.isArray(minmax)){
+                validateArrayOfRanges(minmax, 'options.minmax', methodName)
+                parser = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
+            } else
+            {
+                validateBoolean(minmax, 'options.minmax', methodName)
+                minmax = [0, 1]
+                parser = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
+            }
+            prefix = 'minmax_'
+        }
+
+        this.inputParams.push({key: methodName, params: [kPeriod, kSlowingPeriod, dPeriod, {minmax, prefix, parser, lag}]})
+
+        return this
+    }
     
     macd(fast = 12, slow = 26, signal = 9, options = {}) {
 
@@ -436,24 +474,24 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        let parseRsi = v => v
+        let parser = v => v
         let prefix = ''
 
-        if(minmax !== null)
+        if(Array.isArray(minmax) || (typeof minmax === 'boolean' && minmax === true))
         {
             if(Array.isArray(minmax)){
                 validateArrayOfRanges(minmax, 'options.minmax', methodName)
-                parseRsi = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
+                parser = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
             } else
             {
                 validateBoolean(minmax, 'options.minmax', methodName)
                 minmax = [0, 1]
-                parseRsi = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
+                parser = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
             }
             prefix = 'minmax_'
         }
 
-        this.inputParams.push({key: methodName, params: [size, {target, lag, parseRsi, prefix, minmax}]})
+        this.inputParams.push({key: methodName, params: [size, {target, lag, parser, prefix, minmax}]})
 
         return this
     }
@@ -749,5 +787,24 @@ export default class OHLCV_INDICATORS {
     exportTrainedModels()
     {
         return exportTrainedModels(this)
+    }
+
+    mapCols(newCols = ['change'], callback = null, {lag = 0}) {
+
+        isAlreadyComputed(this)
+
+        const methodName = 'mapCols'
+
+        if(typeof callback === 'undefined' || callback === null)
+        {
+            callback = defaultMapColsCallback
+        }
+
+        validateArray(newCols, 'newCols', methodName)
+        validateNumber(lag, {min: 0, allowDecimals: false}, 'options.lag', methodName)
+
+        this.inputParams.push({key: methodName, params: [newCols, callback, {lag}]})
+
+        return this
     }
 }

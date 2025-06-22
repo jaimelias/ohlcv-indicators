@@ -1,5 +1,6 @@
 import { validateInputParams } from "../utilities/validators.js";
 import { rsi } from "../oscillators/rsi.js";
+import { stochastic } from "../oscillators/stochastic.js";
 import { movingAverages } from "../moving-averages/movingAverages.js";
 import { macd } from "../moving-averages/macd.js";
 import { relativeVolume } from "../moving-averages/relativeVolume.js";
@@ -11,6 +12,7 @@ import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
 import { scaler } from "../machine-learning/scaler.js";
 import { atr } from "../volatility/atr.js";
+import { mapCols } from "../studies/mapCols.js";
 
 import { buildArray } from "../utilities/assignTypes.js";
 import {  numberFormater } from "../utilities/numberUtilities.js";
@@ -24,6 +26,7 @@ import { classifier } from "../machine-learning/classifier.js";
 const mainFunctions = {
   dateTime,
   rsi,
+  stochastic,
   atr,
   ema: movingAverages,
   sma: movingAverages,
@@ -31,7 +34,8 @@ const mainFunctions = {
   relativeVolume,
   donchianChannels,
   bollingerBands,
-  volumeOscillator
+  volumeOscillator,
+  mapCols
 };
 
 export const mainLoop = (input, main) => {
