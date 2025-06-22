@@ -7,7 +7,7 @@ import { modelTrain } from "./train-utilities.js"
 export const classifier = (
   main,
   index,
-  trainingSplit,
+  trainingSize,
   {
     yCallback,
     trainingCols,
@@ -35,9 +35,6 @@ export const classifier = (
     // compute flattened feature‐length (expanding one-hots)
     const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type, verticalOhlcv, index)
 
-    const usable = (len - invalidValueIndex) - predictions
-    const trainingSize = Math.floor(usable * trainingSplit)
-
     const expectedLoops = (flatY) ? predictions : 1 //
 
     instances.classifier[prefix] = {
@@ -45,7 +42,6 @@ export const classifier = (
       expectedLoops,
       isTrained: new Array(expectedLoops).fill(false),
       uniqueLabels: new Array(expectedLoops).fill(0),
-      trainingSize,
       retrainOnEveryIndex: retrain,
       featureCols,
       flatFeaturesColLen,
@@ -73,7 +69,6 @@ export const classifier = (
   const {
     uniqueLabels,
     expectedLoops,
-    trainingSize,
     featureCols,
     flatFeaturesColLen,
     retrainOnEveryIndex,

@@ -556,7 +556,7 @@ export default class OHLCV_INDICATORS {
 
         if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
 
-        const groupKey = (group) ? `${type}_${size}` : ''
+        const groupKey = `${type}_${size}`
         const groupKeyLen = colKeys.length
         const precomputed = {groupKey, groupKeyLen}
 
@@ -572,13 +572,13 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    classifier(trainingSplit = 0.8, options = {})
+    classifier(trainingSize = 200, options = {})
     {
         isAlreadyComputed(this)
 
         const methodName = 'classifier'
 
-        validateNumber(trainingSplit, {min: 0.001, max: 0.999, allowDecimals: true}, 'trainingSplit', methodName)
+        validateNumber(trainingSize, {allowDecimals: false}, 'trainingSize', methodName)
         validateObject(options, 'options', methodName)
 
         const {
@@ -627,14 +627,14 @@ export default class OHLCV_INDICATORS {
 
         const {shortName, flatY, useTrainMethod} = validClassifiers[type]
 
-        const prefix = `cla_${shortName}_${trainingSplit}_prediction`
+        const prefix = `cla_${shortName}_${trainingSize}_prediction`
 
         if(this.isAlreadyComputed.has(prefix))
         {
             throw new Error(
-            `Each classifier must have a unique pair of “type” and trainingSplit.\n` +
+            `Each classifier must have a unique pair of “type” and trainingSize.\n` +
             `This rule ensures that your output columns are labeled unambiguously.\n` +
-            `You provided a duplicate: type="${type}" with trainingSplit=${trainingSplit}.`
+            `You provided a duplicate: type="${type}" with trainingSize=${trainingSize}.`
             );
         }
 
@@ -647,20 +647,20 @@ export default class OHLCV_INDICATORS {
         
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSplit, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  modelArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSize, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  modelArgs, precompute}]})
 
 
         return this
     }
 
-    regressor(trainingSplit = 0.80, options = {})
+    regressor(trainingSize = 200, options = {})
     {
         isAlreadyComputed(this)
 
         const methodName = 'regressor'
         
 
-        validateNumber(trainingSplit, {min: 0.001, max: 0.999, allowDecimals: true}, 'trainingSplit', methodName)
+        validateNumber(trainingSize, {allowDecimals: false}, 'trainingSize', methodName)
         validateObject(options, 'options', methodName)
 
         const {
@@ -690,7 +690,7 @@ export default class OHLCV_INDICATORS {
         validateArray(trainingCols, 'options.trainingCols', methodName)
 
         const {shortName, flatX, flatY, useTrainMethod} = validRegressors[type]
-        const prefix = `reg_${shortName}_${trainingSplit}_${target}_prediction`
+        const prefix = `reg_${shortName}_${trainingSize}_${target}_prediction`
 
         if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
         {
@@ -725,9 +725,9 @@ export default class OHLCV_INDICATORS {
         if(this.isAlreadyComputed.has(prefix))
         {
             throw new Error(
-            `Each regressor must have a unique "type", "trainingSplit" and "target".\n` +
+            `Each regressor must have a unique "type", "trainingSize" and "target".\n` +
             `This rule ensures that your output columns are labeled unambiguously.\n` +
-            `You provided a duplicate: type="${type}", trainingSplit=${trainingSplit} target=${target}.`
+            `You provided a duplicate: type="${type}", trainingSize=${trainingSize} target=${target}.`
             );
         }
 
@@ -741,7 +741,7 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSplit, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute}]})
+        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute}]})
 
         return this
     }

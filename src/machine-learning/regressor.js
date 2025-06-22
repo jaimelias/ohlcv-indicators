@@ -2,7 +2,7 @@ import { getFeaturedKeys, computeFlatFeaturesLen, logMlTraining } from "./ml-uti
 import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
 
-export const regressor = (main, index, trainingSplit, {target, predictions, retrain, trainingCols, findGroups, type, modelArgs, precompute}) => {
+export const regressor = (main, index, trainingSize, {target, predictions, retrain, trainingCols, findGroups, type, modelArgs, precompute}) => {
 
     const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
     const {verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML} = main
@@ -31,10 +31,6 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
 
         // compute flattened feature‐length (expanding one-hots)
         const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type, verticalOhlcv, index)
-
-        const usable = (len - invalidValueIndex) - predictions
-        const trainingSize = Math.floor(usable * trainingSplit)
-
         const expectedLoops = (flatY) ? predictions : 1 //
 
         instances.regressor[prefix] = {
@@ -64,7 +60,6 @@ export const regressor = (main, index, trainingSplit, {target, predictions, retr
     const dataSetInstance = instances.regressor[prefix]
     const {
         expectedLoops,
-        trainingSize, 
         X: xRows, 
         Y, 
         flatFeaturesColLen, 

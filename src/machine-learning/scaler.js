@@ -34,16 +34,13 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
         const winKey = group ? groupKey : target;
         instances.scaler.windows[winKey] = [];
   
-        if (group) {
-          if (!main.scaledGroups[groupKey]) main.scaledGroups[groupKey] = [];
-          main.scaledGroups[groupKey].push(key);
-        }
+        if (!main.scaledGroups[groupKey]) main.scaledGroups[groupKey] = [];
+        main.scaledGroups[groupKey].push(key);
   
         if (lag > 0) {
-          if (group) {
-            const lags = Array.from({ length: lag }).map((_, i) => `${key}_lag_${i + 1}`);
-            main.scaledGroups[groupKey].push(...lags);
-          }
+          const lags = Array.from({ length: lag }).map((_, i) => `${key}_lag_${i + 1}`)
+          main.scaledGroups[groupKey].push(...lags)
+
           main.lag([key], lag);
         }
       }
