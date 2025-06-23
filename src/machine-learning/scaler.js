@@ -22,6 +22,8 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
         }
       }
 
+      const laggedKeys = []
+
       for (const target of colKeys) {
         if (!verticalOhlcv.hasOwnProperty(target)) {
           throw new Error(`Target property "${target}" not found in verticalOhlcv`);
@@ -40,9 +42,13 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
         if (lag > 0) {
           const lags = Array.from({ length: lag }).map((_, i) => `${key}_lag_${i + 1}`)
           main.scaledGroups[groupKey].push(...lags)
-
-          main.lag([key], lag);
+          laggedKeys.push(key)
         }
+      }
+
+      if(lag > 0)
+      {
+        main.lag(laggedKeys, lag);
       }
     }
 

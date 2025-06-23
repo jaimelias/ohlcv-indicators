@@ -82,6 +82,10 @@ export const mainLoop = (input, main) => {
             main.pushToMain({index, key, value})
           }
         }
+
+        for (const { key, params } of inputParams) {
+          if(key === 'lagBase') lag(main, index, ...params)
+        }
       
         // Run all indicator functions except for the ones processed later
         for (const { key, params } of mainInputParams) {

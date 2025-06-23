@@ -283,7 +283,11 @@ export default class OHLCV_INDICATORS {
 
         let secondaryLoop = false
 
-        if(colKeys.some(v => v.includes('_prediction_')))
+        if(colKeys.every(v => ['open', 'high', 'low', 'close', 'volume', 'date'].includes(v)))
+        {
+            methodName += 'Base'
+        }
+        else if(colKeys.some(v => v.includes('_prediction_')))
         {
             methodName += 'Secondary'
             secondaryLoop = true
