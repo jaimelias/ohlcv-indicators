@@ -42,12 +42,6 @@ export const findGroupsFunc = (findGroups, scaledGroups) => {
 
 export const computeFlatFeaturesLen = (featureCols, instances, type, verticalOhlcv, index) => {
   
-  if (!instances.hasOwnProperty('crossPairs')) {
-
-    throw new Error(`Property "instances.crossPairs" not found for ${type}`)
-
-  }
-
   let flatFeaturesColLen = 0
 
   for (const key of featureCols) {

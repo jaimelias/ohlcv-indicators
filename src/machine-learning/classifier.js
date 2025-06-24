@@ -53,7 +53,7 @@ export const classifier = (
     // create NaN‐filled output arrays
     for (let i = 0; i < predictions; i++) {
       const predictionKey = `${prefix}_${i + 1}`
-      verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
+      verticalOhlcv[predictionKey] = (type === 'KNN') ? new Array(len).fill(null) : new Float32Array(len).fill(NaN)
       ML.metrics[predictionKey] = {accuracy: {}, total: 0, correct: 0, labels: {}}
       ML.featureCols[predictionKey] = featureCols
     }
@@ -108,11 +108,11 @@ export const classifier = (
 
       if(flatY)
       {
-        if(Number.isNaN(futureRow)) throw new Error(`Prediction of ${type} at index ${index} was expecting a number.`)
+        if(futureRow == null) throw new Error(`Prediction of ${type} at index ${index} was expecting a number.`)
 
         main.pushToMain({index, key: predictionKey, value: futureRow})
 
-        if(!Number.isNaN(currTrainY))
+        if(currTrainY != null)
         {
           updateClassifierMetrics({
             metrics: ML.metrics[predictionKey], 
@@ -150,9 +150,9 @@ export const classifier = (
 
     if(flatY)
     {
-        if (typeof currTrainY !== 'number' || Number.isNaN(currTrainY))
+        if (typeof currTrainY === 'undefined' || currTrainY == null)
         {
-            throw new Error(`currTrainY must return number, got ${typeof currTrainY} at index ${index}`)
+            throw new Error(`currTrainY must return number, string or boolean got ${typeof currTrainY} at index ${index}`)
         }
     } else {
 

@@ -5,9 +5,8 @@ const defaultTarget = 'close'
 
 export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, lag, decimals }) => {
   const { verticalOhlcv, instances } = main;
-  const visibleTarget = target === defaultTarget ? '' : `_${target}`;
   const indicatorKey = `${size}_${stdDev}`;
-  let prefix = 'bollinger_bands'
+  const prefix = 'bollinger_bands'
 
   // Initialization on the first call.
   if (index === 0) {

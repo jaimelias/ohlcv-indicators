@@ -201,6 +201,11 @@ export default class OHLCV_INDICATORS {
         if (this.isComputed) {
           return this;
         }
+
+        if(!this.isAlreadyComputed.has('crossPairs'))
+        {
+            this.crossPairs([])
+        }
       
         // Mark as “in progress”
         this.isComputed = false;

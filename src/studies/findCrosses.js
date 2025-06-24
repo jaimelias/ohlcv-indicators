@@ -1,5 +1,3 @@
-import { oneHotEncode } from "../machine-learning/ml-utilities.js"
-
 const eq = (fast, slow) => fast === slow
 const gt = (fast, slow) => fast > slow
 const lt = (fast, slow) => fast < slow
@@ -143,13 +141,13 @@ export const crossPairs = (main, index, crossPairsList, {limit}) => {
 
         // allow numeric 'slow' as a constant column
 
-        if (typeof slow === "number") {
+        if (typeof slow === 'number') {
 
             const col = slow.toString()
             verticalOhlcvTempCols.add(col)
             notNumberKeys.add(col)
-            verticalOhlcv[col] =  new Uint8Array(len).fill(slow)
-            arrayTypes[col] = 'Uint8Array'
+            verticalOhlcv[col] =  new Int16Array(len).fill(slow)
+            arrayTypes[col] = 'Int16Array'
         }
 
         // sanity checks
@@ -188,7 +186,7 @@ export const crossPairs = (main, index, crossPairsList, {limit}) => {
      const {run} = instances.crossPairs[crossName]
 
     // ——— Per-bar update ———
-    if (fast === "price") {
+    if (fast === 'price') {
       const fastVal = verticalOhlcv.close[index]
       const slowVal = verticalOhlcv[slow][index]
       run.update(index, {
