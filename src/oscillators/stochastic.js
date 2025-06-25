@@ -12,8 +12,7 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minma
   // Initialization on the first index.
     if (index === 0) {
 
-        const { crossPairsList, len, arrayTypes } = main;
-        crossPairsList.push({ fast: stochK, slow: stochD, isDefault: true });
+        const {len, arrayTypes } = main;
 
         Object.assign(instances, {
             [instanceKey]: new FasterStochasticOscillator(kPeriod, kSlowingPeriod, dPeriod)

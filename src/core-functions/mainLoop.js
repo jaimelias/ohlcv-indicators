@@ -35,11 +35,27 @@ const mainFunctions = {
   donchianChannels,
   bollingerBands,
   volumeOscillator,
-  mapCols
+  mapCols,
+  scaler,
+  crossPairs,
+  lag,
+  regressor,
+  classifier
 };
 
 export const mainLoop = (input, main) => {
-  const { len, inputParams, precisionMultiplier, arrayTypes, verticalOhlcv, verticalOhlcvKeyNames, inputTypes, chunkProcess, notNumberKeys, processSecondaryLoop } = main;
+  const { len, 
+    inputParams, 
+    precisionMultiplier, 
+    arrayTypes, 
+    verticalOhlcv, 
+    verticalOhlcvKeyNames, 
+    inputTypes, 
+    chunkProcess, 
+    notNumberKeys, 
+    processSecondaryLoop,
+    invalidsByKey,
+  } = main;
 
   validateInputParams(inputParams, len)
 
@@ -47,9 +63,6 @@ export const mainLoop = (input, main) => {
   {
     verticalOhlcv[key] = buildArray(arrayTypes[key], len)
   }
-
-  const mainInputParams = inputParams.filter(({ key }) => mainFunctions.hasOwnProperty(key))
-
   // Process each row in the input
   for (let chunkStart = 0; chunkStart < len; chunkStart += chunkProcess) {
 
@@ -82,25 +95,38 @@ export const mainLoop = (input, main) => {
             main.pushToMain({index, key, value})
           }
         }
-
-        for (const { key, params } of inputParams) {
-          if(key === 'lagBase') lag(main, index, ...params)
-        }
-      
-        // Run all indicator functions except for the ones processed later
-        for (const { key, params } of mainInputParams) {
-          mainFunctions[key](main, index, ...params)
-        }
     
         // Process these indicators separately (ensuring their execution order)
-
-        for (const { key, params } of inputParams) {
-          if(key === 'scaler') scaler(main, index, ...params)
-          if(key === 'lag') lag(main, index, ...params)
-          if(key === 'crossPairs') crossPairs(main, index, ...params)
+        for (const { key, params, order } of inputParams)
+        {
+          for(let orderIdx = 0; orderIdx < 9; orderIdx++)
+          {
+            if(typeof order !== 'number') throw new Error(`order property of ${key} not found: ${params}`)
+            if(orderIdx !== order) continue
+            mainFunctions[key](main, index, ...params)
+          }
         }
       
         input[index] = null //flusing data
+
+        let hasInvalidValues = false
+
+        for(const [key, arr] of Object.entries(verticalOhlcv))
+        {
+          if(!invalidsByKey.hasOwnProperty(key)) invalidsByKey[key] = -1
+          const val = arr[index]
+          
+          if(typeof val === 'undefined' || val === null || Number.isNaN(val))
+          {
+            hasInvalidValues = true
+            invalidsByKey[key]++
+          }
+        }
+
+        if(hasInvalidValues)
+        {
+          main.invalidValueIndex++
+        }
       }
   }
 
@@ -122,16 +148,19 @@ export const mainLoop = (input, main) => {
 }
 
 export const secondaryLoop = main => {
-  const {inputParams, len, invalidValueIndex, ML} = main
+  const {inputParams, len, invalidValueIndex} = main
 
   for(let index = invalidValueIndex; index < len; index++)
   {
-      for (const { key, params } of inputParams) {
-        if(key === 'regressor') regressor(main, index, ...params)
-        if(key === 'classifier') classifier(main, index, ...params)
-        if(key === 'scalerSecondary') scaler(main, index, ...params)
-        if(key === 'lagSecondary') lag(main, index, ...params)
+      for (const { key, params, order } of inputParams)
+      {
+        for(let orderIdx = 10; orderIdx < 20; orderIdx++) {
+          if(typeof order !== 'number') throw new Error(`order property of ${key} not found: ${params}`)
+          if(orderIdx !== order) continue
+          mainFunctions[key](main, index, ...params)
+        }
       }
+      
   }
 
 }

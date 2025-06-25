@@ -9,7 +9,7 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
 
   // Initialization on the first index.
   if (index === 0) {
-    const { inputParams, crossPairsList, len , arrayTypes} = main
+    const { inputParams, len , arrayTypes} = main
 
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(`Target property ${target} not found in verticalOhlcv for macd.`)
@@ -28,8 +28,6 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
     const diffKey = target === defaultTarget ? `${displayPrefix}_diff` : `${displayPrefix}_diff_${target}`
     const deaKey = target === defaultTarget ? `${displayPrefix}_dea` : `${displayPrefix}_dea_${target}`
     const histogramKey = target === defaultTarget ? `${displayPrefix}_histogram` : `${displayPrefix}_histogram_${target}`
-
-    crossPairsList.push({ fast: diffKey, slow: deaKey, isDefault: true })
 
     if (!instances.hasOwnProperty('macd')) {
       instances.macd = {

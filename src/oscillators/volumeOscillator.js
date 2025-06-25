@@ -8,7 +8,7 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
 
     if (index === 0) {
 
-        const {crossPairsList, len, arrayTypes} = main
+        const {len, arrayTypes} = main
         Object.assign(instances, {
             [key]: {
                 fastEMA: new FasterEMA(fast),
@@ -17,7 +17,6 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
         })
 
         verticalOhlcv[key] = new Float64Array(len).fill(NaN)
-        crossPairsList.push({ fast: key, slow: 0, isDefault: true })
 
         if(lag > 0)
         {

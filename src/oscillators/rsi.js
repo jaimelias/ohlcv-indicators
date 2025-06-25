@@ -3,7 +3,7 @@ import { FasterSMA } from 'trading-signals';
 
 const defaultTarget = 'close'
 export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) => {
-  const { verticalOhlcv, instances, scaledGroups } = main;
+  const { verticalOhlcv, instances } = main;
 
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const rsiKey = `${prefix}rsi_${size}${suffix}`;
@@ -12,13 +12,11 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
   // Initialization on the first index.
   if (index === 0) {
 
-    const { crossPairsList, len, arrayTypes } = main;
+    const {len, arrayTypes } = main;
 
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(`Target property ${target} not found in verticalOhlcv for rsi.`);
     }
-
-    crossPairsList.push({ fast: rsiKey, slow: rsiSmaKey, isDefault: true });
 
     Object.assign(instances, {
       [rsiKey]: new FasterRSI(size),

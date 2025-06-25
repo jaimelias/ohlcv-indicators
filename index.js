@@ -18,6 +18,7 @@ import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { buildArray } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { defaultMapColsCallback } from './src/studies/mapCols.js'
+import { getOrderFromArray } from './src/utilities/order.js'
 
 import {
     defaultYCallback,
@@ -64,7 +65,6 @@ export default class OHLCV_INDICATORS {
         this.isComputed = false
 
         this.instances = {}
-        this.crossPairsList = []
         this.verticalOhlcv = {}
         this.verticalOhlcvKeyNames = []
         this.verticalOhlcvTempCols = new Set()
@@ -74,6 +74,7 @@ export default class OHLCV_INDICATORS {
         }
 
         this.invalidValueIndex = -1
+        this.invalidsByKey = {}
         this.precision = precision
         this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.scaledGroups = {}
@@ -121,14 +122,15 @@ export default class OHLCV_INDICATORS {
         const {
           precisionMultiplier,
           precision,
-          invalidValueIndex,
           len,
+          invalidValueIndex,
           verticalOhlcv,
           arrayTypes,
           verticalOhlcvTempCols,
           notNumberKeys
         } = this
         const result = {}
+
         const startIndex = skipNull ? invalidValueIndex + 1 : 0
         const newLen = len - startIndex
       
@@ -201,11 +203,6 @@ export default class OHLCV_INDICATORS {
         if (this.isComputed) {
           return this;
         }
-
-        if(!this.isAlreadyComputed.has('crossPairs'))
-        {
-            this.crossPairs([])
-        }
       
         // Mark as “in progress”
         this.isComputed = false;
@@ -235,7 +232,6 @@ export default class OHLCV_INDICATORS {
         const methodName = 'crossPairs'
 
         isAlreadyComputed(this)
-
         validateArray(arr, 'arr', methodName)
         validateObject(options, 'options', methodName)
 
@@ -243,25 +239,17 @@ export default class OHLCV_INDICATORS {
         
         if(limit !== null) validateNumber(limit, {}, 'options.limit', methodName)
 
-        for (const [i, pair] of arr.entries()) {
-            const { fast, slow } = pair || {};
-            if (fast == null || slow == null) {
+        const orderArr = []
+
+        for (const {fast = '', slow = ''} of arr) {
+
+            if (fast === '' || slow === '') {
                 throw new Error(
-                    `Invalid crossPairs[${i}]: Object property “fast” must be a non-null column name and “slow” must be a non-null column name or integer.`
+                    `Invalid crossPairs[${fast}_${slow}]: Object property “fast” must be a non-null column name and “slow” must be a non-null column name or integer.`
                 );
             }
-        }
 
-        this.crossPairsList = [...this.crossPairsList, ...arr]
-
-        if(this.crossPairsList.some(({fast, slow}) => 
-            
-            `${fast}`.includes('_prediction_') || `${slow}`.includes('_prediction_')
-            `${fast}`.includes('_zscore_') || `${slow}`.includes('_zscore_')
-            `${fast}`.includes('_minmax_') || `${slow}`.includes('_minmax_')
-            `${fast}`.includes('_x_') || `${slow}`.includes('_x_')))
-        {
-            throw new Error(`"${methodName}" can not be used with the the following strings: ${JSON.stringify(invalidKeyStrings)}`)
+            orderArr.push(fast.toString(), slow.toString())
         }
 
         if(this.isAlreadyComputed.has(methodName))
@@ -271,7 +259,9 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(methodName)
 
-        this.inputParams.push({key: methodName, params: [this.crossPairsList, {limit}]})
+        const order = getOrderFromArray(orderArr, methodName)
+
+        this.inputParams.push({key: methodName, order, params: [arr, {limit}]})
         
         return this
     }
@@ -279,26 +269,21 @@ export default class OHLCV_INDICATORS {
 
     lag(colKeys = ['close'], lookback = 1) {
 
-        let methodName = 'lag'
+        const methodName = 'lag'
 
         isAlreadyComputed(this)
-
         validateArray(colKeys, 'colKeys', methodName)
         validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
 
+        const order = getOrderFromArray(colKeys, methodName)
         let secondaryLoop = false
 
-        if(colKeys.every(v => ['open', 'high', 'low', 'close', 'volume', 'date'].includes(v)))
+        if(order >= 10)
         {
-            methodName += 'Base'
-        }
-        else if(colKeys.some(v => v.includes('_prediction_')))
-        {
-            methodName += 'Secondary'
             secondaryLoop = true
         }
 
-        this.inputParams.push({key: methodName, params: [colKeys, lookback, {secondaryLoop}]})
+        this.inputParams.push({key: methodName, order, params: [colKeys, lookback, {secondaryLoop}]})
         
         return this;
     }
@@ -320,7 +305,7 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [size, {lag}]})
+        this.inputParams.push({key: methodName, order: 0, params: [size, {lag}]})
  
         return this
     }
@@ -342,7 +327,7 @@ export default class OHLCV_INDICATORS {
         if(upper !== null) validateNumber(upper, {min: 0.001, max: 100, allowDecimals: true}, 'options.upper', 'atr')
         if(lower !== null) validateNumber(lower, {min: 0.001, max: 100, allowDecimals: true}, 'options.lower', 'atr')
 
-        this.inputParams.push({key: methodName, params: [size, {lag, percentage, upper, lower}]})
+        this.inputParams.push({key: methodName, order: 0, params: [size, {lag, percentage, upper, lower}]})
 
         return this
     }
@@ -361,7 +346,9 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
+        const order = getOrderFromArray([target], methodName)
+
+        this.inputParams.push({key: methodName, order, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -379,7 +366,9 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
+        const order = getOrderFromArray([target], methodName)
+
+        this.inputParams.push({key: methodName, order, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -417,7 +406,7 @@ export default class OHLCV_INDICATORS {
             prefix = 'minmax_'
         }
 
-        this.inputParams.push({key: methodName, params: [kPeriod, kSlowingPeriod, dPeriod, {minmax, prefix, parser, lag}]})
+        this.inputParams.push({key: methodName, order: 0, params: [kPeriod, kSlowingPeriod, dPeriod, {minmax, prefix, parser, lag}]})
 
         return this
     }
@@ -441,7 +430,9 @@ export default class OHLCV_INDICATORS {
         const instanceKey = `${fast}_${slow}_${signal}${target === 'close' ? '' : `_${target}`}`
         const precomputed = {instanceKey}
 
-        this.inputParams.push({key: methodName, params: [fast, slow, signal, {target, lag, precomputed}]})
+        const order = getOrderFromArray([target], methodName)
+
+        this.inputParams.push({key: methodName, order, params: [fast, slow, signal, {target, lag, precomputed}]})
         
         return this
 
@@ -463,8 +454,10 @@ export default class OHLCV_INDICATORS {
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(height, 'options.height', methodName)
         if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
-    
-        this.inputParams.push({key: methodName, params: [size, stdDev, {target, height, range, lag, decimals}]});
+  
+        const order = getOrderFromArray([target], methodName)
+
+        this.inputParams.push({key: methodName, order, params: [size, stdDev, {target, height, range, lag, decimals}]});
     
         return this;
     }
@@ -500,7 +493,9 @@ export default class OHLCV_INDICATORS {
             prefix = 'minmax_'
         }
 
-        this.inputParams.push({key: methodName, params: [size, {target, lag, parser, prefix, minmax}]})
+        const order = getOrderFromArray([target], methodName)
+
+        this.inputParams.push({key: methodName, order, params: [size, {target, lag, parser, prefix, minmax}]})
 
         return this
     }
@@ -522,7 +517,7 @@ export default class OHLCV_INDICATORS {
         validateBoolean(height, 'options.height', methodName)
         if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
       
-        this.inputParams.push({ key: methodName, params: [size, offset, { height, range, lag, decimals}] });
+        this.inputParams.push({ key: methodName, order: 0, params: [size, offset, { height, range, lag, decimals}] });
       
         return this;
     }
@@ -546,7 +541,7 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [fastsize, slowsize, {lag}]})
+        this.inputParams.push({key: methodName, order: 0, params: [fastsize, slowsize, {lag}]})
         return this           
     }
     dateTime(options = {})
@@ -580,7 +575,7 @@ export default class OHLCV_INDICATORS {
             colKeys: Object.keys(colKeySizes)
         }
 
-        this.inputParams.push({key: methodName, params: [{lag, oneHot, precompute}]})
+        this.inputParams.push({key: methodName, order: 0, params: [{lag, oneHot, precompute}]})
         return this           
     }
 
@@ -609,13 +604,14 @@ export default class OHLCV_INDICATORS {
 
         let secondaryLoop = false
 
-        if(colKeys.some(v => v.includes('_prediction_')))
+        const order = getOrderFromArray(colKeys, methodName)
+
+        if(order >= 10)
         {
-            methodName += 'Secondary'
             secondaryLoop = true
         }
 
-        this.inputParams.push({key: methodName, params: [size, colKeys, {type, group, range, lag, precomputed, decimals, pca, secondaryLoop}]})
+        this.inputParams.push({key: methodName, order, params: [size, colKeys, {type, group, range, lag, precomputed, decimals, pca, secondaryLoop}]})
         return this
     }
 
@@ -660,10 +656,17 @@ export default class OHLCV_INDICATORS {
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'options.predictions', methodName)
 
+        const orderArr = [...trainingCols]
+
         if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
         {
-            if(findGroups.some(o => !o.hasOwnProperty('type') || (!o.hasOwnProperty('size') && !o.hasOwnProperty('groupName')) || (o.hasOwnProperty('size') && o.hasOwnProperty('groupName')))) {
-                throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`)
+            for (const { type = '', size, groupName = '' } of findGroups) {
+
+                if (!type || (!size && !groupName) || (size && groupName)) {
+                    throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`);
+                }
+
+                orderArr.push(type.toString(), groupName.toString());
             }
         }  else {
             if(trainingCols.length === 0)
@@ -694,7 +697,9 @@ export default class OHLCV_INDICATORS {
         
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  modelArgs, precompute}]})
+        const order = getOrderFromArray(orderArr, methodName)
+
+        this.inputParams.push({key: methodName, order, params: [trainingSize, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  modelArgs, precompute}]})
 
 
         return this
@@ -738,12 +743,19 @@ export default class OHLCV_INDICATORS {
 
         const {shortName, flatX, flatY, useTrainMethod} = validRegressors[type]
         const prefix = `reg_${shortName}_${trainingSize}_${target}_prediction`
+        const orderArr = [...trainingCols]
 
         if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
         {
-            if(findGroups.some(o => !o.hasOwnProperty('type') || (!o.hasOwnProperty('size') && !o.hasOwnProperty('groupName')) || (o.hasOwnProperty('size') && o.hasOwnProperty('groupName')))) {
-                throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`)
+            for (const { type = '', size, groupName = '' } of findGroups) {
+
+                if (!type || (!size && !groupName) || (size && groupName)) {
+                    throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`);
+                }
+
+                orderArr.push(type.toString(), groupName.toString());
             }
+
         }  else {
             if(trainingCols.length === 0 && flatX === false)
             {
@@ -788,7 +800,10 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute}]})
+
+        const order = getOrderFromArray(orderArr, methodName)
+
+        this.inputParams.push({key: methodName, order, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute}]})
 
         return this
     }
@@ -798,7 +813,7 @@ export default class OHLCV_INDICATORS {
         return exportTrainedModels(this)
     }
 
-    mapCols(newCols = ['change'], callback = null, {lag = 0}) {
+    mapCols(newCols = ['change'], callback = null, options = {}) {
 
         isAlreadyComputed(this)
 
@@ -809,8 +824,13 @@ export default class OHLCV_INDICATORS {
             callback = defaultMapColsCallback
         }
 
+        validateObject(options, 'options', methodName)
+
+        const {lag = 0, order = 9} = options
+
         validateArray(newCols, 'newCols', methodName)
         validateNumber(lag, {min: 0, allowDecimals: false}, 'options.lag', methodName)
+        validateNumber(order, {min: 0, max: 20}, 'order', methodName)
 
         this.inputParams.push({key: methodName, params: [newCols, callback, {lag}]})
 

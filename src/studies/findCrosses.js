@@ -152,10 +152,10 @@ export const crossPairs = (main, index, crossPairsList, {limit}) => {
 
         // sanity checks
         if (fast !== "price" && !verticalOhlcv.hasOwnProperty(fast)) {
-            throw new Error(`fast "${fast}" not found in crossPairs "${crossName}"`)
+            throw new Error(`crossPairs invalid param: fast "${fast}" not found in "verticalOhlcv": ${JSON.stringify(Object.keys(verticalOhlcv))}`)
         }
         if (!verticalOhlcv.hasOwnProperty(slow)) {
-            throw new Error(`slow "${slow}" not found in crossPairs "${crossName}"`)
+            throw new Error(`crossPairs invalid param: slow "${slow}" not found in "verticalOhlcv": ${JSON.stringify(Object.keys(verticalOhlcv))}`)
         }
 
         if(!instances.hasOwnProperty('crossPairs'))
