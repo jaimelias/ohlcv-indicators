@@ -4,6 +4,8 @@ const defaultTarget = 'close';
 
 export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}) => {
 
+  if(index + 1 > main.len) return
+
   const { verticalOhlcv, instances } = main
   const {instanceKey} = precomputed
 

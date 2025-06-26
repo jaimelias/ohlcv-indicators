@@ -2,6 +2,9 @@ import { FasterStochasticOscillator } from 'trading-signals';
 
 const defaultTarget = 'close'
 export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minmax, prefix, lag, parser}) => {
+
+    if(index + 1 > main.len) return
+
     const { verticalOhlcv, instances, scaledGroups } = main;
 
     const paramsKey = (kPeriod === 14 && kSlowingPeriod === 3 && dPeriod === 3) ? '' : `${kPeriod}_${kSlowingPeriod}_${dPeriod}`

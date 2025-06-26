@@ -2,6 +2,8 @@ import { FasterEMA } from 'trading-signals';
 
 export const volumeOscillator = (main, index, fast, slow, {lag}) => {
 
+    if(index + 1 > main.len) return
+
     const {verticalOhlcv, instances} = main
     const value = verticalOhlcv.volume[index]
     const key = `volume_oscillator_${fast}_${slow}`

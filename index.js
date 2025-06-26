@@ -579,24 +579,22 @@ export default class OHLCV_INDICATORS {
         return this           
     }
 
-    scaler(size, colKeys = [], options = {})
+    scaler(type = 'zscore', size, options = {})
     {
         let methodName = 'scaler'
 
         isAlreadyComputed(this)
 
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
-        validateArray(colKeys, 'colKeys', methodName)
+        
         validateObject(options, 'options', methodName)
 
-        const {group = false, range = [0, 1], lag = 0, type = 'zscore', decimals = null, pca = null} = options
+        const {group = false, range = [0, 1], lag = 0,  colKeys = []} = options
 
+        validateArray(colKeys, 'options.colKeys', methodName)
         validateBoolean(group, 'options.group', methodName)
-        if(pca !== null) validateObject(pca, 'options.pca', methodName)
         validateArrayOfRanges(range, 'options.range', methodName)
         validateArrayOptions(['minmax', 'zscore'], type, 'options.type', methodName)
-
-        if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
 
         const groupKey = `${type}_${size}`
         const groupKeyLen = colKeys.length
@@ -611,7 +609,7 @@ export default class OHLCV_INDICATORS {
             secondaryLoop = true
         }
 
-        this.inputParams.push({key: methodName, order, params: [size, colKeys, {type, group, range, lag, precomputed, decimals, pca, secondaryLoop}]})
+        this.inputParams.push({key: methodName, order, params: [size, colKeys, {type, group, range, lag, precomputed, secondaryLoop}]})
         return this
     }
 
@@ -804,6 +802,83 @@ export default class OHLCV_INDICATORS {
         const order = getOrderFromArray(orderArr, methodName)
 
         this.inputParams.push({key: methodName, order, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute}]})
+
+        return this
+    }
+
+    pca(suffix, trainingSize, options = {})
+    {
+        const methodName = 'pca'
+        validateNumber(trainingSize, {min: 1, max: this.len}, 'trainingSize', methodName)
+        validateString(suffix, 'suffix', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {
+            findGroups = [], 
+            trainingCols = [], 
+            lookback = 0
+        } = options
+
+        
+        validateArray(trainingCols, 'options.trainigCols', methodName)
+        validateNumber(lookback, {min: 0, max: this.len, allowDecimals: false}, 'options.lookback', methodName)
+        validateObject(options.modelArgs, 'options.modelArgs', methodName)
+
+        //modelArgs
+
+        const modelArgs = {
+            showSource: false,
+            storeModel: false,
+            isCovarianceMatrix: false,
+            method: 'NIPALS', //SVD, covarianceMatrix or NIPALS
+            center: true,
+            scale: false,
+            nCompNIPALS: 5,
+            ignoreZeroVariance: false,
+            ...options.modelArgs
+        }
+
+        validateBoolean(modelArgs.showSource, 'options.modelArgs.showSource', methodName)
+        validateBoolean(modelArgs.storeModel, 'options.modelArgs.storeModel', methodName)
+        validateBoolean(modelArgs.isCovarianceMatrix, 'options.modelArgs.isCovarianceMatrix', methodName)
+        validateBoolean(modelArgs.center, 'options.modelArgs.center', methodName)
+        validateBoolean(modelArgs.scale, 'options.modelArgs.scale', methodName)
+        validateBoolean(modelArgs.ignoreZeroVariance, 'options.modelArgs.ignoreZeroVariance', methodName)
+        validateArrayOptions(['SVD', 'NIPALS', 'covarianceMatrix'], modelArgs.method, 'options.modelArgs.method', methodName)
+        validateNumber(modelArgs.nCompNIPALS, {min: 1}, 'options.modelArgs.nCompNIPALS', methodName)
+
+
+
+
+        const orderArr = []
+
+        if(validateArray(findGroups, 'options.findGroups', 'pca') && findGroups.length > 0)
+        {
+            
+            for (const { type = '', size, groupName = '' } of findGroups) {
+
+                if (!type || (!size && !groupName) || (size && groupName)) {
+                    throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`);
+                }
+
+                orderArr.push(type.toString(), groupName.toString())
+            }
+        }
+
+        const order = getOrderFromArray(orderArr, methodName)
+        const keyName = `pca_${suffix}_${trainingSize}`
+
+        if(this.isAlreadyComputed.has(keyName)) {
+            throw new Error(
+            `Each regressor must have a unique "suffix" param.\n` +
+            `This rule ensures that your output columns are labeled unambiguously.\n` +
+            `You provided a duplicate: type="${suffix}".`
+            )
+        }
+
+        const lookbackAbs =  Math.abs(lookback) + 1
+        this.isAlreadyComputed.add(keyName)
+        this.inputParams.push({key: methodName, order, params: [{keyName, trainingSize, findGroups, trainingCols, lookbackAbs, modelArgs}]})
 
         return this
     }

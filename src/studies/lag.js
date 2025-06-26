@@ -1,6 +1,9 @@
 import { buildArray } from "../utilities/assignTypes.js"
 
 export const lag = (main, index, colKeys, lookback, {secondaryLoop}) => {
+
+  if(index + 1 > main.len) return
+  
   const { verticalOhlcv, len, arrayTypes, invalidValueIndex } = main
 
   if((index === 0 && secondaryLoop === false) || ((index + 1) === (invalidValueIndex + 1) && secondaryLoop === true))

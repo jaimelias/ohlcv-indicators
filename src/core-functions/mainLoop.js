@@ -40,7 +40,8 @@ const mainFunctions = {
   crossPairs,
   lag,
   regressor,
-  classifier
+  classifier,
+  pca
 };
 
 export const mainLoop = (input, main) => {
@@ -130,18 +131,12 @@ export const mainLoop = (input, main) => {
       }
   }
 
-  const isSecondaryLoopNeeded = inputParams.some(({ key }) => key === 'regressor' || key === 'classifier')
-  const isPcaNeeded = inputParams.some(({ key, params }) => key.startsWith('scaler') && params[2].pca !== null)
+  const isSecondaryLoopNeeded = inputParams.some(({ key }) => key === 'regressor' || key === 'classifier' || key === 'pca')
 
-  
   if(isSecondaryLoopNeeded || processSecondaryLoop)
   {
     secondaryLoop(main)
   }
-
-  if(isPcaNeeded) {
-    pca(main)
-  }  
 
   verticalOhlcvKeyNames.push(...Object.keys(verticalOhlcv))
   

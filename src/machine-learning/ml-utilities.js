@@ -46,7 +46,7 @@ export const computeFlatFeaturesLen = (featureCols, instances, type, verticalOhl
 
   for (const key of featureCols) {
 
-    if (key.startsWith('one_hot_')) {
+    if (key.startsWith('one_hot_') || key.startsWith('pca_')) {
 
       const colSize = verticalOhlcv[key][index].length
 

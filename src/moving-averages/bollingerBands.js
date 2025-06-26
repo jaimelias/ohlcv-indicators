@@ -4,6 +4,9 @@ import { roundDecimalPlaces } from '../utilities/numberUtilities.js';
 const defaultTarget = 'close'
 
 export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, lag, decimals }) => {
+
+  if(index + 1 > main.len) return
+
   const { verticalOhlcv, instances } = main;
   const indicatorKey = `${size}_${stdDev}`;
   const prefix = 'bollinger_bands'

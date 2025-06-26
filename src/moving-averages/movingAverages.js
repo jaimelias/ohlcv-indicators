@@ -7,6 +7,9 @@ const indicatorClasses = {
 }
 
 export const movingAverages = (main, index, methodName, size, { target, lag }) => {
+
+  if(index + 1 > main.len) return
+
   const { verticalOhlcv, instances } = main
   const suffix = (target !== 'close') ?  `_${target}` : ''
   const keyName = `${methodName}_${size}${suffix}`
