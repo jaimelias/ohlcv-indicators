@@ -22,7 +22,7 @@ export const getOrderFromArray = (arr, methodName) => {
         }
     }
 
-    const weights2 = ['pca', 'prediction', 'regressor', 'classifier']
+    const weights2 = ['prediction', 'regressor', 'classifier', 'pca']
 
     if(!arr.some(v => weights2.includes(v)) && !weights2.includes(methodName))
     {

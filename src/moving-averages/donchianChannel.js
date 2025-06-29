@@ -3,7 +3,7 @@ import { roundDecimalPlaces } from "../utilities/numberUtilities.js";
 
 export const donchianChannels = (main, index, size, offset, options) => {
 
-  if(index + 1 > main.len) return
+  
 
   const {verticalOhlcv, instances, len, inputParams, arrayTypes, lag} = main
   const { height: includeHeight, range: rangeKeys, decimals } = options

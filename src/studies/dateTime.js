@@ -2,7 +2,7 @@ import {oneHotEncode} from '../machine-learning/ml-utilities.js'
 
 export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
-    if(index + 1 > main.len) return
+    
 
     const {instances, verticalOhlcv, notNumberKeys} = main
     const {prefix} = precompute

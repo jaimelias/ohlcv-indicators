@@ -1,3 +1,4 @@
+import { areKeyValuesValid } from "./pushToMain.js";
 import { validateInputParams } from "../utilities/validators.js";
 import { rsi } from "../oscillators/rsi.js";
 import { stochastic } from "../oscillators/stochastic.js";
@@ -38,10 +39,7 @@ const mainFunctions = {
   mapCols,
   scaler,
   crossPairs,
-  lag,
-  regressor,
-  classifier,
-  pca
+  lag
 };
 
 export const mainLoop = (input, main) => {
@@ -55,7 +53,6 @@ export const mainLoop = (input, main) => {
     chunkProcess, 
     notNumberKeys, 
     processSecondaryLoop,
-    invalidsByKey,
   } = main;
 
   validateInputParams(inputParams, len)
@@ -100,7 +97,7 @@ export const mainLoop = (input, main) => {
         // Process these indicators separately (ensuring their execution order)
         for (const { key, params, order } of inputParams)
         {
-          for(let orderIdx = 0; orderIdx < 9; orderIdx++)
+          for(let orderIdx = 0; orderIdx <= 9; orderIdx++)
           {
             if(typeof order !== 'number') throw new Error(`order property of ${key} not found: ${params}`)
             if(orderIdx !== order) continue
@@ -110,23 +107,11 @@ export const mainLoop = (input, main) => {
       
         input[index] = null //flusing data
 
-        let hasInvalidValues = false
+        const keyNames = Object.keys(verticalOhlcv)
 
-        for(const [key, arr] of Object.entries(verticalOhlcv))
-        {
-          if(!invalidsByKey.hasOwnProperty(key)) invalidsByKey[key] = -1
-          const val = arr[index]
-          
-          if(typeof val === 'undefined' || val === null || Number.isNaN(val))
-          {
-            hasInvalidValues = true
-            invalidsByKey[key]++
-          }
-        }
-
-        if(hasInvalidValues)
-        {
-          main.invalidValueIndex++
+        // if any value at this index is missing/NaN/null, mark it invalid
+        if (!areKeyValuesValid(main, index, keyNames)) {
+          main.invalidValueIndex = index
         }
       }
   }
@@ -145,17 +130,20 @@ export const mainLoop = (input, main) => {
 export const secondaryLoop = main => {
   const {inputParams, len, invalidValueIndex} = main
 
-  for(let index = invalidValueIndex; index < len; index++)
+  const startIndex = invalidValueIndex + 1
+
+  for(let index = startIndex; index < len; index++)
   {
       for (const { key, params, order } of inputParams)
       {
-        for(let orderIdx = 10; orderIdx < 20; orderIdx++) {
+        for(let orderIdx = 10; orderIdx <= 20; orderIdx++) {
           if(typeof order !== 'number') throw new Error(`order property of ${key} not found: ${params}`)
           if(orderIdx !== order) continue
-          mainFunctions[key](main, index, ...params)
+          if(key === 'pca') pca(main, index, ...params)
+          if(key === 'classifier') classifier(main, index, ...params)
+          if(key === 'regressor') regressor(main, index, ...params)
         }
       }
-      
   }
 
 }

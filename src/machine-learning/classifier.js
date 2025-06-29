@@ -1,7 +1,7 @@
 import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining, updateClassifierMetrics } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
-
+import { areKeyValuesValid } from "../core-functions/pushToMain.js"
 
 
 export const classifier = (
@@ -22,18 +22,14 @@ export const classifier = (
   const { lookbackAbs, prefix, useTrainMethod, flatY } = precompute
   const { verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML } = main
   const allModels = ML.models
+  const startIndex = (invalidValueIndex + 1)
   
   // ─── INITIALIZATION ───────────────────────────────────────────────
-  if((index + 1) === (invalidValueIndex + 1)) {
-    // build featureCols
-    const featureCols = getFeaturedKeys({trainingCols, findGroups, verticalOhlcv, scaledGroups, type})
+  if(index === startIndex) {
 
     // prepare instance storage
     if (!instances.hasOwnProperty('classifier')) instances.classifier = {}
     if(!instances.classifier.hasOwnProperty(prefix)) instances.classifier[prefix] = {}
-
-    // compute flattened feature‐length (expanding one-hots)
-    const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type, verticalOhlcv, index)
 
     const expectedLoops = (flatY) ? predictions : 1 //
 
@@ -43,28 +39,55 @@ export const classifier = (
       isTrained: new Array(expectedLoops).fill(false),
       uniqueLabels: new Array(expectedLoops).fill(0),
       retrainOnEveryIndex: retrain,
-      featureCols,
-      flatFeaturesColLen,
+      featureCols: [],
+      flatFeaturesColLen: 0,
       X: [],
       Y: Array.from({ length: expectedLoops }, () => []),
     }
-
-
-    // create NaN‐filled output arrays
-    for (let i = 0; i < predictions; i++) {
-      const predictionKey = `${prefix}_${i + 1}`
-      verticalOhlcv[predictionKey] = (type === 'KNN') ? new Array(len).fill(null) : new Float32Array(len).fill(NaN)
-      ML.metrics[predictionKey] = {accuracy: {}, total: 0, correct: 0, labels: {}}
-      ML.featureCols[predictionKey] = featureCols
-    }
-
-    logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
+  } 
+  else if(index < startIndex || index < lookbackAbs)
+  {
+    return
+  }
+  else if(index + 1 === len) 
+  {
+      //last execution
+      for(const featureKey of instances.classifier[prefix].featureCols)
+      {
+          if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for classifier ${type}.`)
+      }
   }
 
-  // ─── EARLY EXIT IF NOT ENOUGH HISTORY ─────────────────────────────
-  if (index < lookbackAbs) return
-
   const dataSetInstance = instances.classifier[prefix]
+
+  if(dataSetInstance.flatFeaturesColLen === 0)
+  {
+    dataSetInstance.featureCols = getFeaturedKeys({trainingCols, findGroups, verticalOhlcv, scaledGroups})
+
+    if(areKeyValuesValid(main, index, dataSetInstance.featureCols))
+    {
+      dataSetInstance.flatFeaturesColLen = computeFlatFeaturesLen(dataSetInstance.featureCols, instances, type, verticalOhlcv, index)
+
+      // create NaN‐filled output arrays
+      for (let i = 0; i < predictions; i++) {
+        const predictionKey = `${prefix}_${i + 1}`
+        verticalOhlcv[predictionKey] = (type === 'KNN') ? new Array(len).fill(null) : new Float32Array(len).fill(NaN)
+        ML.metrics[predictionKey] = {accuracy: {}, total: 0, correct: 0, labels: {}}
+        ML.featureCols[predictionKey] = dataSetInstance.featureCols
+      }
+
+      logMlTraining({
+        featureCols: dataSetInstance.featureCols, 
+        flatFeaturesColLen: dataSetInstance.flatFeaturesColLen, 
+        type, 
+        trainingSize
+      })
+    } else {
+      return
+    }
+  }
+
+  if(dataSetInstance.flatFeaturesColLen === 0) return
 
   const {
     uniqueLabels,
@@ -81,7 +104,7 @@ export const classifier = (
     type,
     index,
     lookbackAbs,
-    verticalOhlcv
+    main
   })
 
   if(!trainX) return 

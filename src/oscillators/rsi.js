@@ -4,7 +4,7 @@ import { FasterSMA } from 'trading-signals';
 const defaultTarget = 'close'
 export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) => {
 
-  if(index + 1 > main.len) return
+  
   
   const { verticalOhlcv, instances } = main;
 

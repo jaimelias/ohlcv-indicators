@@ -16,8 +16,11 @@ export const buildTrainX = ({
   type,
   index,
   lookbackAbs,
-  verticalOhlcv
+  main
 }) => {
+
+  const {verticalOhlcv} = main
+
   let shouldExit = false
 
   // --- BUILD A FLATTENED LIST OF “COLUMN SLOTS” ---

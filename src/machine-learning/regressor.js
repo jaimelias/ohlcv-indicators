@@ -1,36 +1,20 @@
 import { getFeaturedKeys, computeFlatFeaturesLen, logMlTraining } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
+import { areKeyValuesValid } from "../core-functions/pushToMain.js"
 
 export const regressor = (main, index, trainingSize, {target, predictions, retrain, trainingCols, findGroups, type, modelArgs, precompute}) => {
 
     const {lookbackAbs, prefix, flatX, flatY, useTrainMethod} = precompute
     const {verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML} = main
     const allModels = ML.models
+    const startIndex = (invalidValueIndex + 1)
 
-    if((index + 1) === (invalidValueIndex + 1))
+    if(index === startIndex)
     {
-        const featureCols = getFeaturedKeys({trainingCols, findGroups, verticalOhlcv, scaledGroups, type})
-
-        if(!verticalOhlcv.hasOwnProperty(target))
-        {
-            throw new Error(`Target property "${target}" not found in verticalOhlcv for regressor.`)
-        }
-        if(!featureCols.includes(target))
-        {
-            throw new Error(`Target property "${target}" not found in ${type} features: ${JSON.stringify(featureCols)}`)
-        }
-
         if (!instances.hasOwnProperty('regressor')) instances.regressor = {}
         if(!instances.regressor.hasOwnProperty(prefix)) instances.regressor[prefix] = {}
 
-        for(const featureKey of featureCols)
-        {
-            if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for regressor.`)
-        }
-
-        // compute flattened feature‐length (expanding one-hots)
-        const flatFeaturesColLen = computeFlatFeaturesLen(featureCols, instances, type, verticalOhlcv, index)
         const expectedLoops = (flatY) ? predictions : 1 //
 
         instances.regressor[prefix] = {
@@ -38,26 +22,61 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
             trainingSize,
             isTrained: new Array(expectedLoops).fill(false),
             retrainOnEveryIndex: retrain,
-            featureCols,
-            flatFeaturesColLen,
+            featureCols: [],
+            flatFeaturesColLen: 0,
             X: [],
             Y: Array.from({ length: expectedLoops }, () => []),
         }
-
-        for(let x = 0; x < predictions; x++)
+    } 
+    else if(index < startIndex || index < lookbackAbs)
+    {
+        return
+    }
+    else if(index + 1 === len) 
+    {
+        //last execution
+        for(const featureKey of instances.regressor[prefix].featureCols)
         {
-            const predictionKey = `${prefix}_${(x+1)}`
-            verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
-            ML.featureCols[predictionKey] = featureCols
+            if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for regressor ${type}.`)
         }
-
-        logMlTraining({featureCols, flatFeaturesColLen, type, trainingSize})
     }
 
-    // --- EARLY EXIT IF NOT ENOUGH HISTORY ---
-    if (index < lookbackAbs) return;
-
     const dataSetInstance = instances.regressor[prefix]
+
+    if(dataSetInstance.flatFeaturesColLen === 0)
+    {
+        dataSetInstance.featureCols = getFeaturedKeys({trainingCols, findGroups, verticalOhlcv, scaledGroups})
+
+        if(areKeyValuesValid(main, index, dataSetInstance.featureCols))
+        {
+            dataSetInstance.flatFeaturesColLen = computeFlatFeaturesLen(dataSetInstance.featureCols, instances, type, verticalOhlcv, index)
+
+            for(let x = 0; x < predictions; x++)
+            {
+                const predictionKey = `${prefix}_${(x+1)}`
+                verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
+                ML.featureCols[predictionKey] = dataSetInstance.featureCols
+            }
+
+            logMlTraining({
+                featureCols: dataSetInstance.featureCols, 
+                flatFeaturesColLen: dataSetInstance.flatFeaturesColLen, 
+                type, 
+                trainingSize
+            })
+
+        } else {
+            return
+        }
+    }
+    
+    if(dataSetInstance.flatFeaturesColLen === 0) return
+
+    if(!verticalOhlcv.hasOwnProperty(target))
+    {
+        throw new Error(`Target property "${target}" not found in verticalOhlcv for regressor.`)
+    }
+
     const {
         expectedLoops,
         X: xRows, 
@@ -67,8 +86,12 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
         retrainOnEveryIndex
     } = dataSetInstance
 
+    if(!featureCols.includes(target))
+    {
+        throw new Error(`Target property "${target}" not found in ${type} features: ${JSON.stringify(featureCols)}`)
+    }
     
-    const trainX = (flatX) ? verticalOhlcv[target][index] : buildTrainX({featureCols, flatFeaturesColLen, type, index, lookbackAbs, verticalOhlcv})
+    const trainX = (flatX) ? verticalOhlcv[target][index] : buildTrainX({featureCols, flatFeaturesColLen, type, index, lookbackAbs, main})
 
     if (flatX) {
         if (!Number.isFinite(trainX)) return;   // or `trainX == null`

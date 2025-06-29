@@ -1,6 +1,6 @@
 export const mapCols = (main, index, newCols, callback, {lag}) => {
 
-    if(index + 1 > main.len) return
+    
 
     const {verticalOhlcv, len, arrayTypes} = main
 

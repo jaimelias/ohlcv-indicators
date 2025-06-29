@@ -74,7 +74,6 @@ export default class OHLCV_INDICATORS {
         }
 
         this.invalidValueIndex = -1
-        this.invalidsByKey = {}
         this.precision = precision
         this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.scaledGroups = {}
@@ -276,14 +275,7 @@ export default class OHLCV_INDICATORS {
         validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
 
         const order = getOrderFromArray(colKeys, methodName)
-        let secondaryLoop = false
-
-        if(order >= 10)
-        {
-            secondaryLoop = true
-        }
-
-        this.inputParams.push({key: methodName, order, params: [colKeys, lookback, {secondaryLoop}]})
+        this.inputParams.push({key: methodName, order, params: [colKeys, lookback]})
         
         return this;
     }
@@ -878,7 +870,8 @@ export default class OHLCV_INDICATORS {
 
         const lookbackAbs =  Math.abs(lookback) + 1
         this.isAlreadyComputed.add(keyName)
-        this.inputParams.push({key: methodName, order, params: [{keyName, trainingSize, findGroups, trainingCols, lookbackAbs, modelArgs}]})
+
+        this.inputParams.push({key: methodName, order, params: [{keyName, trainingSize, findGroups, trainingCols, lookbackAbs, modelArgs, order}]})
 
         return this
     }

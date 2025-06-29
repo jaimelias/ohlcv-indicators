@@ -1,12 +1,12 @@
 import { buildArray } from "../utilities/assignTypes.js"
 
-export const lag = (main, index, colKeys, lookback, {secondaryLoop}) => {
+export const lag = (main, index, colKeys, lookback) => {
 
-  if(index + 1 > main.len) return
   
-  const { verticalOhlcv, len, arrayTypes, invalidValueIndex } = main
+  
+  const { verticalOhlcv, len, arrayTypes } = main
 
-  if((index === 0 && secondaryLoop === false) || ((index + 1) === (invalidValueIndex + 1) && secondaryLoop === true))
+  if(index === 0)
   {
     for (const colKey of colKeys) {
       if (!arrayTypes.hasOwnProperty(colKey)) {
@@ -22,9 +22,6 @@ export const lag = (main, index, colKeys, lookback, {secondaryLoop}) => {
       }   
     }
   }
-  
-  if(secondaryLoop === true && index <= invalidValueIndex) true
-
 
   for (const colKey of colKeys) {
     const currentColumn = verticalOhlcv[colKey]

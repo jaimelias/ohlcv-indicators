@@ -132,7 +132,7 @@ class CrossInstance {
 
 export const crossPairs = (main, index, crossPairsList, {limit}) => {
 
-  if(index + 1 > main.len) return
+  
 
   const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes, notNumberKeys} = main
 

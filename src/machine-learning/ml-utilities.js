@@ -46,6 +46,12 @@ export const computeFlatFeaturesLen = (featureCols, instances, type, verticalOhl
 
   for (const key of featureCols) {
 
+    if(!verticalOhlcv.hasOwnProperty(key)) throw new Error(`Property "${key}" not found in "verticalOhlcv".`)
+
+    const val = verticalOhlcv[key][index]
+
+    if(typeof val === 'undefined' || val === null || Number.isNaN(val)) throw new Error(`Invalid value of property "${key}".`)
+
     if (key.startsWith('one_hot_') || key.startsWith('pca_')) {
 
       const colSize = verticalOhlcv[key][index].length
@@ -81,21 +87,31 @@ export const countUniqueLabels = Y => {
 }
 
 
-export const getFeaturedKeys = ({trainingCols, findGroups, verticalOhlcv, scaledGroups, type}) => {
+export const getFeaturedKeys = ({trainingCols, findGroups, verticalOhlcv, scaledGroups}) => {
 
   const featureCols = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
 
-    if (featureCols.length === 0) {
-      throw new Error(`No "featureCols" available in "${type}"`)
-    }
 
-    // sanity‐check that all features exist
-    for(const featureKey of featureCols)
-    {
-      if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for "${type}".`)
-    }
+  if (featureCols.length === 0) {
+    return []
+  }
 
-    return featureCols
+  let keyNotFound = false
+
+  // sanity‐check that all features exist
+  for(let x = 0; x < featureCols.length; x++)
+  {
+    const featureKey = featureCols[x]
+
+    if(!verticalOhlcv.hasOwnProperty(featureKey)) {
+      keyNotFound = true
+      break
+    }
+  }
+  
+  if(keyNotFound) return []
+
+  return featureCols
 }
 
 export const updateClassifierMetrics = ({ metrics, trueLabel, predictedLabel }) => {

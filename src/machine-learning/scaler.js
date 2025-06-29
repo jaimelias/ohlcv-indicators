@@ -2,14 +2,14 @@ import { normalizeMinMax, normalizeZScore } from "./ml-utilities.js";
   
 export const scaler = (main, index, size, colKeys, {type, group, range, lag, precomputed, secondaryLoop}) => {
 
-    if(index + 1 > main.len) return
+    
 
     const {groupKey, groupKeyLen} = precomputed
     const { verticalOhlcv, instances, arrayTypes, invalidValueIndex } = main;
     const prefix = `${type}_${size}`;
   
-    if((index === 0 && secondaryLoop === false) || ((index + 1) === (invalidValueIndex + 1) && secondaryLoop === true)) {
-      const { len, isAlreadyComputed } = main;
+    if(index === 0) {
+      const { len, isAlreadyComputed } = main
 
       if(isAlreadyComputed.has(prefix))
       {
