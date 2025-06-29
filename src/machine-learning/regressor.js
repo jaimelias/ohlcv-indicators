@@ -1,4 +1,4 @@
-import { getFeaturedKeys, computeFlatFeaturesLen, logMlTraining } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen, logMlTraining, findGroupsFunc } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
 import { areKeyValuesValid } from "../core-functions/pushToMain.js"
@@ -34,6 +34,13 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
     }
     else if(index + 1 === len) 
     {
+        if(instances.regressor[prefix].featureCols.length === 0)
+        {
+            const inputFeatures = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
+
+            throw new Error(`Some of the provided ${type} features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
+        }
+
         //last execution
         for(const featureKey of instances.regressor[prefix].featureCols)
         {
@@ -161,7 +168,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
 
             if ((currTrainY.length !== predictions)) {
 
-                throw new Error(`currTrainY length (${currTrainY.length}) ≠ "options.predictions" (${predictions}) for classifier "${type}"`)
+                throw new Error(`currTrainY length (${currTrainY.length}) ≠ "options.predictions" (${predictions}) for regressor "${type}"`)
             }           
         }
 

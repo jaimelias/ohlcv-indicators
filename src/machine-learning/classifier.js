@@ -1,4 +1,4 @@
-import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining, updateClassifierMetrics } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining, updateClassifierMetrics, findGroupsFunc } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 import { modelTrain } from "./train-utilities.js"
 import { areKeyValuesValid } from "../core-functions/pushToMain.js"
@@ -51,6 +51,14 @@ export const classifier = (
   }
   else if(index + 1 === len) 
   {
+
+      if(instances.classifier[prefix].featureCols.length === 0)
+      {
+        const inputFeatures = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
+
+        throw new Error(`Some of the provided ${type} features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
+      }
+
       //last execution
       for(const featureKey of instances.classifier[prefix].featureCols)
       {

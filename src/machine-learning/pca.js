@@ -1,4 +1,4 @@
-import { getFeaturedKeys, computeFlatFeaturesLen } from "./ml-utilities.js";
+import { getFeaturedKeys, computeFlatFeaturesLen, findGroupsFunc } from "./ml-utilities.js";
 import { buildTrainX } from "./trainX.js";
 import { areKeyValuesValid } from "../core-functions/pushToMain.js";
 
@@ -31,6 +31,14 @@ export const pca = (main, index, {keyName, trainingSize, findGroups, trainingCol
     }
     else if(index + 1 === len) 
     {
+
+        if(instances.pca[keyName].featureCols.length === 0)
+        {
+            const inputFeatures = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
+
+            throw new Error(`Some of the provided ${type} features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
+        }
+
         //last execution
         for(const featureKey of instances.pca[keyName].featureCols)
         {
