@@ -127,7 +127,7 @@ export const mainLoop = (input, main) => {
   
 }
 
-export const secondaryLoop = main => {
+export const secondaryLoop = (main) => {
   const {inputParams, len, invalidValueIndex} = main
 
   const startIndex = invalidValueIndex + 1

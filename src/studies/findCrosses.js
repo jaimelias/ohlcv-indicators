@@ -132,18 +132,15 @@ class CrossInstance {
 
 export const crossPairs = (main, index, crossPairsList, {limit}) => {
 
-  
-
   const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes, notNumberKeys} = main
 
-  if(index === 0)
-  {
-    for (const { fast, slow } of crossPairsList)
+  for (const { fast, slow } of crossPairsList) {
+
+    const crossName = `${fast}_x_${slow}`
+
+    if(index === 0)
     {
-        const crossName = `${fast}_x_${slow}`
-
         // allow numeric 'slow' as a constant column
-
         if (typeof slow === 'number') {
 
             const col = slow.toString()
@@ -153,13 +150,7 @@ export const crossPairs = (main, index, crossPairsList, {limit}) => {
             arrayTypes[col] = 'Int16Array'
         }
 
-        // sanity checks
-        if (fast !== "price" && !verticalOhlcv.hasOwnProperty(fast)) {
-            throw new Error(`crossPairs invalid param: fast "${fast}" not found in "verticalOhlcv": ${JSON.stringify(Object.keys(verticalOhlcv))}`)
-        }
-        if (!verticalOhlcv.hasOwnProperty(slow)) {
-            throw new Error(`crossPairs invalid param: slow "${slow}" not found in "verticalOhlcv": ${JSON.stringify(Object.keys(verticalOhlcv))}`)
-        }
+
 
         if(!instances.hasOwnProperty('crossPairs'))
         {
@@ -176,17 +167,20 @@ export const crossPairs = (main, index, crossPairsList, {limit}) => {
         verticalOhlcv[crossName] = new Int32Array(len).fill(NaN)
         notNumberKeys.add(crossName)
         arrayTypes[crossName] = 'Int32Array'
-
+    }  else if(index + 1 === len) {
+        // sanity checks
+        if (fast !== "price" && !verticalOhlcv.hasOwnProperty(fast)) {
+            throw new Error(`crossPairs invalid param: fast "${fast}" not found in "verticalOhlcv": ${JSON.stringify(Object.keys(verticalOhlcv))}`)
+        }
+        if (!verticalOhlcv.hasOwnProperty(slow)) {
+            throw new Error(`crossPairs invalid param: slow "${slow}" not found in "verticalOhlcv": ${JSON.stringify(Object.keys(verticalOhlcv))}`)
+        }
     }
-  }
+    
+    if (fast !== "price" && !verticalOhlcv.hasOwnProperty(fast)) return
+    if (!verticalOhlcv.hasOwnProperty(slow)) return
 
- 
-
-  for (const { fast, slow } of crossPairsList) {
-
-    const crossName = `${fast}_x_${slow}`
-
-     const {run} = instances.crossPairs[crossName]
+    const {run} = instances.crossPairs[crossName]
 
     // ——— Per-bar update ———
     if (fast === 'price') {

@@ -1,8 +1,8 @@
 import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining, updateClassifierMetrics, findGroupsFunc } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
-import { modelTrain } from "./train-utilities.js"
 import { areKeyValuesValid } from "../core-functions/pushToMain.js"
 
+const algo = 'classifier'
 
 export const classifier = (
   main,
@@ -15,11 +15,15 @@ export const classifier = (
     retrain,
     type,
     modelArgs,
+    horizon,
     precompute,
-    predictions
+    predictions,
+    filterCallback,
+    modelConfig,
+    modelClass
   }
 ) => {
-  const { lookbackAbs, prefix, useTrainMethod, flatY } = precompute
+  const { lookbackAbs, prefix, flatY } = precompute
   const { verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML } = main
   const allModels = ML.models
   const startIndex = (invalidValueIndex + 1)
@@ -28,45 +32,68 @@ export const classifier = (
   if(index === startIndex) {
 
     // prepare instance storage
-    if (!instances.hasOwnProperty('classifier')) instances.classifier = {}
-    if(!instances.classifier.hasOwnProperty(prefix)) instances.classifier[prefix] = {}
+    if (!instances.hasOwnProperty(algo)) instances[algo] = {}
+    if(!instances[algo].hasOwnProperty(prefix)) instances[algo][prefix] = {}
 
     const expectedLoops = (flatY) ? predictions : 1 //
 
-    instances.classifier[prefix] = {
+    instances[algo][prefix] = {
 
       expectedLoops,
       isTrained: new Array(expectedLoops).fill(false),
       uniqueLabels: new Array(expectedLoops).fill(0),
-      retrainOnEveryIndex: retrain,
+      shouldRetrain: retrain,
       featureCols: [],
       flatFeaturesColLen: 0,
       X: [],
       Y: Array.from({ length: expectedLoops }, () => []),
+    }
+
+    for (let i = 0; i < predictions; i++) {
+      const predictionKey = `${prefix}_${i + 1}`
+
+      verticalOhlcv[predictionKey] = (type === 'KNN') ? new Array(len).fill(null) : new Float32Array(len).fill(NaN)
+      ML.metrics[predictionKey] = {accuracy: {}, total: 0, correct: 0, labels: {}}
+
+      if(!allModels.hasOwnProperty(predictionKey))
+      {
+        allModels[predictionKey] = []
+      }
     }
   } 
   else if(index < startIndex || index < lookbackAbs)
   {
     return
   }
+  else if(filterCallback(verticalOhlcv, index) === false)
+  {
+      return
+  }
   else if(index + 1 === len) 
   {
 
-      if(instances.classifier[prefix].featureCols.length === 0)
+      if(instances[algo][prefix].featureCols.length === 0)
       {
         const inputFeatures = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
 
-        throw new Error(`Some of the provided ${type} features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
+        throw new Error(`Some of the provided ${algo} "${prefix}" features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
       }
 
       //last execution
-      for(const featureKey of instances.classifier[prefix].featureCols)
+      for(const featureKey of instances[algo][prefix].featureCols)
       {
-          if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for classifier ${type}.`)
+          if(!verticalOhlcv.hasOwnProperty(featureKey)) throw new Error(`Feature "${featureKey}" not found in verticalOhlcv for ${prefix}.`)
       }
+
+      if(instances[algo][prefix].X.length < trainingSize)
+      {
+        const requiredDatapoints = instances[algo][prefix].X.length - trainingSize
+        throw new Error(`The current "trainingSize" at ${algo} "${prefix}" requires at least ${requiredDatapoints} more datapoints. Try adding more input ohlcv rows or reducing the "trainingSize" by ${requiredDatapoints}.`)
+      }
+
   }
 
-  const dataSetInstance = instances.classifier[prefix]
+  const dataSetInstance = instances[algo][prefix]
 
   if(dataSetInstance.flatFeaturesColLen === 0)
   {
@@ -74,15 +101,7 @@ export const classifier = (
 
     if(areKeyValuesValid(main, index, dataSetInstance.featureCols))
     {
-      dataSetInstance.flatFeaturesColLen = computeFlatFeaturesLen(dataSetInstance.featureCols, instances, type, verticalOhlcv, index)
-
-      // create NaN‐filled output arrays
-      for (let i = 0; i < predictions; i++) {
-        const predictionKey = `${prefix}_${i + 1}`
-        verticalOhlcv[predictionKey] = (type === 'KNN') ? new Array(len).fill(null) : new Float32Array(len).fill(NaN)
-        ML.metrics[predictionKey] = {accuracy: {}, total: 0, correct: 0, labels: {}}
-        ML.featureCols[predictionKey] = dataSetInstance.featureCols
-      }
+      dataSetInstance.flatFeaturesColLen = computeFlatFeaturesLen(dataSetInstance.featureCols, verticalOhlcv, index)
 
       logMlTraining({
         featureCols: dataSetInstance.featureCols, 
@@ -102,7 +121,7 @@ export const classifier = (
     expectedLoops,
     featureCols,
     flatFeaturesColLen,
-    retrainOnEveryIndex,
+    shouldRetrain,
     X: xRows
   } = dataSetInstance
 
@@ -118,7 +137,7 @@ export const classifier = (
   if(!trainX) return 
 
    //if univariable Y (flatY) a model is created for each prediction
-  const trainY = yCallback(index, verticalOhlcv)
+  const trainY = yCallback(index, verticalOhlcv, horizon)
 
   if (trainY !== null && (!Array.isArray(trainY) || trainY.length !== predictions)) {
 
@@ -132,14 +151,16 @@ export const classifier = (
     const currTrainY =  (flatY) ? (trainY === null) ? null : trainY[loopIdx] : trainY
     const isTrained = dataSetInstance.isTrained[loopIdx]
 
+    const shouldPredict = allModels.hasOwnProperty(predictionKey) && isTrained && (shouldRetrain === false || allModels[predictionKey].length === horizon)
+
     //predicts using previously saved models even if current currTrainY is not available
-    if(allModels.hasOwnProperty(predictionKey))
+    if(shouldPredict)
     {
-      const futureRow = allModels[predictionKey].predict([trainX])[0]
+      const futureRow = allModels[predictionKey][0].predict([trainX])[0]
 
       if(flatY)
       {
-        if(futureRow == null) throw new Error(`Prediction of ${type} at index ${index} was expecting a number.`)
+        if(futureRow == null) throw new Error(`Prediction of ${prefix} at index ${index} was expecting a number.`)
 
         main.pushToMain({index, key: predictionKey, value: futureRow})
 
@@ -156,7 +177,7 @@ export const classifier = (
 
         if (!Array.isArray(futureRow) || futureRow.length !== predictions) {
           throw new Error(
-            `Prediction output of "${type}" at index ${index} was expecting an array of values.`
+            `Prediction output of ${algo} "${prefix}" at index ${index} was expecting an array of values.`
           )
         }
 
@@ -190,7 +211,7 @@ export const classifier = (
         if ((currTrainY.length !== predictions)) {
 
           throw new Error(
-            `The number of label columns returned (${currTrainY.length}) doesn’t match the options.predictions (${predictions}) setting for the "${type}" classifier. ` +
+            `The number of label columns returned (${currTrainY.length}) doesn’t match the options.predictions (${predictions}) setting for the ${algo} "${prefix}" classifier. ` +
             `Please update your yCallback function so its output array items align with options.predictions.`
           );
 
@@ -208,7 +229,7 @@ export const classifier = (
       if (xRows.length > trainingSize) xRows.shift()
     }
 
-    const shouldTrainModel = retrainOnEveryIndex || !isTrained
+    const shouldTrainModel = shouldRetrain || !isTrained
 
     if (shouldTrainModel && xRows.length === trainingSize && yRows.length === trainingSize) {
 
@@ -218,12 +239,27 @@ export const classifier = (
         
         if(uniqueLabels[loopIdx] < 2)
         {
-          throw new Error(`Invalid number or labels in ${type}. Check the logic of your "yCallback" function.`)
+          throw new Error(`Invalid number or labels in ${prefix}. Check the logic of your "yCallback" function.`)
         }
       }
 
-      allModels[predictionKey] = modelTrain({main, type, xRows, yRows, useTrainMethod, modelArgs, algo: 'classifier', uniqueLabels: uniqueLabels[loopIdx]})
+
+      const {train} = modelConfig
+
+      const trainedModel = train({modelClass, xRows, yRows, modelArgs, uniqueLabels: uniqueLabels[loopIdx]})
+
+      allModels[predictionKey].push(
+       trainedModel
+      )
+
+      if(allModels[predictionKey].length > horizon)
+      {
+        allModels[predictionKey].shift()
+      }
+
       dataSetInstance.isTrained[loopIdx] = true
     }
   }
+
+  return true
 }

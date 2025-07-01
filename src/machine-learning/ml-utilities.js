@@ -40,7 +40,7 @@ export const findGroupsFunc = (findGroups, scaledGroups) => {
     return output
 }
 
-export const computeFlatFeaturesLen = (featureCols, instances, type, verticalOhlcv, index) => {
+export const computeFlatFeaturesLen = (featureCols, verticalOhlcv, index) => {
   
   let flatFeaturesColLen = 0
 

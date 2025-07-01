@@ -212,13 +212,14 @@ export default class OHLCV_INDICATORS {
         // Only run the full loop once (or when new data appears later,
         // if you extend this to reset isComputed elsewhere)
         if (this.len > 0) {
-          mainLoop(this.input, this);
-          this.isComputed = true;
+            mainLoop(this.input, this)
 
-          //flushing after mainLoop
-          this.input = []
-          this.instances = {}
-          this.firstRow = []
+            this.isComputed = true;
+
+            //flushing after mainLoop
+            this.input = []
+            this.instances = {}
+            this.firstRow = []
         }
       
         return this;
@@ -610,8 +611,7 @@ export default class OHLCV_INDICATORS {
         isAlreadyComputed(this)
 
         const methodName = 'classifier'
-
-        validateNumber(trainingSize, {allowDecimals: false}, 'trainingSize', methodName)
+        validateNumber(trainingSize, {max: this.len, allowDecimals: false}, 'trainingSize', methodName)
         validateObject(options, 'options', methodName)
 
         const {
@@ -621,7 +621,9 @@ export default class OHLCV_INDICATORS {
             lookback = 0,
             findGroups = [],
             predictions = 2,
-            modelArgs = undefined
+            horizon = 2,
+            modelArgs = undefined,
+            filterCallback = () => true
         } = options
 
         if (modelArgs !== undefined && (typeof modelArgs !== 'object' || modelArgs === null || Array.isArray(modelArgs))) throw new TypeError(`"modelArgs" must be either undefined or a plain object in ${type}`);
@@ -643,7 +645,8 @@ export default class OHLCV_INDICATORS {
 
         validateBoolean(retrain, 'options.retrain', methodName)
         validateArray(trainingCols, 'options.trainingCols', methodName)
-        validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
+        validateNumber(horizon, {min: 1, max: this.len, allowDecimals: false}, 'options.horizon', methodName)
+        validateNumber(lookback, {max: 0, allowDecimals: false}, 'options.lookback', methodName)
         validateNumber(predictions, {min: 1, allowDecimals: false}, 'options.predictions', methodName)
 
         const orderArr = [...trainingCols]
@@ -665,7 +668,7 @@ export default class OHLCV_INDICATORS {
             }
         }
 
-        const {shortName, flatY, useTrainMethod} = validClassifiers[type]
+        const {shortName, flatY} = validClassifiers[type]
 
         const prefix = `cla_${shortName}_${trainingSize}_prediction`
 
@@ -681,15 +684,17 @@ export default class OHLCV_INDICATORS {
         const precompute = {
             lookbackAbs: Math.abs(lookback) + 1,
             flatY,
-            prefix,
-            useTrainMethod
+            prefix
         }
         
         this.isAlreadyComputed.add(prefix)
 
         const order = getOrderFromArray(orderArr, methodName)
 
-        this.inputParams.push({key: methodName, order, params: [trainingSize, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, type,  modelArgs, precompute}]})
+        const modelConfig = validClassifiers[type]
+        const modelClass =  this.ML.classes[type]
+
+        this.inputParams.push({key: methodName, order, params: [trainingSize, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, horizon, type,  modelArgs, precompute, filterCallback, modelConfig, modelClass}]})
 
 
         return this
@@ -702,7 +707,7 @@ export default class OHLCV_INDICATORS {
         const methodName = 'regressor'
         
 
-        validateNumber(trainingSize, {allowDecimals: false}, 'trainingSize', methodName)
+        validateNumber(trainingSize, {max: this.len, allowDecimals: false}, 'trainingSize', methodName)
         validateObject(options, 'options', methodName)
 
         const {
@@ -713,7 +718,8 @@ export default class OHLCV_INDICATORS {
             type = 'SimpleLinearRegression', 
             lookback = 0,
             findGroups = [],
-            modelArgs = undefined
+            modelArgs = undefined,
+            filterCallback = () => true
         } = options
 
         validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
@@ -731,7 +737,7 @@ export default class OHLCV_INDICATORS {
         validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
         validateArray(trainingCols, 'options.trainingCols', methodName)
 
-        const {shortName, flatX, flatY, useTrainMethod} = validRegressors[type]
+        const {shortName, flatX, flatY} = validRegressors[type]
         const prefix = `reg_${shortName}_${trainingSize}_${target}_prediction`
         const orderArr = [...trainingCols]
 
@@ -784,8 +790,7 @@ export default class OHLCV_INDICATORS {
             lookbackAbs: Math.abs(lookback) + 1,
             flatX,
             flatY,
-            prefix,
-            useTrainMethod
+            prefix
         }
 
         this.isAlreadyComputed.add(prefix)
@@ -793,7 +798,10 @@ export default class OHLCV_INDICATORS {
 
         const order = getOrderFromArray(orderArr, methodName)
 
-        this.inputParams.push({key: methodName, order, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute}]})
+        const modelConfig = validRegressors[type]
+        const modelClass =  this.ML.classes[type]
+
+        this.inputParams.push({key: methodName, order, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute, filterCallback, modelConfig, modelClass}]})
 
         return this
     }
@@ -808,13 +816,18 @@ export default class OHLCV_INDICATORS {
         const {
             findGroups = [], 
             trainingCols = [], 
-            lookback = 0
+            lookback = 0,
+            filterCallback = () => true
         } = options
 
         
         validateArray(trainingCols, 'options.trainigCols', methodName)
         validateNumber(lookback, {min: 0, max: this.len, allowDecimals: false}, 'options.lookback', methodName)
-        validateObject(options.modelArgs, 'options.modelArgs', methodName)
+        if(typeof options.modelArgs !== 'undefined') {
+            validateObject(options.modelArgs, 'options.modelArgs', methodName)
+        } else {
+            options.modelArgs = {}
+        }
 
         //modelArgs
 
@@ -858,9 +871,9 @@ export default class OHLCV_INDICATORS {
         }
 
         const order = getOrderFromArray(orderArr, methodName)
-        const keyName = `pca_${suffix}_${trainingSize}`
+        const prefix = `pca_${suffix}_${trainingSize}`
 
-        if(this.isAlreadyComputed.has(keyName)) {
+        if(this.isAlreadyComputed.has(prefix)) {
             throw new Error(
             `Each regressor must have a unique "suffix" param.\n` +
             `This rule ensures that your output columns are labeled unambiguously.\n` +
@@ -869,9 +882,9 @@ export default class OHLCV_INDICATORS {
         }
 
         const lookbackAbs =  Math.abs(lookback) + 1
-        this.isAlreadyComputed.add(keyName)
+        this.isAlreadyComputed.add(prefix)
 
-        this.inputParams.push({key: methodName, order, params: [{keyName, trainingSize, findGroups, trainingCols, lookbackAbs, modelArgs, order}]})
+        this.inputParams.push({key: methodName, order, params: [{prefix, trainingSize, findGroups, trainingCols, lookbackAbs, modelArgs, filterCallback}]})
 
         return this
     }
@@ -894,13 +907,13 @@ export default class OHLCV_INDICATORS {
 
         validateObject(options, 'options', methodName)
 
-        const {lag = 0, order = 9} = options
+        const {lag = 0} = options
 
         validateArray(newCols, 'newCols', methodName)
         validateNumber(lag, {min: 0, allowDecimals: false}, 'options.lag', methodName)
-        validateNumber(order, {min: 0, max: 20}, 'order', methodName)
+        const order = getOrderFromArray(newCols, methodName)
 
-        this.inputParams.push({key: methodName, params: [newCols, callback, {lag}]})
+        this.inputParams.push({key: methodName, order, params: [newCols, callback, {lag}]})
 
         return this
     }
