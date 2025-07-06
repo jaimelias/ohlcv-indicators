@@ -6,7 +6,7 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
 
   
   
-  const { verticalOhlcv, instances } = main;
+  const { verticalOhlcv, instances, notNumberKeys } = main;
 
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const rsiKey = `${prefix}rsi_${size}${suffix}`;
@@ -53,6 +53,7 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
     for(const key of keyNames)
     {
       arrayTypes[key] = 'Float64Array'
+      notNumberKeys.add(key)
     }
 
   }

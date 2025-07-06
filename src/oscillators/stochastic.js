@@ -5,7 +5,7 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minma
 
     
 
-    const { verticalOhlcv, instances, scaledGroups } = main;
+    const { verticalOhlcv, instances, notNumberKeys } = main;
 
     const paramsKey = (kPeriod === 14 && kSlowingPeriod === 3 && dPeriod === 3) ? '' : `${kPeriod}_${kSlowingPeriod}_${dPeriod}`
     const stochD = `${prefix}stoch_d${paramsKey}`;
@@ -48,6 +48,7 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minma
         for(const key of keyNames)
         {
             arrayTypes[key] = 'Float64Array'
+            notNumberKeys.add(key)
         }
     }
 
