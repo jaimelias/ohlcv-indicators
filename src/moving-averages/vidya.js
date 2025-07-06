@@ -161,8 +161,6 @@ export const vidya = (main, index, size, momentum, options = {}) => {
     liquidity = highest
   }
 
-  console.log(keys.liquidity, liquidity)
-
   // Push outputs
   main.pushToMain({ index, key: keys.vidya, value: trendValue });
   main.pushToMain({ index, key: keys.upper, value: upper });
