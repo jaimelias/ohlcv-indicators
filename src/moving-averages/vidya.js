@@ -3,7 +3,7 @@ import { FasterSMA } from 'trading-signals';
 
 export const vidya = (main, index, size, momentum, options = {}) => {
   const { verticalOhlcv, instances, len, arrayTypes, lag } = main;
-  const { target = 'close', atrLength = 200, bandDistance = 2 } = options;
+  const { target = 'close', atrLength = 200, bandDistance = 2, liquidityLookback = 20 } = options
   const indicatorKey = `${size}_${momentum}`;
 
   // Initialization on the first bar
@@ -16,10 +16,11 @@ export const vidya = (main, index, size, momentum, options = {}) => {
     const keyBase = target === 'close' ? prefix : `${prefix}_${target}`;
     const keys = {
       vidya: keyBase,
-      upper: `${prefix}_upper`, lower: `${prefix}_lower`,
-      up:    `${prefix}_trendUp`, down: `${prefix}_trendDown`,
-      volume: `${prefix}_vol`, buyVol: `${prefix}_buyVol`, sellVol: `${prefix}_sellVol`, deltaVol: `${prefix}_deltaVol`,
-      cross: `${prefix}_cross`
+      upper: `${prefix}_upper`, 
+      lower: `${prefix}_lower`,
+      delta_vol: `${prefix}_delta_vol`,
+      cross: `${prefix}_cross`,
+      liquidity: `${prefix}_liquidity`,
     };
 
     // Prepare instances container
@@ -27,7 +28,11 @@ export const vidya = (main, index, size, momentum, options = {}) => {
     instances.vidya.settings[indicatorKey] = {
       momentumBuffer: [], prevVidya: NaN,
       sma: new FasterSMA(15), atrBuffer: [],
-      isTrendUp: false, upVol: 0, downVol: 0
+      isTrendUp: false, upVol: 0, downVol: 0,
+      liquidity: {
+        high: [],
+        low: []
+      }
     };
 
     // Allocate output arrays
@@ -44,10 +49,11 @@ export const vidya = (main, index, size, momentum, options = {}) => {
   const keyBase = target === 'close' ? prefix : `${prefix}_${target}`;
   const keys = {
     vidya: keyBase,
-    upper: `${prefix}_upper`, lower: `${prefix}_lower`,
-    up:    `${prefix}_trendUp`, down: `${prefix}_trendDown`,
-    volume: `${prefix}_vol`, buyVol: `${prefix}_buyVol`, sellVol: `${prefix}_sellVol`, deltaVol: `${prefix}_deltaVol`,
-    cross: `${prefix}_cross`
+    upper: `${prefix}_upper`, 
+    lower: `${prefix}_lower`,
+    delta_vol: `${prefix}_delta_vol`,
+    cross: `${prefix}_cross`,
+    liquidity: `${prefix}_liquidity`,
   };
 
   // Series inputs
@@ -58,6 +64,9 @@ export const vidya = (main, index, size, momentum, options = {}) => {
   const open  = verticalOhlcv.open[index];
   const vol   = verticalOhlcv.volume[index];
   const prevCross = index > 0 ? verticalOhlcv[keys.cross][index - 1] : 0;
+
+  const highest = (inst.liquidity.high.length === liquidityLookback) ? Math.max(...inst.liquidity.high) : NaN
+  const lowest = (inst.liquidity.low.length === liquidityLookback) ? Math.min(...inst.liquidity.low) : NaN
 
   // Compute ATR (Wilder's RMA)
   if (index > 0) {
@@ -140,17 +149,33 @@ export const vidya = (main, index, size, momentum, options = {}) => {
     ? (inst.isTrendUp ? lower : upper)
     : NaN;
 
+
+  let liquidity = NaN
+
+  if(cross > 0)
+  {
+    liquidity = lowest
+  }
+  else if(cross < 0)
+  {
+    liquidity = highest
+  }
+
+  console.log(keys.liquidity, liquidity)
+
   // Push outputs
   main.pushToMain({ index, key: keys.vidya, value: trendValue });
   main.pushToMain({ index, key: keys.upper, value: upper });
   main.pushToMain({ index, key: keys.lower, value: lower });
-  main.pushToMain({ index, key: keys.up, value: crossUp ? 1 : 0 });
-  main.pushToMain({ index, key: keys.down, value: crossDown ? 1 : 0 });
-  main.pushToMain({ index, key: keys.volume, value: vol });
-  main.pushToMain({ index, key: keys.buyVol, value: inst.upVol });
-  main.pushToMain({ index, key: keys.sellVol, value: inst.downVol });
-  main.pushToMain({ index, key: keys.deltaVol, value: deltaPct });
+  main.pushToMain({ index, key: keys.delta_vol, value: deltaPct });
   main.pushToMain({ index, key: keys.cross, value: cross });
+  main.pushToMain({ index, key: keys.liquidity, value: liquidity });
+
+  inst.liquidity.high.push(high)
+  inst.liquidity.low.push(low)
+
+  if(inst.liquidity.high.length > liquidityLookback) inst.liquidity.high.shift()
+  if(inst.liquidity.low.length > liquidityLookback) inst.liquidity.low.shift()
 
   return true;
 };
