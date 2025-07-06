@@ -7,8 +7,10 @@ export const buildArray = (arrayType, len) => {
   const ctorMap = {
     Array:        Array,
     Float64Array: Float64Array,
+    Float32Array: Float32Array,
     Int32Array:   Int32Array,
     Uint8Array:   Uint8Array,
+    Int8Array:   Int8Array,
     Int16Array:   Int16Array,
   }
 

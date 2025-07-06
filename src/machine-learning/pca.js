@@ -39,7 +39,7 @@ export const pca = (main, index, {prefix, trainingSize, findGroups, trainingCols
         {
             const inputFeatures = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
 
-            throw new Error(`Some of the provided ${prefix} features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
+            throw new Error(`Some of the provided features in ${prefix} features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
         }
 
         //last execution

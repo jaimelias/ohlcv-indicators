@@ -235,10 +235,11 @@ export default class OHLCV_INDICATORS {
         validateArray(arr, 'arr', methodName)
         validateObject(options, 'options', methodName)
 
-        const {limit = null} = options
+        const {limit = 125, oneHot = false} = options
         
-        if(limit !== null) validateNumber(limit, {}, 'options.limit', methodName)
-
+        validateNumber(limit, {min: 2, max: this.len}, 'options.limit', methodName)
+        validateBoolean(oneHot, 'options.oneHot', methodName)
+       
         const orderArr = []
 
         for (const {fast = '', slow = ''} of arr) {
@@ -261,7 +262,7 @@ export default class OHLCV_INDICATORS {
 
         const order = getOrderFromArray(orderArr, methodName)
 
-        this.inputParams.push({key: methodName, order, params: [arr, {limit}]})
+        this.inputParams.push({key: methodName, order, params: [arr, {limit, oneHot}]})
         
         return this
     }
@@ -362,6 +363,28 @@ export default class OHLCV_INDICATORS {
         const order = getOrderFromArray([target], methodName)
 
         this.inputParams.push({key: methodName, order, params: [methodName, size, {target, lag}]})
+
+        return this
+    }
+
+    vidya(size = 14, smoothing = 20, options = {}) {
+
+        const methodName = 'vidya'
+
+        isAlreadyComputed(this)
+
+        validateNumber(size, {min: 2, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateNumber(smoothing, {min: size, max: this.len, allowDecimals: false}, 'smoothing', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {target = 'close', lag = 0} = options
+
+        validateString(target, 'options.target', methodName)
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+
+        const order = getOrderFromArray([target], methodName)
+
+        this.inputParams.push({key: methodName, order, params: [size, smoothing, {target, lag}]})
 
         return this
     }

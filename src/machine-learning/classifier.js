@@ -76,7 +76,7 @@ export const classifier = (
       {
         const inputFeatures = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
 
-        throw new Error(`Some of the provided ${algo} "${prefix}" features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
+        throw new Error(`Some of the provided features in ${algo} "${prefix}" features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
       }
 
       //last execution
@@ -245,6 +245,8 @@ export const classifier = (
 
 
       const {train} = modelConfig
+
+      console.log(yRows)
 
       const trainedModel = train({modelClass, xRows, yRows, modelArgs, uniqueLabels: uniqueLabels[loopIdx]})
 

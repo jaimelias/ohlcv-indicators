@@ -54,7 +54,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
         {
             const inputFeatures = [...trainingCols, ...(findGroupsFunc(findGroups, scaledGroups))]
 
-            throw new Error(`Some of the provided ${prefix} features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
+            throw new Error(`Some of the provided  features in ${prefix} features where not found in "verticalOhlcv": ${JSON.stringify(inputFeatures)}`)
         }
 
         //last execution
@@ -143,7 +143,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
         const currTrainY =  (flatY) ? (typeof trainY[loopIdx] === 'undefined') ? null : trainY[loopIdx] : trainY
         const isTrained = dataSetInstance.isTrained[loopIdx]
 
-        const shouldPredict = allModels.hasOwnProperty(predictionKey) && isTrained && (shouldRetrain === false || allModels[predictionKey].length === predictions)
+        const shouldPredict = allModels.hasOwnProperty(predictionKey) && isTrained && allModels[predictionKey].length === expectedLoops
 
         //predicts using previously saved models even if current currTrainY is not available
         if(shouldPredict)

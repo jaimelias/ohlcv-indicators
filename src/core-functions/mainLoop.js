@@ -3,6 +3,7 @@ import { validateInputParams } from "../utilities/validators.js";
 import { rsi } from "../oscillators/rsi.js";
 import { stochastic } from "../oscillators/stochastic.js";
 import { movingAverages } from "../moving-averages/movingAverages.js";
+import { vidya } from "../moving-averages/vidya.js";
 import { macd } from "../moving-averages/macd.js";
 import { relativeVolume } from "../moving-averages/relativeVolume.js";
 import { donchianChannels } from "../moving-averages/donchianChannel.js";
@@ -31,6 +32,7 @@ const mainFunctions = {
   atr,
   ema: movingAverages,
   sma: movingAverages,
+  vidya,
   macd,
   relativeVolume,
   donchianChannels,

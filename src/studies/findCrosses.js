@@ -1,3 +1,5 @@
+import { oneHotEncode } from "../machine-learning/ml-utilities.js"
+import { buildArray } from "../utilities/assignTypes.js"
 const eq = (fast, slow) => fast === slow
 const gt = (fast, slow) => fast > slow
 const lt = (fast, slow) => fast < slow
@@ -130,7 +132,7 @@ class CrossInstance {
 
 }
 
-export const crossPairs = (main, index, crossPairsList, {limit}) => {
+export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
 
   const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes, notNumberKeys} = main
 
@@ -146,11 +148,20 @@ export const crossPairs = (main, index, crossPairsList, {limit}) => {
             const col = slow.toString()
             verticalOhlcvTempCols.add(col)
             notNumberKeys.add(col)
-            verticalOhlcv[col] =  new Int16Array(len).fill(slow)
-            arrayTypes[col] = 'Int16Array'
+
+            let slowNumArrType = 'Int16Array'
+
+            if(slow === 0 || slow === 1)
+            {
+                slowNumArrType = 'Uint8Array'
+            } else if(slow >= -125 && slow <= 125)
+            {
+                slowNumArrType = 'Int8Array'
+            }
+
+            verticalOhlcv[col] =  buildArray(slowNumArrType, len)
+            arrayTypes[col] = 'slowNumArrType'
         }
-
-
 
         if(!instances.hasOwnProperty('crossPairs'))
         {
@@ -163,10 +174,26 @@ export const crossPairs = (main, index, crossPairsList, {limit}) => {
             min: Infinity,
             max: -Infinity
         }
+
+        let crossArrType = 'Int16Array'
+
+        if(limit <= 125)
+        {
+            crossArrType = 'Int8Array'
+        }
+
+        verticalOhlcv[crossName] = buildArray(crossArrType, len)
         
-        verticalOhlcv[crossName] = new Int32Array(len).fill(NaN)
+        if(oneHot)
+        {
+            verticalOhlcv[`one_hot_${crossName}`] = buildArray('Array', len)
+            notNumberKeys.add(`one_hot_${crossName}`)
+        }
+
         notNumberKeys.add(crossName)
-        arrayTypes[crossName] = 'Int32Array'
+        
+        arrayTypes[crossName] = 'crossArrType'
+
     }  else if(index + 1 === len) {
         // sanity checks
         if (fast !== "price" && !verticalOhlcv.hasOwnProperty(fast)) {
@@ -200,9 +227,16 @@ export const crossPairs = (main, index, crossPairsList, {limit}) => {
 
     const rawValue = run.getResult()
 
-    const value = limit === null ? rawValue : Math.max(-limit, Math.min(limit, rawValue))
+    const value = Math.max(-limit, Math.min(limit, rawValue))
 
     main.pushToMain({index, key: crossName, value})
+
+    if(oneHot)
+    {
+        const oneHotIdx = value + limit
+        const oneHotSize = 2 * limit + 1
+        main.pushToMain({index, key: `one_hot_${crossName}`, value: oneHotEncode(oneHotIdx, oneHotSize)})
+    }
 
   }
 
