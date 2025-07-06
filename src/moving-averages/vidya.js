@@ -65,8 +65,8 @@ export const vidya = (main, index, size, momentum, options = {}) => {
   const vol   = verticalOhlcv.volume[index];
   const prevCross = index > 0 ? verticalOhlcv[keys.cross][index - 1] : 0;
 
-  const highest = (inst.liquidity.high.length === liquidityLookback) ? Math.max(...inst.liquidity.high) : NaN
-  const lowest = (inst.liquidity.low.length === liquidityLookback) ? Math.min(...inst.liquidity.low) : NaN
+  const highestHigh = (inst.liquidity.high.length === liquidityLookback) ? Math.max(...inst.liquidity.high) : NaN
+  const lowestLow = (inst.liquidity.low.length === liquidityLookback) ? Math.min(...inst.liquidity.low) : NaN
 
   // Compute ATR (Wilder's RMA)
   if (index > 0) {
@@ -145,20 +145,16 @@ export const vidya = (main, index, size, momentum, options = {}) => {
   const deltaPct = (inst.upVol - inst.downVol) / avgVol;
 
   // Trend-based boundary (reset on crossover)
-  const trendValue = (!crossUp && !crossDown)
-    ? (inst.isTrendUp ? lower : upper)
-    : NaN;
-
-
+  const trendValue = (inst.isTrendUp) ? lower : upper;
   let liquidity = NaN
 
   if(cross > 0)
   {
-    liquidity = lowest
+    liquidity = lowestLow
   }
   else if(cross < 0)
   {
-    liquidity = highest
+    liquidity = highestHigh
   }
 
   // Push outputs
