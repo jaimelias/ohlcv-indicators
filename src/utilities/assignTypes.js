@@ -25,7 +25,7 @@ export const buildArray = (arrayType, len) => {
 }
 
 export const assignTypes = main => {
-  const {firstRow, notNumberKeys} = main
+  const {firstRow} = main
   const inputTypes  = {}
   const arrayTypes  = {}
 
@@ -34,13 +34,11 @@ export const assignTypes = main => {
     if (colName === 'date') {
       inputTypes[colName] = selectDateFormatter(cellValue, true)
       arrayTypes[colName] = 'Array'
-      notNumberKeys.add(colName)
     }
     else if(colName === 'volume')
     {
       inputTypes[colName] = classifyNum(cellValue, true)
       arrayTypes[colName] = 'Int32Array'
-      notNumberKeys.add(colName)
     }
     else if(numberKeys.has(colName))
     {
@@ -50,14 +48,16 @@ export const assignTypes = main => {
       const thisType = classifyNum(cellValue, false)
       inputTypes[colName] = thisType
       arrayTypes[colName] = (thisType === 'number') ? 'Float64Array' : 'Array'
-
-      if(!thisType.startsWith('number'))
-      {
-        notNumberKeys.add(colName)
-      }
-
     }
   }
 
   return { inputTypes, arrayTypes }
+}
+
+
+export const getArrayType = (key, arr) => {
+  if (!arr || typeof arr !== 'object') {
+    throw new TypeError(`Invalid array type: "${key}"`);
+  }
+  return arr.constructor.name;
 }

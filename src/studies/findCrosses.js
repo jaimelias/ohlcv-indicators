@@ -134,7 +134,7 @@ class CrossInstance {
 
 export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
 
-  const {verticalOhlcv, verticalOhlcvTempCols, instances, len, arrayTypes, notNumberKeys} = main
+  const {verticalOhlcv, verticalOhlcvTempCols, instances, len} = main
 
   for (const { fast, slow } of crossPairsList) {
 
@@ -147,7 +147,6 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
 
             const col = slow.toString()
             verticalOhlcvTempCols.add(col)
-            notNumberKeys.add(col)
 
             let slowNumArrType = 'Int16Array'
 
@@ -160,7 +159,6 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
             }
 
             verticalOhlcv[col] =  buildArray(slowNumArrType, len)
-            arrayTypes[col] = 'slowNumArrType'
         }
 
         if(!instances.hasOwnProperty('crossPairs'))
@@ -187,12 +185,7 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
         if(oneHot)
         {
             verticalOhlcv[`one_hot_${crossName}`] = buildArray('Array', len)
-            notNumberKeys.add(`one_hot_${crossName}`)
         }
-
-        notNumberKeys.add(crossName)
-        
-        arrayTypes[crossName] = 'crossArrType'
 
     }  else if(index + 1 === len) {
         // sanity checks

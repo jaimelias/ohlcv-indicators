@@ -16,7 +16,7 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
 
   if (index === 0) {
 
-    const {arrayTypes, len} = main
+    const {len} = main
 
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(
@@ -33,8 +33,6 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
     {
       main.lag([keyName], lag)
     }
-
-    arrayTypes[keyName] = 'Float64Array'
   }
 
   // Retrieve the current price value

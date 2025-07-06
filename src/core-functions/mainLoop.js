@@ -47,13 +47,11 @@ const mainFunctions = {
 export const mainLoop = (input, main) => {
   const { len, 
     inputParams, 
-    precisionMultiplier, 
     arrayTypes, 
     verticalOhlcv, 
     verticalOhlcvKeyNames, 
     inputTypes, 
     chunkProcess, 
-    notNumberKeys, 
     processSecondaryLoop,
   } = main;
 
@@ -77,12 +75,7 @@ export const mainLoop = (input, main) => {
 
           if(numberFormater.hasOwnProperty(formaterKey))
           {
-            let formatedValue = numberFormater[formaterKey](value)
-
-            if(precisionMultiplier > 1 && !notNumberKeys.has(key))
-            {
-              formatedValue = formatedValue * precisionMultiplier
-            }
+            const formatedValue = numberFormater[formaterKey](value)
 
             main.pushToMain({index, key, value: formatedValue})
           }

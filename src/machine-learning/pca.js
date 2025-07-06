@@ -22,7 +22,6 @@ export const pca = (main, index, {prefix, trainingSize, findGroups, trainingCols
         }
         
         verticalOhlcv[prefix] = new Array(len).fill(null)
-        main.notNumberKeys.add(prefix)
     }
     else if(index < startIndex || index < lookbackAbs)
     {

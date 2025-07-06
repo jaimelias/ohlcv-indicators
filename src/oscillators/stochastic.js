@@ -5,7 +5,7 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minma
 
     
 
-    const { verticalOhlcv, instances, notNumberKeys } = main;
+    const { verticalOhlcv, instances } = main;
 
     const paramsKey = (kPeriod === 14 && kSlowingPeriod === 3 && dPeriod === 3) ? '' : `${kPeriod}_${kSlowingPeriod}_${dPeriod}`
     const stochD = `${prefix}stoch_d${paramsKey}`;
@@ -15,7 +15,7 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minma
   // Initialization on the first index.
     if (index === 0) {
 
-        const {len, arrayTypes } = main;
+        const {len } = main;
 
         Object.assign(instances, {
             [instanceKey]: new FasterStochasticOscillator(kPeriod, kSlowingPeriod, dPeriod)
@@ -43,12 +43,6 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minma
         if (Array.isArray(minmax)) {
             const group = main.scaledGroups.minmax_rsi ??= [];
             group.push(...keyNames)
-        }
-
-        for(const key of keyNames)
-        {
-            arrayTypes[key] = 'Float64Array'
-            notNumberKeys.add(key)
         }
     }
 

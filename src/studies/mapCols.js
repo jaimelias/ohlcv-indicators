@@ -2,7 +2,7 @@ export const mapCols = (main, index, newCols, callback, {lag}) => {
 
     
 
-    const {verticalOhlcv, len, arrayTypes} = main
+    const {verticalOhlcv, len} = main
 
     if(index === 0)
     {
@@ -14,7 +14,6 @@ export const mapCols = (main, index, newCols, callback, {lag}) => {
             }
 
             verticalOhlcv[key] = new Array(len).fill(0)
-            arrayTypes[key] = 'Array'
         }
 
         if(lag > 0)

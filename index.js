@@ -14,8 +14,7 @@ import {
 import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
-import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
-import { buildArray } from './src/utilities/assignTypes.js'
+import { buildArray, getArrayType } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { defaultMapColsCallback } from './src/studies/mapCols.js'
 import { getOrderFromArray } from './src/utilities/order.js'
@@ -39,16 +38,14 @@ import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
  */
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, precision = true, inputParams = null, chunkProcess = 2000, ML = {}}) {
+    constructor({input, ticker = null, inputParams = null, chunkProcess = 2000, ML = {}}) {
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
 
-        validateBoolean(precision, 'precision', 'constructor')
         validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
         validateObject(ML, 'ML', 'constructor')
 
-        this.notNumberKeys = new Set()
         this.chunkProcess = chunkProcess
         
         this.input = [...input]
@@ -74,8 +71,6 @@ export default class OHLCV_INDICATORS {
         }
 
         this.invalidValueIndex = -1
-        this.precision = precision
-        this.precisionMultiplier = calcPrecisionMultiplier(this, this.firstRow)
         this.scaledGroups = {}
         this.isAlreadyComputed = new Set()
 
@@ -119,14 +114,10 @@ export default class OHLCV_INDICATORS {
         validateObject(options, 'options', 'getDataAsCols')
       
         const {
-          precisionMultiplier,
-          precision,
           len,
           invalidValueIndex,
           verticalOhlcv,
-          arrayTypes,
           verticalOhlcvTempCols,
-          notNumberKeys
         } = this
         const result = {}
 
@@ -137,16 +128,13 @@ export default class OHLCV_INDICATORS {
 
             if(verticalOhlcvTempCols.has(key)) continue
 
-            const shouldApplyPrecision = precision && !notNumberKeys.has(key)
-            result[key] = buildArray(arrayTypes[key], newLen)
+            const thisArrType = getArrayType(key, verticalOhlcv[key])
+
+            result[key] = buildArray(thisArrType, newLen)
 
             for (let x = startIndex; x < len; x++)
             {
-                if(shouldApplyPrecision)
-                {
-                    result[key][x] = arr[x] / precisionMultiplier 
-                }
-                else if(key === 'date')
+                if(key === 'date')
                 {
                     result[key][x] = dateOutputFormaters[dateFormat](arr[x])
                 }

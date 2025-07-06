@@ -4,12 +4,12 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
     
 
-    const {instances, verticalOhlcv, notNumberKeys} = main
+    const {instances, verticalOhlcv} = main
     const {prefix} = precompute
 
     if(index === 0)
     {
-        const {len, dateType, arrayTypes} = main
+        const {len, dateType} = main
         if(!dateType) throw Error('dateTime method found and invalid "date" in input ohlcv')
 
         const startYear = verticalOhlcv.date[0].getUTCFullYear()
@@ -31,18 +31,12 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
         // choose your ctor, fill-value and type-name once
         const ctor     = oneHot ? Array     : Int16Array
         const fillVal  = oneHot ? null      : NaN
-        const typeName = oneHot ? 'Array'   : 'Int16Array'
 
         // single loop instead of three
         for (const key of colKeys) {
-        // 1) set the arrayType
-        arrayTypes[key] = typeName
 
-        // 2) allocate and fill the backing array
-        verticalOhlcv[key] = new ctor(len).fill(fillVal)
+            verticalOhlcv[key] = new ctor(len).fill(fillVal)
 
-        // 3) mark as non-numeric
-        notNumberKeys.add(key)
         }
 
         // finally, apply lag once

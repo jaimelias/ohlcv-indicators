@@ -10,7 +10,7 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
 
     if (index === 0) {
 
-        const {len, arrayTypes} = main
+        const {len} = main
         Object.assign(instances, {
             [key]: {
                 fastEMA: new FasterEMA(fast),
@@ -24,8 +24,6 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
         {
             main.lag([key], lag)
         }
-
-        arrayTypes[key] = 'Float64Array'
     }
 
     const { fastEMA, slowEMA } = instances[key];

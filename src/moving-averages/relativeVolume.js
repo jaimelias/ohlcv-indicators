@@ -8,7 +8,7 @@ export const relativeVolume = (main, index, size, {lag}) => {
   const { instances, verticalOhlcv } = main;
 
   if (index === 0) {
-    const { len, arrayTypes } = main;
+    const { len } = main;
 
     instances[key] = {
       instance: new FasterSMA(size),
@@ -21,8 +21,7 @@ export const relativeVolume = (main, index, size, {lag}) => {
     {
       main.lag([key], lag)
     }
-  
-    arrayTypes[key] = 'Float64Array'
+
   }
 
   const value = verticalOhlcv.volume[index];

@@ -6,7 +6,7 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
 
   
   
-  const { verticalOhlcv, instances, notNumberKeys } = main;
+  const { verticalOhlcv, instances } = main;
 
   const suffix = target === defaultTarget ? '' : `_${target}`;
   const rsiKey = `${prefix}rsi_${size}${suffix}`;
@@ -15,7 +15,7 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
   // Initialization on the first index.
   if (index === 0) {
 
-    const {len, arrayTypes } = main;
+    const {len } = main;
 
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(`Target property ${target} not found in verticalOhlcv for rsi.`);
@@ -48,12 +48,6 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
     if (Array.isArray(minmax)) {
       const group = main.scaledGroups.minmax_rsi ??= [];
       group.push(...keyNames);
-    }
-
-    for(const key of keyNames)
-    {
-      arrayTypes[key] = 'Float64Array'
-      notNumberKeys.add(key)
     }
 
   }

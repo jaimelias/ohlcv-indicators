@@ -14,7 +14,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   // Initialization on the first call.
   if (index === 0) {
 
-    const {inputParams, verticalOhlcv, len, arrayTypes } = main;
+    const {inputParams, verticalOhlcv, len } = main;
 
     if (!(target in verticalOhlcv)) {
       throw new Error(`bollingerBands could not find target "${target}"`);
@@ -68,11 +68,6 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     if(lag > 0)
     {
       main.lag(keyNames, lag)
-    }
-
-    for(const key of keyNames)
-    {
-      arrayTypes[key] = 'Float64Array'
     }
   }
 

@@ -2,7 +2,7 @@ import { FasterSMA } from 'trading-signals';
 // Variable Index Dynamic Average (VIDYA) indicator with volume stats
 
 export const vidya = (main, index, size, momentum, options = {}) => {
-  const { verticalOhlcv, instances, len, arrayTypes } = main;
+  const { verticalOhlcv, instances, len } = main;
   const { target, lag, atrLength = 200, bandDistance = 2, liquidityLookback = 20 } = options
   const indicatorKey = `${size}_${momentum}`;
 
@@ -37,9 +37,9 @@ export const vidya = (main, index, size, momentum, options = {}) => {
 
     // Allocate output arrays
     Object.values(keys).forEach(key => {
-      verticalOhlcv[key] = new Float64Array(len).fill(NaN);
-      arrayTypes[key] = 'Float64Array';
-    });
+      verticalOhlcv[key] = new Float64Array(len).fill(NaN)
+    })
+    
     if (lag > 0) main.lag(Object.values(keys), lag);
   }
 

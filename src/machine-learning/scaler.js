@@ -5,7 +5,7 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
     
 
     const {groupKey, groupKeyLen} = precomputed
-    const { verticalOhlcv, instances, arrayTypes, invalidValueIndex } = main;
+    const { verticalOhlcv, instances, invalidValueIndex } = main;
     const prefix = `${type}_${size}`;
   
     if(index === 0) {
@@ -37,8 +37,7 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
         }
   
         const key = `${prefix}_${target}`;
-        verticalOhlcv[key] = new Float64Array(len).fill(NaN);
-        arrayTypes[key] = 'Float64Array'
+        verticalOhlcv[key] = new Float64Array(len).fill(NaN)
   
         const winKey = group ? groupKey : target;
         instances.scaler[prefix].windows[winKey] = [];

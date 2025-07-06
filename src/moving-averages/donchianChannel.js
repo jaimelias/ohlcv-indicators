@@ -5,7 +5,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
 
   
 
-  const {verticalOhlcv, instances, len, inputParams, arrayTypes, lag} = main
+  const {verticalOhlcv, instances, len, inputParams, lag} = main
   const { height: includeHeight, range: rangeKeys, decimals } = options
   const indicatorKey = `${size}_${offset}`
 
@@ -44,10 +44,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
     );
 
     // apply lag if requested
-    if (lag > 0) main.lag(keys, lag);
-
-    // mark price-based outputs
-    keys.forEach(k => arrayTypes[k] = 'Float64Array');
+    if (lag > 0) main.lag(keys, lag)
   }
 
   // ---- PER-BAR COMPUTATION ----

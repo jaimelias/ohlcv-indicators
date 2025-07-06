@@ -7,7 +7,7 @@ export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
 
   if (index === 0) {
 
-    const {instances, verticalOhlcv, arrayTypes, len} = main
+    const {instances, verticalOhlcv, len} = main
 
     instances[baseKeyName] = new FasterATR(size, FasterWSMA)
 
@@ -20,7 +20,6 @@ export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
     for(const k of keyNames)
     { 
       verticalOhlcv[k] = new Float64Array(len).fill(NaN)
-      arrayTypes[k] = 'Float64Array'
     }
 
     if(lag > 0)

@@ -1,24 +1,25 @@
-import { buildArray } from "../utilities/assignTypes.js"
+import { buildArray, getArrayType } from "../utilities/assignTypes.js"
 
 export const lag = (main, index, colKeys, lookback) => {
 
   
   
-  const { verticalOhlcv, len, arrayTypes } = main
+  const { verticalOhlcv, len } = main
 
   if(index === 0)
   {
     for (const colKey of colKeys) {
-      if (!arrayTypes.hasOwnProperty(colKey)) {
+      if (!verticalOhlcv.hasOwnProperty(colKey)) {
           throw new Error(
-          `Lag processing invoked by "${colKey}" expected arrayTypes to have a "${colKey}" property, but it wasn’t found.`
+          `Lag processing invoked by col "${colKey}" was not found in "verticalOhlcv".`
           )
       }
 
       for (let step = 1; step <= lookback; step++) {
           const key = `${colKey}_lag_${step}`
-          verticalOhlcv[key] = buildArray(arrayTypes[colKey], len)
-          arrayTypes[key] = arrayTypes[colKey]
+          const thisArrType = getArrayType(colKey, verticalOhlcv[colKey])
+
+          verticalOhlcv[key] = buildArray(thisArrType, len)
       }   
     }
   }

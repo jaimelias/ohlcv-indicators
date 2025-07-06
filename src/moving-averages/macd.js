@@ -11,7 +11,7 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
 
   // Initialization on the first index.
   if (index === 0) {
-    const { inputParams, len , arrayTypes} = main
+    const { inputParams, len } = main
 
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(`Target property ${target} not found in verticalOhlcv for macd.`)
@@ -55,11 +55,6 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
     if(lag > 0)
     {
       main.lag(keyNames, lag)
-    }
-
-    for(const key of keyNames)
-    {
-      arrayTypes[key] = 'Float64Array'
     }
 
   }
