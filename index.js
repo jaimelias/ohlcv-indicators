@@ -377,10 +377,13 @@ export default class OHLCV_INDICATORS {
         validateNumber(smoothing, {min: size, max: this.len, allowDecimals: false}, 'smoothing', methodName)
         validateObject(options, 'options', methodName)
 
-        const {target = 'close', lag = 0} = options
+        const {target = 'close', lag = 0, atrLength = 200, bandDistance = 2, liquidityLookback = 20} = options
 
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateNumber(bandDistance, {min: 0.01, max: 10, allowDecimals: true}, 'options.bandDistance', methodName)
+        validateNumber(atrLength, {min: 2, max: this.len, allowDecimals: false}, 'options.atrLength', methodName)
+        validateNumber(liquidityLookback, {min: 1, max: this.len, allowDecimals: false}, 'options.liquidityLookback', methodName)
 
         const order = getOrderFromArray([target], methodName)
 
