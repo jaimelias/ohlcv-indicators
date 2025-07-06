@@ -1,6 +1,7 @@
-import { getFeaturedKeys, computeFlatFeaturesLen, countUniqueLabels, logMlTraining, updateClassifierMetrics, findGroupsFunc } from "./ml-utilities.js"
+import { getFeaturedKeys, computeFlatFeaturesLen, logMlTraining, updateClassifierMetrics, findGroupsFunc } from "./ml-utilities.js"
 import { buildTrainX } from "./trainX.js"
 import { areKeyValuesValid } from "../core-functions/pushToMain.js"
+import { countUniqueLabels, oversampleXY } from "./balancing.js"
 
 const algo = 'classifier'
 
@@ -246,9 +247,9 @@ export const classifier = (
 
       const {train} = modelConfig
 
-      console.log(yRows)
+      const {X: overX, Y: overY} = oversampleXY(xRows, yRows)      
 
-      const trainedModel = train({modelClass, xRows, yRows, modelArgs, uniqueLabels: uniqueLabels[loopIdx]})
+      const trainedModel = train({modelClass, xRows: overX, yRows: overY, modelArgs, uniqueLabels: uniqueLabels[loopIdx]})
 
       allModels[predictionKey].push(
        trainedModel
