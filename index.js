@@ -355,14 +355,14 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    vidya(size = 14, smoothing = 20, options = {}) {
+    vidya(size = 14, momentum = 20, options = {}) {
 
         const methodName = 'vidya'
 
         isAlreadyComputed(this)
 
         validateNumber(size, {min: 2, max: this.len, allowDecimals: false}, 'size', methodName)
-        validateNumber(smoothing, {min: size, max: this.len, allowDecimals: false}, 'smoothing', methodName)
+        validateNumber(momentum, {min: 1, max: this.len, allowDecimals: false}, 'momentum', methodName)
         validateObject(options, 'options', methodName)
 
         const {target = 'close', lag = 0, atrLength = 200, bandDistance = 2, liquidityLookback = 20} = options
@@ -375,7 +375,7 @@ export default class OHLCV_INDICATORS {
 
         const order = getOrderFromArray([target], methodName)
 
-        this.inputParams.push({key: methodName, order, params: [size, smoothing, {target, lag}]})
+        this.inputParams.push({key: methodName, order, params: [size, momentum, {target, lag}]})
 
         return this
     }
