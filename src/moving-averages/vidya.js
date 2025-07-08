@@ -3,7 +3,7 @@ import { FasterSMA } from 'trading-signals';
 
 export const vidya = (main, index, size, momentum, options = {}) => {
   const { verticalOhlcv, instances, len } = main;
-  const { target, lag, atrLength = 200, bandDistance = 2, liquidityLookback = 20 } = options
+  const { target, lag, atrLength = 200, bandDistance = 2, liquidityLookback = 5 } = options
   const indicatorKey = `${size}_${momentum}`;
 
   // Initialization on the first bar

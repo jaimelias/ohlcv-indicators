@@ -147,18 +147,7 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
 
             const col = slow.toString()
             verticalOhlcvTempCols.add(col)
-
-            let slowNumArrType = 'Int16Array'
-
-            if(slow === 0 || slow === 1)
-            {
-                slowNumArrType = 'Uint8Array'
-            } else if(slow >= -125 && slow <= 125)
-            {
-                slowNumArrType = 'Int8Array'
-            }
-
-            verticalOhlcv[col] =  buildArray(slowNumArrType, len)
+            verticalOhlcv[col] =  buildArray('Int16Array', len)
         }
 
         if(!instances.hasOwnProperty('crossPairs'))
@@ -220,15 +209,21 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
 
     const rawValue = run.getResult()
 
-    const value = Math.max(-limit, Math.min(limit, rawValue))
+    const value = rawValue//Math.max(-limit, Math.min(limit, rawValue))
 
     main.pushToMain({index, key: crossName, value})
 
     if(oneHot)
     {
-        const oneHotIdx = value + limit
-        const oneHotSize = 2 * limit + 1
-        main.pushToMain({index, key: `one_hot_${crossName}`, value: oneHotEncode(oneHotIdx, oneHotSize)})
+        // clamp _just_ for the one-hot index
+        const clamped = Math.max(-limit, Math.min(limit, rawValue));
+        const oneHotIdx = clamped + limit;
+        const oneHotSize = 2 * limit + 1;
+        main.pushToMain({
+            index,
+            key: `one_hot_${crossName}`,
+            value: oneHotEncode(oneHotIdx, oneHotSize)
+        });
     }
 
   }
