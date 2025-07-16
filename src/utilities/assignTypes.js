@@ -3,7 +3,7 @@ import { selectDateFormatter } from "./dateUtilities.js";
 
 const numberKeys = new Set(['open', 'high', 'low', 'close'])
 
-export const buildArray = (arrayType, len) => {
+export const buildArray = (arrayType, len, fallbackValue) => {
   const ctorMap = {
     Array:        Array,
     Float64Array: Float64Array,
@@ -14,14 +14,24 @@ export const buildArray = (arrayType, len) => {
     Int16Array:   Int16Array,
   }
 
-  const Ctor = ctorMap[arrayType];
+  const Ctor = ctorMap[arrayType]
   if (!Ctor || typeof Ctor.from !== 'function') {
-    throw new Error(`Unsupported array type: ${arrayType}`);
+    throw new Error(`Unsupported array type: ${arrayType}`)
   }
   // Arrays get nulls, typed-arrays get NaNs
-  const fillValue = arrayType === 'Array' ? null : NaN;
+
+  let fillValue
+
+  if(typeof fallbackValue !== 'undefined')
+  {
+    fillValue = fallbackValue
+  } else {
+    fillValue = arrayType === 'Array' ? null : NaN
+  }
+
+  
   // Ctor.from({ length }, mapFn) works for Array *and* all TypedArrays
-  return Ctor.from({ length: len }, () => fillValue);
+  return Ctor.from({ length: len }, () => fillValue)
 }
 
 export const assignTypes = main => {

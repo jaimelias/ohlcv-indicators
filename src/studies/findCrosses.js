@@ -132,7 +132,7 @@ class CrossInstance {
 
 }
 
-export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
+export const crossPairs = (main, index, crossPairsList) => {
 
   const {verticalOhlcv, verticalOhlcvTempCols, instances, len} = main
 
@@ -147,7 +147,7 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
 
             const col = slow.toString()
             verticalOhlcvTempCols.add(col)
-            verticalOhlcv[col] =  buildArray('Int16Array', len)
+            verticalOhlcv[col] =  buildArray('Int16Array', len, slow)
         }
 
         if(!instances.hasOwnProperty('crossPairs'))
@@ -164,12 +164,7 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
 
         const crossArrType = 'Int16Array'
 
-        verticalOhlcv[crossName] = buildArray(crossArrType, len)
-        
-        if(oneHot)
-        {
-            verticalOhlcv[`one_hot_${crossName}`] = buildArray('Array', len)
-        }
+        verticalOhlcv[crossName] = buildArray(crossArrType, len, 0)
 
     }  else if(index + 1 === len) {
         // sanity checks
@@ -181,7 +176,7 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
         }
     }
     
-    if (fast !== "price" && !verticalOhlcv.hasOwnProperty(fast)) return
+    if (fast !== 'price' && !verticalOhlcv.hasOwnProperty(fast)) return
     if (!verticalOhlcv.hasOwnProperty(slow)) return
 
     const {run} = instances.crossPairs[crossName]
@@ -202,24 +197,8 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
       run.update(index, { fast: fastVal, slow: slowVal })
     }
 
-    const rawValue = run.getResult()
-
-    const value = rawValue//Math.max(-limit, Math.min(limit, rawValue))
-
+    const value = run.getResult()
     main.pushToMain({index, key: crossName, value})
-
-    if(oneHot)
-    {
-        // clamp _just_ for the one-hot index
-        const clamped = Math.max(-limit, Math.min(limit, rawValue));
-        const oneHotIdx = clamped + limit;
-        const oneHotSize = 2 * limit + 1;
-        main.pushToMain({
-            index,
-            key: `one_hot_${crossName}`,
-            value: oneHotEncode(oneHotIdx, oneHotSize)
-        });
-    }
 
   }
 
