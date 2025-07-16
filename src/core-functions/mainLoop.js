@@ -3,6 +3,7 @@ import { validateInputParams } from "../utilities/validators.js";
 import { rsi } from "../oscillators/rsi.js";
 import { stochastic } from "../oscillators/stochastic.js";
 import { movingAverages } from "../moving-averages/movingAverages.js";
+import { heikenAshi } from "../moving-averages/heikenAshi.js";
 import { vidya } from "../moving-averages/vidya.js";
 import { macd } from "../moving-averages/macd.js";
 import { relativeVolume } from "../moving-averages/relativeVolume.js";
@@ -27,6 +28,7 @@ import { classifier } from "../machine-learning/classifier.js";
 // Map indicator keys to their respective functions
 const mainFunctions = {
   dateTime,
+  heikenAshi,
   rsi,
   stochastic,
   atr,

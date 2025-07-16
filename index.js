@@ -355,6 +355,26 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
+    heikenAshi(smoothLength = 10, afterSmoothLength = 10, options = {}) {
+        const methodName = 'heikenAshi'
+
+        isAlreadyComputed(this)
+
+        validateNumber(smoothLength, {min: 1, max: this.len, allowDecimals: false}, 'smoothLength', methodName)
+        validateNumber(afterSmoothLength, {min: 1, max: this.len, allowDecimals: false}, 'afterSmoothLength', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {lag = 0} = options
+
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+
+        const order = 0
+
+        this.inputParams.push({key: methodName, order, params: [smoothLength, afterSmoothLength, {lag}]})
+
+        return this
+    }
+
     vidya(size = 14, momentum = 20, options = {}) {
 
         const methodName = 'vidya'
