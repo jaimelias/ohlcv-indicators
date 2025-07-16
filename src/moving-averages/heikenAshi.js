@@ -1,93 +1,117 @@
 import { FasterEMA } from 'trading-signals';
 
 export const heikenAshi = (main, index, smoothLength, afterSmoothLength, {lag}) => {
-  const { verticalOhlcv, instances, len } = main;
+    const { verticalOhlcv, instances, len } = main
+    const prefix = `heiken_ashi_${smoothLength}_${afterSmoothLength}`
+    const keys = ['open', 'high', 'low', 'close']
 
-  const prefix = `heiken_ashi_${smoothLength}_${afterSmoothLength}`
-  const keys = ['open', 'high', 'low', 'close']
+    // ---- INIT ----
+    if (index === 0) {
 
-  // ---- INIT ----
-  if (index === 0) {
-    // Initialize pre-smoothing EMA instances and buffers
-    instances[prefix] = {
-      emaPre: Object.fromEntries(keys.map(k => [k, new FasterEMA(smoothLength)])),
-      emaPost: Object.fromEntries(keys.map(k => [k, new FasterEMA(afterSmoothLength)])),
-      prevHaOpen: NaN,
-      prevHaClose: NaN,
-    };
+        // Initialize pre-smoothing EMA instances and buffers
+        instances[prefix] = {
+            emaPre: Object.fromEntries(keys.map(k => [k, new FasterEMA(smoothLength)])),
+            emaPost: Object.fromEntries(keys.map(k => [k, new FasterEMA(afterSmoothLength)])),
+            prevHaOpen: NaN,
+            prevHaClose: NaN,
+            isTrendUp: false,
+        };
 
-    const keyNames = keys.map(k => `${prefix}_${k}`)
+        const keyNames = keys.map(k => `${prefix}_${k}`)
 
-    const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, new Float64Array(len).fill(NaN)]))
+        const verticalOhlcvSetup = Object.fromEntries([...keyNames, `${prefix}_cross`].map(v => [v, new Float64Array(len).fill(NaN)]))
 
-    Object.assign(verticalOhlcv, {...verticalOhlcvSetup})
+        Object.assign(verticalOhlcv, {...verticalOhlcvSetup})
 
-    if(lag > 0)
-    {
-      main.lag(keyNames, lag)
+        if(lag > 0)
+        {
+            main.lag(keyNames, lag)
+        }
     }
-  }
 
-  // ---- FETCH RAW INPUTS ----
-  const o = verticalOhlcv.open[index]
-  const h = verticalOhlcv.high[index]
-  const l = verticalOhlcv.low[index]
-  const c = verticalOhlcv.close[index]
+    // ---- FETCH RAW INPUTS ----
+    const open = verticalOhlcv.open[index]
+    const high = verticalOhlcv.high[index]
+    const low = verticalOhlcv.low[index]
+    const close = verticalOhlcv.close[index]
 
-  if ([o, h, l, c].some(v => Number.isNaN(v))) return true;
 
-  const state = instances[prefix]
+    if ([open, high, low, close].some(v => Number.isNaN(v))) return true;
 
-  // ---- PRE-SMOOTHING (EMA) ----
-  state.emaPre.open.update(o)
-  state.emaPre.high.update(h)
-  state.emaPre.low.update(l)
-  state.emaPre.close.update(c)
+    const inst = instances[prefix]
 
-  let sOpen, sHigh, sLow, sClose;
-  try {
-    sOpen = state.emaPre.open.getResult()
-    sHigh = state.emaPre.high.getResult()
-    sLow = state.emaPre.low.getResult()
-    sClose = state.emaPre.close.getResult()
-  } catch {
-    return true; // skip if not enough data
-  }
+    // ---- PRE-SMOOTHING (EMA) ----
+    inst.emaPre.open.update(open)
+    inst.emaPre.high.update(high)
+    inst.emaPre.low.update(low)
+    inst.emaPre.close.update(close)
 
-  // ---- HEIKEN ASHI CORE ----
-  const haClose = (sOpen + sHigh + sLow + sClose) / 4;
-  const haOpen = (Number.isNaN(state.prevHaOpen) || Number.isNaN(state.prevHaClose))
-    ? (sOpen + sClose) / 2
-    : (state.prevHaOpen + state.prevHaClose) / 2;
-  const haHigh = Math.max(sHigh, haOpen, haClose)
-  const haLow = Math.min(sLow, haOpen, haClose)
+    let sOpen, sHigh, sLow, sClose
 
-  // Store for next round
-  state.prevHaOpen = haOpen
-  state.prevHaClose = haClose
+    try {
+        sOpen = inst.emaPre.open.getResult()
+        sHigh = inst.emaPre.high.getResult()
+        sLow = inst.emaPre.low.getResult()
+        sClose = inst.emaPre.close.getResult()
+    } catch {
+        return true; // skip if not enough data
+    }
 
-  // ---- POST-SMOOTHING (EMA) ----
-  state.emaPost.open.update(haOpen)
-  state.emaPost.high.update(haHigh)
-  state.emaPost.low.update(haLow)
-  state.emaPost.close.update(haClose)
+    // ---- HEIKEN ASHI CORE ----
+    const haClose = (sOpen + sHigh + sLow + sClose) / 4
+    const haOpen = (Number.isNaN(inst.prevHaOpen) || Number.isNaN(inst.prevHaClose)) ? (sOpen + sClose) / 2 : (inst.prevHaOpen + inst.prevHaClose) / 2
+    const haHigh = Math.max(sHigh, haOpen, haClose)
+    const haLow = Math.min(sLow, haOpen, haClose)
 
-  let smOpen, smHigh, smLow, smClose
+    // Store for next round
+    inst.prevHaOpen = haOpen
+    inst.prevHaClose = haClose
 
-  try {
-    smOpen = state.emaPost.open.getResult()
-    smHigh = state.emaPost.high.getResult()
-    smLow = state.emaPost.low.getResult()
-    smClose = state.emaPost.close.getResult()
-  } catch {
-    return true
-  }
+    // ---- POST-SMOOTHING (EMA) ----
+    inst.emaPost.open.update(haOpen)
+    inst.emaPost.high.update(haHigh)
+    inst.emaPost.low.update(haLow)
+    inst.emaPost.close.update(haClose)
 
-  // ---- PUSH OUTPUTS ----
-  main.pushToMain({ index, key: `${prefix}_open`, value: smOpen })
-  main.pushToMain({ index, key: `${prefix}_high`, value: smHigh })
-  main.pushToMain({ index, key: `${prefix}_low`, value: smLow })
-  main.pushToMain({ index, key: `${prefix}_close`, value: smClose })
+    let smOpen, smHigh, smLow, smClose
+
+    try {
+        smOpen = inst.emaPost.open.getResult()
+        smHigh = inst.emaPost.high.getResult()
+        smLow = inst.emaPost.low.getResult()
+        smClose = inst.emaPost.close.getResult()
+    } catch {
+        return true
+    }
+
+  // Cumulative cross counter: positive when uptrend, negative when downtrend
+    const prevCross = index > 0 ? verticalOhlcv[`${prefix}_cross`][index - 1] : 0
+    const prevHaOpen = index > 0 ? verticalOhlcv[`${prefix}_open`][index - 1] : NaN
+    const prevHaClose = index > 0 ? verticalOhlcv[`${prefix}_close`][index - 1] : NaN
+    const crossUp = !Number.isNaN(prevHaClose) && prevHaClose <= prevHaOpen && smClose > smOpen
+    const crossDown = !Number.isNaN(prevHaClose) && prevHaClose >= prevHaOpen && smClose < smOpen
+
+
+    if (crossUp) inst.isTrendUp = true;
+    if (crossDown) inst.isTrendUp = false;
+
+    let cross = 0
+
+    if (index > 0) {
+        if (inst.isTrendUp) {
+            cross = prevCross > 0 ? prevCross + 1 : 1
+        } else {
+            cross = prevCross < 0 ? prevCross - 1 : -1
+        }
+    }
+
+    // ---- PUSH OUTPUTS ----
+    main.pushToMain({ index, key: `${prefix}_open`, value: smOpen })
+    main.pushToMain({ index, key: `${prefix}_high`, value: smHigh })
+    main.pushToMain({ index, key: `${prefix}_low`, value: smLow })
+    main.pushToMain({ index, key: `${prefix}_close`, value: smClose })
+    main.pushToMain({ index, key: `${prefix}_cross`, value: cross })
+
 
   return true
 }
