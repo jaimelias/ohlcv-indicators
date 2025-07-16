@@ -162,12 +162,7 @@ export const crossPairs = (main, index, crossPairsList, {limit, oneHot}) => {
             max: -Infinity
         }
 
-        let crossArrType = 'Int16Array'
-
-        if(limit <= 125)
-        {
-            crossArrType = 'Int8Array'
-        }
+        const crossArrType = 'Int16Array'
 
         verticalOhlcv[crossName] = buildArray(crossArrType, len)
         

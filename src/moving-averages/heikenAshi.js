@@ -34,10 +34,6 @@ export const heikenAshi = (main, index, smoothLength, afterSmoothLength, {lag}) 
     const high = verticalOhlcv.high[index]
     const low = verticalOhlcv.low[index]
     const close = verticalOhlcv.close[index]
-
-
-    if ([open, high, low, close].some(v => Number.isNaN(v))) return true;
-
     const inst = instances[prefix]
 
     // ---- PRE-SMOOTHING (EMA) ----
