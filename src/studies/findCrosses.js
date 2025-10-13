@@ -132,7 +132,7 @@ class CrossInstance {
 
 }
 
-export const crossPairs = (main, index, crossPairsList) => {
+export const crossPairs = (main, index, crossPairsList, {oneHot, limit}) => {
 
   const {verticalOhlcv, verticalOhlcvTempCols, instances, len} = main
 
@@ -147,7 +147,8 @@ export const crossPairs = (main, index, crossPairsList) => {
 
             const col = slow.toString()
             verticalOhlcvTempCols.add(col)
-            verticalOhlcv[col] =  buildArray('Int16Array', len, slow)
+            const numArrType = (slow >= -125 || slow <= 125) ? 'Int8Array' : 'Int16Array'
+            verticalOhlcv[col] =  buildArray(numArrType, len, slow)
         }
 
         if(!instances.hasOwnProperty('crossPairs'))
@@ -162,9 +163,14 @@ export const crossPairs = (main, index, crossPairsList) => {
             max: -Infinity
         }
 
-        const crossArrType = 'Int16Array'
+        const crossArrType = (limit !== null && limit <= 125) ? 'Int8Array' : 'Int16Array'
 
         verticalOhlcv[crossName] = buildArray(crossArrType, len, 0)
+
+        if(oneHot)
+        {
+            verticalOhlcv[`one_hot_${crossName}`] = buildArray('Array', len, null)
+        }
 
     }  else if(index + 1 === len) {
         // sanity checks
@@ -197,8 +203,20 @@ export const crossPairs = (main, index, crossPairsList) => {
       run.update(index, { fast: fastVal, slow: slowVal })
     }
 
-    const value = run.getResult()
+    const rawValue = run.getResult()
+    const value = (limit !== null) ? Math.min(Math.max(rawValue, -limit), limit) : rawValue
     main.pushToMain({index, key: crossName, value})
+
+    if(oneHot)
+    {
+        const oneHotIdx = value + limit;
+        const oneHotSize = 2 * limit + 1;
+        main.pushToMain({
+            index,
+            key: `one_hot_${crossName}`,
+            value: oneHotEncode(oneHotIdx, oneHotSize)
+        });
+    }
 
   }
 

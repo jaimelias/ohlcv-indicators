@@ -223,9 +223,9 @@ export default class OHLCV_INDICATORS {
         validateArray(arr, 'arr', methodName)
         validateObject(options, 'options', methodName)
 
-        const {limit = 125, oneHot = false} = options
+        const {limit = null, oneHot = false} = options
         
-        validateNumber(limit, {min: 2, max: this.len}, 'options.limit', methodName)
+        if(limit !== null) validateNumber(limit, {min: 2, max: this.len}, 'options.limit', methodName)
         validateBoolean(oneHot, 'options.oneHot', methodName)
        
         const orderArr = []
@@ -355,13 +355,18 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    heikenAshi(smoothLength = 10, afterSmoothLength = 10, options = {}) {
+    heikenAshi(smoothLength = null, afterSmoothLength = null, options = {}) {
         const methodName = 'heikenAshi'
 
         isAlreadyComputed(this)
 
-        validateNumber(smoothLength, {min: 1, max: this.len, allowDecimals: false}, 'smoothLength', methodName)
-        validateNumber(afterSmoothLength, {min: 1, max: this.len, allowDecimals: false}, 'afterSmoothLength', methodName)
+        const bothNull = smoothLength === null && afterSmoothLength === null;
+
+        if(bothNull === false) {
+            validateNumber(smoothLength, {min: 1, max: this.len, allowDecimals: false}, 'smoothLength', methodName)
+            validateNumber(afterSmoothLength, {min: 1, max: this.len, allowDecimals: false}, 'afterSmoothLength', methodName)
+        }
+
         validateObject(options, 'options', methodName)
 
         const {lag = 0} = options
@@ -370,7 +375,7 @@ export default class OHLCV_INDICATORS {
 
         const order = 0
 
-        this.inputParams.push({key: methodName, order, params: [smoothLength, afterSmoothLength, {lag}]})
+        this.inputParams.push({key: methodName, order, params: [smoothLength, afterSmoothLength, {lag, bothNull}]})
 
         return this
     }
