@@ -292,6 +292,27 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
+    volumeDelta(options = {}) {
+
+        const methodName = 'volumeDelta'
+
+        if(!this.inputTypes.hasOwnProperty('volume')) {
+            throw new Error('If "volumeDelta" is called the input ohlcv must contain valid volume properties.')
+        }
+
+        isAlreadyComputed(this)
+
+        validateObject(options, 'options', methodName)
+
+        const { lag = 0} = options;
+
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+
+        this.inputParams.push({key: methodName, order: 0, params: [{lag}]})
+ 
+        return this
+    }
+
     atr(size = 14, options = {}) {
 
         const methodName = 'atr'

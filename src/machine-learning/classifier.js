@@ -5,6 +5,51 @@ import { countUniqueLabels, oversampleXY } from "./balancing.js"
 
 const algo = 'classifier'
 
+class Store {
+  constructor(args = {}) {
+    Object.entries(args).forEach(([k, v]) => { this[k] = v })
+  }
+
+  // internal helpers
+  _unwrap = v => Array.isArray(v) ? v[0] : v
+  _num = (v, def = 0) => {
+    const n = Number(this._unwrap(v))
+    return Number.isFinite(n) ? n : def
+  }
+
+  // set: supports value OR updater function
+  // if you pass a function, we feed it the current *numeric* value
+  set = (key, valueOrFn) => {
+    if (typeof valueOrFn === 'function') {
+      const next = valueOrFn(this._num(this[key], 0))
+      this[key] = next               // <- change to [next] if you want to keep the array wrapper
+      return next
+    } else {
+      this[key] = valueOrFn          // <- change to [valueOrFn] if you want to keep the array wrapper
+      return valueOrFn
+    }
+  }
+
+  // convenience numerics
+  inc = (key, delta = 1) => this.set(key, v => v + delta)
+  add = (key, delta = 0) => this.inc(key, delta) // alias
+  getNum = (key, def = 0) => this._num(this[key], def)
+
+  get = (key) => this._unwrap(this[key])
+  getAll = () => {
+
+    const output = {}
+    
+    for(const [key, valueOrFn] of Object.entries(this)) {
+      if(typeof valueOrFn === 'function') continue
+      output[key] = valueOrFn
+    }
+
+
+    return {...output}
+  }  // shallow clone of data-only fields
+}
+
 export const classifier = (
   main,
   index,
@@ -39,7 +84,15 @@ export const classifier = (
     const expectedLoops = (flatY) ? predictions : 1 //
 
     instances[algo][prefix] = {
-
+      store: new Store({
+        strategy: null,
+        total: 0,
+        win: 0,
+        loss: 0,
+        gainLoss: 0,
+        idx: 0,
+        initialBalance: verticalOhlcv.close[index]
+      }),
       expectedLoops,
       isTrained: new Array(expectedLoops).fill(false),
       uniqueLabels: new Array(expectedLoops).fill(0),
@@ -66,7 +119,7 @@ export const classifier = (
   {
     return
   }
-  else if(filterCallback(verticalOhlcv, index) === false)
+  else if(filterCallback(verticalOhlcv, index, instances[algo][prefix].store) === false)
   {
       return
   }
@@ -138,7 +191,7 @@ export const classifier = (
   if(!trainX) return 
 
    //if univariable Y (flatY) a model is created for each prediction
-  const trainY = yCallback(index, verticalOhlcv, horizon)
+  const trainY = yCallback(index, verticalOhlcv, horizon, instances[algo][prefix].store)
 
   if (trainY !== null && (!Array.isArray(trainY) || trainY.length !== predictions)) {
 

@@ -10,6 +10,7 @@ import { relativeVolume } from "../moving-averages/relativeVolume.js";
 import { donchianChannels } from "../moving-averages/donchianChannel.js";
 import { bollingerBands } from "../moving-averages/bollingerBands.js";
 import { volumeOscillator } from "../oscillators/volumeOscillator.js";
+import { volumeDelta } from "../oscillators/volumeDelta.js";
 import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
@@ -36,6 +37,7 @@ const mainFunctions = {
   sma: movingAverages,
   vidya,
   macd,
+  volumeDelta,
   relativeVolume,
   donchianChannels,
   bollingerBands,
