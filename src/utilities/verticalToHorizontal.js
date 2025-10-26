@@ -5,6 +5,8 @@ export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, da
 
   const {verticalOhlcv, invalidValueIndex, len, verticalOhlcvKeyNames, verticalOhlcvTempCols, priceBased, precision, precisionMultiplier} = main
 
+  
+
   if (verticalOhlcvKeyNames.length === 0) return []
   
   const skipNullIndex = skipNull && invalidValueIndex >= 0 ? invalidValueIndex + 1 : 0
@@ -22,7 +24,7 @@ export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, da
       }
   }
 
-   for(const [key, arr] of Object.entries(verticalOhlcv)){
+  for(const [key, arr] of Object.entries(verticalOhlcv)){
     if(verticalOhlcvTempCols.has(key)) continue
 
     for (let i = maxStartIndex; i < len; i++)
