@@ -4,32 +4,37 @@ export const lag = (main, index, colKeys, lookback) => {
 
   
   
-  const { verticalOhlcv, len } = main
+  const { verticalOhlcv, len, priceBased } = main
 
   if(index === 0)
   {
-    for (const colKey of colKeys) {
-      if (!verticalOhlcv.hasOwnProperty(colKey)) {
-          throw new Error(
-          `Lag processing invoked by col "${colKey}" was not found in "verticalOhlcv".`
-          )
+    for (const targetKey of colKeys) {
+      if (!verticalOhlcv.hasOwnProperty(targetKey)) {
+        throw new Error(
+        `Lag processing invoked by col "${targetKey}" was not found in "verticalOhlcv".`
+        )
       }
 
-      for (let step = 1; step <= lookback; step++) {
-          const key = `${colKey}_lag_${step}`
-          const thisArrType = getArrayType(colKey, verticalOhlcv[colKey])
+      const addToPriceBased = priceBased.has(targetKey)
 
-          verticalOhlcv[key] = buildArray(thisArrType, len)
+      for (let step = 1; step <= lookback; step++) {
+        const key = `${targetKey}_lag_${step}`
+
+        if(addToPriceBased) priceBased.add(key)
+
+        const thisArrType = getArrayType(targetKey, verticalOhlcv[targetKey])
+
+        verticalOhlcv[key] = buildArray(thisArrType, len)
       }   
     }
   }
 
-  for (const colKey of colKeys) {
-    const currentColumn = verticalOhlcv[colKey]
+  for (const targetKey of colKeys) {
+    const currentColumn = verticalOhlcv[targetKey]
 
     // Populate the lagged values each tick:
     for (let step = 1; step <= lookback; step++) {
-      const key = `${colKey}_lag_${step}`
+      const key = `${targetKey}_lag_${step}`
       const laggedIndex = index - step
       const value =
         laggedIndex < 0 || currentColumn[laggedIndex] === undefined

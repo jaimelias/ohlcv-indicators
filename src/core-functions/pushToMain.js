@@ -25,10 +25,9 @@ export const areKeyValuesValid = (main, index, keyNames) => {
 
         const val = verticalOhlcv[key][index]
 
-        if(typeof val === 'undefined' || val === null || Number.isNaN(val))
-        {
-            output = false
-            break
+        if (val == null || Number.isNaN(val) || !Number.isFinite(val)) {
+            output = false;
+            break;
         }
     }
 

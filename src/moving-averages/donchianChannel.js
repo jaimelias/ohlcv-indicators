@@ -1,12 +1,10 @@
 
-import { roundDecimalPlaces } from "../utilities/numberUtilities.js";
-
 export const donchianChannels = (main, index, size, offset, options) => {
 
   
 
-  const {verticalOhlcv, instances, len, inputParams, lag} = main
-  const { height: includeHeight, range: rangeKeys, decimals } = options
+  const {verticalOhlcv, instances, len, inputParams, lag, priceBased} = main
+  const { height: includeHeight, range: rangeKeys } = options
   const indicatorKey = `${size}_${offset}`
 
   // ---- INIT (only at first bar) ----
@@ -28,6 +26,10 @@ export const donchianChannels = (main, index, size, offset, options) => {
         );
       }
       keys.push(`${prefix}_range_${rk}`);
+    }
+
+    for(const k of keys) {
+      priceBased.add(k)
     }
 
     // bootstrap instance
@@ -96,7 +98,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
     const heightVal = hasBounds && lower
       ? (upper - lower) / lower
       : NaN;
-    main.pushToMain({ index, key: `${prefix}_height`, value: (decimals === null) ? heightVal : roundDecimalPlaces(heightVal, decimals) });
+    main.pushToMain({ index, key: `${prefix}_height`, value: heightVal });
   }
 
   // precompute spread once
@@ -111,7 +113,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
     const val   = hasBounds && price === price && spread
       ? (price - lower) / spread
       : NaN;
-    main.pushToMain({ index, key: rangeOut[i], value: (decimals === null) ? val : roundDecimalPlaces(val, decimals) });
+    main.pushToMain({ index, key: rangeOut[i], value: val });
   }
 
   return true;

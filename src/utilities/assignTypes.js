@@ -1,8 +1,6 @@
 import { classifyNum } from "./numberUtilities.js";
 import { selectDateFormatter } from "./dateUtilities.js";
 
-const numberKeys = new Set(['open', 'high', 'low', 'close'])
-
 export const buildArray = (arrayType, len, fallbackValue) => {
   const ctorMap = {
     Array:        Array,
@@ -35,7 +33,7 @@ export const buildArray = (arrayType, len, fallbackValue) => {
 }
 
 export const assignTypes = main => {
-  const {firstRow} = main
+  const {firstRow, precision, initialPriceBased} = main
   const inputTypes  = {}
   const arrayTypes  = {}
 
@@ -50,12 +48,12 @@ export const assignTypes = main => {
       inputTypes[colName] = classifyNum(cellValue, true)
       arrayTypes[colName] = 'Int32Array'
     }
-    else if(numberKeys.has(colName))
+    else if(initialPriceBased.has(colName))
     {
-      inputTypes[colName] = classifyNum(cellValue, true)
+      inputTypes[colName] = classifyNum(cellValue, true, precision)
       arrayTypes[colName] = 'Float64Array'
     } else {
-      const thisType = classifyNum(cellValue, false)
+      const thisType = classifyNum(cellValue, false, precision)
       inputTypes[colName] = thisType
       arrayTypes[colName] = (thisType === 'number') ? 'Float64Array' : 'Array'
     }

@@ -89,7 +89,7 @@ export const classifier = (
         total: 0,
         win: 0,
         loss: 0,
-        gainLoss: 0,
+        strategyGainLoss: 0,
         idx: 0,
         initialBalance: verticalOhlcv.close[index]
       }),

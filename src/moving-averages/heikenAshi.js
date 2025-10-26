@@ -1,7 +1,7 @@
 import { FasterEMA } from 'trading-signals';
 
 export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag = 0, bothNull = false } = {}) => {
-  const { verticalOhlcv, instances, len } = main;
+  const { verticalOhlcv, instances, len, priceBased } = main;
   const prefix = (bothNull) ?  'heiken_ashi' : `heiken_ashi_${smoothLength}_${afterSmoothLength}`;
   const keys = ['open', 'high', 'low', 'close'];
 
@@ -25,6 +25,10 @@ export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag =
     const verticalOhlcvSetup = Object.fromEntries(
       [...keyNames, `${prefix}_cross`].map(v => [v, new Float64Array(len).fill(NaN)])
     );
+
+    for(const k of keyNames) {
+      priceBased.add(k)
+    }
 
     Object.assign(verticalOhlcv, { ...verticalOhlcvSetup });
 

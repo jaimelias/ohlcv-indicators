@@ -1,5 +1,6 @@
 import { oneHotEncode } from "../machine-learning/ml-utilities.js"
 import { buildArray } from "../utilities/assignTypes.js"
+import { addPrecisionAsNumber } from "../utilities/precisionMultiplier.js"
 const eq = (fast, slow) => fast === slow
 const gt = (fast, slow) => fast > slow
 const lt = (fast, slow) => fast < slow
@@ -134,7 +135,7 @@ class CrossInstance {
 
 export const crossPairs = (main, index, crossPairsList, {oneHot, limit}) => {
 
-  const {verticalOhlcv, verticalOhlcvTempCols, instances, len} = main
+  const {verticalOhlcv, verticalOhlcvTempCols, instances, len, precision, precisionMultiplier, priceBased} = main
 
   for (const { fast, slow } of crossPairsList) {
 
@@ -147,8 +148,15 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, limit}) => {
 
             const col = slow.toString()
             verticalOhlcvTempCols.add(col)
-            const numArrType = (slow >= -125 || slow <= 125) ? 'Int8Array' : 'Int16Array'
-            verticalOhlcv[col] =  buildArray(numArrType, len, slow)
+
+            const requiresPrecision = precision && (fast === 'price' || priceBased.has(fast))
+
+            const slowVal = requiresPrecision
+                ? addPrecisionAsNumber(col, precisionMultiplier) 
+                : slow
+
+            const numArrType = (slow >= -125 && slow <= 125 && requiresPrecision === false) ? 'Int8Array' : 'Float64Array'
+            verticalOhlcv[col] =  buildArray(numArrType, len, slowVal)
         }
 
         if(!instances.hasOwnProperty('crossPairs'))
@@ -163,7 +171,7 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, limit}) => {
             max: -Infinity
         }
 
-        const crossArrType = (limit !== null && limit <= 125) ? 'Int8Array' : 'Int16Array'
+        const crossArrType = (limit !== null && limit <= 125) ? 'Int8Array' : 'Float64Array'
 
         verticalOhlcv[crossName] = buildArray(crossArrType, len, 0)
 

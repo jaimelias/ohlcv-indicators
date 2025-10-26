@@ -1,11 +1,7 @@
 import { FasterBollingerBands } from 'trading-signals'
-import { roundDecimalPlaces } from '../utilities/numberUtilities.js';
-
 const defaultTarget = 'close'
 
-export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, lag, decimals }) => {
-
-  
+export const bollingerBands = (main, index, size, stdDev, { height, range = [], target, lag }) => {
 
   const { verticalOhlcv, instances } = main;
   const indicatorKey = `${size}_${stdDev}`;
@@ -14,7 +10,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
   // Initialization on the first call.
   if (index === 0) {
 
-    const {inputParams, verticalOhlcv, len } = main;
+    const {inputParams, verticalOhlcv, len, priceBased } = main;
 
     if (!(target in verticalOhlcv)) {
       throw new Error(`bollingerBands could not find target "${target}"`);
@@ -62,6 +58,13 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
 
     }
 
+    if(priceBased.has(target)) {
+      for(const k of keyNames) {
+        priceBased.add(k)
+      }
+    }
+
+
     const verticalOhlcvSetup = Object.fromEntries(keyNames.map(v => [v, new Float64Array(len).fill(NaN)]))
     Object.assign(verticalOhlcv, {...verticalOhlcvSetup})
 
@@ -106,7 +109,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     if (!Number.isNaN(lower) && !Number.isNaN(upper)) {
       heightValue = ((upper - lower) / lower)
     }
-    main.pushToMain({ index, key: `${prefix}_height${suffix}`, value: (decimals === null) ? heightValue : roundDecimalPlaces(heightValue, decimals) });
+    main.pushToMain({ index, key: `${prefix}_height${suffix}`, value: heightValue });
   }
 
   // Process each range property.
@@ -116,7 +119,7 @@ export const bollingerBands = (main, index, size, stdDev, { height, range = [], 
     if (!Number.isNaN(priceValue) && !Number.isNaN(lower) && !Number.isNaN(upper)) {
       rangeValue = (priceValue - lower) / (upper - lower)
     }
-    main.pushToMain({ index, key: `${prefix}_range_${rangeKey}${suffix}`, value: (decimals === null) ? rangeValue : roundDecimalPlaces(rangeValue, decimals) });
+    main.pushToMain({ index, key: `${prefix}_range_${rangeKey}${suffix}`, value: rangeValue });
   }
 
   return true;

@@ -6,7 +6,7 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
 
   
 
-  const { verticalOhlcv, instances } = main
+  const { verticalOhlcv, instances, priceBased } = main
   const {instanceKey} = precomputed
 
   // Initialization on the first index.
@@ -51,6 +51,10 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
     })
 
     const keyNames = [diffKey, deaKey, histogramKey]
+
+    for(const k of keyNames) {
+      priceBased.add(k)
+    }
 
     if(lag > 0)
     {

@@ -1,5 +1,4 @@
 import { mainLoop } from './src/core-functions/mainLoop.js'
-import { correlation } from './src/studies/correlation.js'
 import { 
     isAlreadyComputed, 
     validateArray, 
@@ -14,10 +13,10 @@ import {
 import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
-import { buildArray, getArrayType } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { defaultMapColsCallback } from './src/studies/mapCols.js'
 import { getOrderFromArray } from './src/utilities/order.js'
+import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 
 import {
     defaultYCallback,
@@ -38,24 +37,32 @@ import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
  */
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, inputParams = null, chunkProcess = 2000, ML = {}}) {
+    constructor({input, ticker = null, inputParams = null, chunkProcess = 2000, ML = {}, precision = false}) {
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
 
         validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
         validateObject(ML, 'ML', 'constructor')
+        validateBoolean(precision, 'precision', 'contructor')
 
         this.chunkProcess = chunkProcess
         
         this.input = [...input]
         this.len = this.input.length
         this.firstRow = this.input[0]
-        
+        this.precision = precision
+
+        const initialPriceBasedArr = ['open', 'high', 'low', 'close']
+        this.initialPriceBased = new Set(initialPriceBasedArr)
+        this.priceBased = new Set(initialPriceBasedArr)
+        this.precisionMultiplier = calcPrecisionMultiplier(this)
+
         const {inputTypes, arrayTypes} = assignTypes(this)
 
         this.inputTypes = inputTypes
         this.arrayTypes = arrayTypes
+
         if(!this.firstRow.hasOwnProperty('close')) throw Error(`input OHLCV array objects require at least "close" property: ${ticker}`)
 
         this.dateType = this.inputTypes.date ? this.inputTypes.date : null;
@@ -65,10 +72,7 @@ export default class OHLCV_INDICATORS {
         this.verticalOhlcv = {}
         this.verticalOhlcvKeyNames = []
         this.verticalOhlcvTempCols = new Set()
-
-        this.utilities = {
-            correlation
-        }
+        this.utilities = {}
 
         this.invalidValueIndex = -1
         this.scaledGroups = {}
@@ -104,50 +108,6 @@ export default class OHLCV_INDICATORS {
         return this 
     }
 
-
-    getDataAsCols(options = {}) {
-        this.compute();
-
-        const {skipNull = true, dateFormat = 'string'} = options
-
-        validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getDataAsCols')
-        validateObject(options, 'options', 'getDataAsCols')
-      
-        const {
-          len,
-          invalidValueIndex,
-          verticalOhlcv,
-          verticalOhlcvTempCols,
-        } = this
-        const result = {}
-
-        const startIndex = skipNull ? invalidValueIndex + 1 : 0
-        const newLen = len - startIndex
-      
-        for (const [key, arr] of Object.entries(verticalOhlcv)) {
-
-            if(verticalOhlcvTempCols.has(key)) continue
-
-            const thisArrType = getArrayType(key, verticalOhlcv[key])
-
-            result[key] = buildArray(thisArrType, newLen)
-
-            for (let x = startIndex; x < len; x++)
-            {
-                if(key === 'date')
-                {
-                    result[key][x] = dateOutputFormaters[dateFormat](arr[x])
-                }
-                else{
-                    result[key][x] = arr[x]
-                }
-            }
-
-        }
-      
-        return result;
-      }
-      
 
     getData(options = {}) {
 
@@ -500,17 +460,16 @@ export default class OHLCV_INDICATORS {
         validateNumber(stdDev, {min: 0.01, max: 50, allowDecimals: true}, 'stdDev', methodName)
         validateObject(options, 'options', methodName)
 
-        const {target = 'close', height = false, range = [],  lag = 0, decimals = null} = options
+        const {target = 'close', height = false, range = [],  lag = 0} = options
 
         validateString(target, 'options.target', methodName)
         validateArray(range, 'options.range', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(height, 'options.height', methodName)
-        if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
   
         const order = getOrderFromArray([target], methodName)
 
-        this.inputParams.push({key: methodName, order, params: [size, stdDev, {target, height, range, lag, decimals}]});
+        this.inputParams.push({key: methodName, order, params: [size, stdDev, {target, height, range, lag}]});
     
         return this;
     }
@@ -558,19 +517,17 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
 
-        
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateNumber(offset, {min: 0, max: this.len, allowDecimals: false}, 'offset', methodName)
       
         validateObject(options, 'options', methodName)
-        const { height = false, range = [], lag = 0, decimals = null} = options;
+        const { height = false, range = [], lag = 0} = options;
       
         validateArray(range, 'options.range', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(height, 'options.height', methodName)
-        if(decimals !== null) validateNumber(decimals, {min: 1, max: 15, allowDecimals: false}, 'decimals', methodName)
       
-        this.inputParams.push({ key: methodName, order: 0, params: [size, offset, { height, range, lag, decimals}] });
+        this.inputParams.push({ key: methodName, order: 0, params: [size, offset, { height, range, lag}] });
       
         return this;
     }

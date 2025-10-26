@@ -19,7 +19,7 @@ import { atr } from "../volatility/atr.js";
 import { mapCols } from "../studies/mapCols.js";
 
 import { buildArray } from "../utilities/assignTypes.js";
-import {  numberFormater } from "../utilities/numberUtilities.js";
+import {  inputNumberFormatter } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
 
 import { pca } from "../machine-learning/pca.js";
@@ -57,6 +57,7 @@ export const mainLoop = (input, main) => {
     inputTypes, 
     chunkProcess, 
     processSecondaryLoop,
+    precisionMultiplier
   } = main;
 
   validateInputParams(inputParams, len)
@@ -77,9 +78,11 @@ export const mainLoop = (input, main) => {
         {
           const value = curr[key]
 
-          if(numberFormater.hasOwnProperty(formaterKey))
+          if(inputNumberFormatter.hasOwnProperty(formaterKey))
           {
-            const formatedValue = numberFormater[formaterKey](value)
+            if(typeof value === 'undefined') console.log({index, formaterKey, key})
+
+            const formatedValue = inputNumberFormatter[formaterKey](value, precisionMultiplier)
 
             main.pushToMain({index, key, value: formatedValue})
           }
