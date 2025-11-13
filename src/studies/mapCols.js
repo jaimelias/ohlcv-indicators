@@ -1,12 +1,9 @@
-export const mapCols = (main, index, newCols, callback, {lag}) => {
+export const mapCols = (main, index, newCols, callback, {lag, isPriceBased}) => {
 
-    
-
-    const {verticalOhlcv, len} = main
+    const {verticalOhlcv, len, priceBased, precision} = main
 
     if(index === 0)
     {
-
         for(const key of newCols)
         {
             if(verticalOhlcv.hasOwnProperty(key)) {
@@ -14,6 +11,11 @@ export const mapCols = (main, index, newCols, callback, {lag}) => {
             }
 
             verticalOhlcv[key] = new Array(len).fill(0)
+
+            if(precision && isPriceBased)
+            {
+                priceBased.add(key)
+            }
         }
 
         if(lag > 0)
@@ -35,12 +37,10 @@ export const mapCols = (main, index, newCols, callback, {lag}) => {
 export const defaultMapColsCallback = ({main, index}) => {
     const {verticalOhlcv} = main
 
-    const currClose = verticalOhlcv.close[index]
-    const prevClose = verticalOhlcv.close[index-1]
+    const close = verticalOhlcv.close[index]
+    const open = verticalOhlcv.open[index-1]
     
-    if(typeof prevClose === 'undefined') return null
-
     return {
-        change: (currClose - prevClose) / prevClose
+        change: ((close - open) / open) * 100
     }
 } 

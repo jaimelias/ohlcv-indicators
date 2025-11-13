@@ -291,7 +291,7 @@ export const classifier = (
       {
         uniqueLabels[loopIdx] = countUniqueLabels(yRows)
         
-        if(uniqueLabels[loopIdx] < 2)
+        if(uniqueLabels[loopIdx] < 1)
         {
           throw new Error(`Invalid number or labels in ${prefix}. Check the logic of your "yCallback" function.`)
         }

@@ -924,13 +924,19 @@ export default class OHLCV_INDICATORS {
 
         validateObject(options, 'options', methodName)
 
-        const {lag = 0} = options
+        const {lag = 0, isPriceBased = false} = options
 
         validateArray(newCols, 'newCols', methodName)
         validateNumber(lag, {min: 0, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(isPriceBased, 'isPriceBased', 'mapCols')
+
+        if(this.precision === false && isPriceBased) {
+            throw new Error(`Invalid param: If "mapCols.options.isPriceBased" is true, the "constructor.precision" param must be also true.`)
+        }
+
         const order = getOrderFromArray(newCols, methodName)
 
-        this.inputParams.push({key: methodName, order, params: [newCols, callback, {lag}]})
+        this.inputParams.push({key: methodName, order, params: [newCols, callback, {lag, isPriceBased}]})
 
         return this
     }

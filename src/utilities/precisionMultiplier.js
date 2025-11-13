@@ -1,8 +1,8 @@
-// ------------------------------
-// calcPrecisionMultiplier (unchanged semantics)
-// ------------------------------
+
+//calcPrecisionMultiplier is calculated once, using the open, high, low and close values of the first row
+//the multiplier (1000000000) is store in constructor
 export const calcPrecisionMultiplier = main => {
-  const { precision, firstRow, initialPriceBased } = main;
+  const { precision, firstRow, initialPriceBased, priceBased } = main;
   if (precision === false) return 1
 
   const multipliers = []
@@ -18,81 +18,74 @@ export const calcPrecisionMultiplier = main => {
         Property "${key}" had the value "${strNum}" type ${typeof strNum}.`)
     }
 
-    if (!new Set(['open', 'high', 'low', 'close']).has(key)) continue;
+    if (!priceBased.has(key)) continue
 
-    const [, decimals = ''] = strNum.split('.')
-    const decimalPrecision = Math.max(4, decimals.length)
-    multipliers.push(Math.pow(10, decimalPrecision)) // returns Number
+    const [integerStr, decimals = ''] = strNum.split('.')
+    const integer = Number(integerStr)
+    const decimalPrecision = integer > 0 ? 4 : Math.max(4, decimals.length)
+    multipliers.push(Math.pow(10, decimalPrecision))
   }
 
   if (multipliers.length === 0) return 1
-  return Math.max(...multipliers)
+
+  const maxMultiplier = 10 ** 9 //1000000000
+
+  return Math.min(maxMultiplier, Math.max(...multipliers))
 }
 
-// ------------------------------
-// Precise BigInt-based helpers (no `n` literals)
-// ------------------------------
-export const addPrecisionExact = (strNum, mul) => {
+//this function converts the strNum into a integer * multiplier
+export const addPrecisionAsNumber = (strNum, multiplier) => {
   if (typeof strNum !== 'string') throw new Error('addPrecisionExact expects a string when precision=true')
 
   const negative = strNum.charAt(0) === '-'
   const s = negative ? strNum.slice(1) : strNum
   const [intPart, decPart = ''] = s.split('.')
 
-  // Compute decimals from mul (mul expected as 10^decimals)
-  const mulStr = String(mul);
-  const decimals = (mul === 1) ? 0 : (mulStr.length - 1)
+  // Compute decimals from multiplier (multiplier expected as 10^decimals)
+  const mulStr = String(multiplier);
+  const decimals = (multiplier === 1) ? 0 : (mulStr.length - 1)
 
   const decPadded = decPart.padEnd(decimals, '0').slice(0, decimals); // pad or trim
   const integerString = intPart + decPadded // e.g. "12" + "3400" => "123400"
 
-  // Use BigInt constructor (no n-literals)
-  let result = BigInt(integerString || '0'); // handle "0" or empty
+  let result = parseInt(integerString || '0', 10)
+
   if (negative) result = -result
+
   return result
 }
 
-export const revertPrecisionExact = (num, mul) => {
 
-
-  // Convert input to BigInt without using literal suffixes
-  const big = (typeof num === 'bigint') ? num : BigInt(parseInt(num))
-  const neg = big < BigInt(0)
-  const abs = neg ? -big : big
-
-  const mulBig = BigInt(mul);
-  if (mulBig === BigInt(1)) {
-    const s = abs.toString()
-    return neg ? `-${s}` : s
+//this function converts the outputs the number generated in addPrecisionAsNumber / multiplier
+export const revertPrecisionAsNumber = (num, multiplier) => {
+  if (typeof num !== 'number' || !Number.isFinite(num)) {
+    throw new Error('revertPrecisionAsNumber expects a finite number')
   }
 
-  const intPart = abs / mulBig
-  const fracPart = abs % mulBig
+  const negative = num < 0
+  let abs = Math.abs(num)
 
-  const decimals = String(mul).length - 1
-  const fracStr = fracPart.toString().padStart(decimals, '0')
+  // Make sure we're working with an integer, mirroring addPrecisionAsNumber
+  abs = Math.trunc(abs)
 
-  // Remove trailing zeros in fractional part (optional)
-  const trimmedFrac = fracStr.replace(/0+$/, '')
-  const result = trimmedFrac.length === 0
-    ? intPart.toString()
-    : `${intPart.toString()}.${trimmedFrac}`
+  const decimals = (multiplier === 1) ? 0 : (String(multiplier).length - 1)
 
-  return neg ? `-${result}` : result
-}
+  if (decimals === 0) {
+    // No fractional part; just restore sign
+    return negative ? -abs : abs
+  }
 
-// ------------------------------
-// Convenience wrappers (Numbers) — may lose precision
-// ------------------------------
-export const addPrecisionAsNumber = (strNum, mul) => {
+  // Integer division and remainder
+  const intPart = Math.trunc(abs / multiplier)
+  const fracPart = abs % multiplier
 
-  const big = addPrecisionExact(strNum, mul)
-  
-  return Number(big)
-}
+  // Build fractional string with leading zeros, then trim trailing zeros
+  let fracStr = String(fracPart).padStart(decimals, '0')
+  fracStr = fracStr.replace(/0+$/, '')
 
-export const revertPrecisionAsNumber = (num, mul) => {
+  const resultStr = fracStr.length === 0
+    ? String(intPart)
+    : `${intPart}.${fracStr}`
 
-  const asStr = revertPrecisionExact(num, mul)
-  return Number(asStr)
+  return Number(negative ? `-${resultStr}` : resultStr)
 }

@@ -2,7 +2,7 @@
 import {FasterATR, FasterWSMA} from 'trading-signals';
 
 export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
-  const { verticalOhlcv, instances } = main
+  const { verticalOhlcv, instances, priceBased } = main
   const baseKeyName = `atr_${size}`
 
   if (index === 0) {
@@ -20,6 +20,7 @@ export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
     for(const k of keyNames)
     { 
       verticalOhlcv[k] = new Float64Array(len).fill(NaN)
+      priceBased.add(k)
     }
 
     if(lag > 0)
