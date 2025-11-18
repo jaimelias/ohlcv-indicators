@@ -2,8 +2,6 @@ import { FasterSMA } from 'trading-signals';
 
 export const relativeVolume = (main, index, size, {lag}) => {
 
-  
-
   const key = `relative_volume_${size}`;
   const { instances, verticalOhlcv } = main;
 

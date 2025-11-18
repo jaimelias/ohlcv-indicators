@@ -1,37 +1,55 @@
 
 //calcPrecisionMultiplier is calculated once, using the open, high, low and close values of the first row
-//the multiplier (1000000000) is store in constructor
+//the multiplier (min 10000) is store in constructor
+
 export const calcPrecisionMultiplier = main => {
-  const { precision, firstRow, initialPriceBased, priceBased } = main;
+  const { precision, firstRow, initialPriceBased } = main
   if (precision === false) return 1
 
-  const multipliers = []
-
-  const err = 'If "precision" is set to true all the "open", "high", "low" and "close" values must be numeric strings like "123.45" with no commas or currency symbols.'
+  let maxMultiplier = 1
 
   for (const [key, strNum] of Object.entries(firstRow)) {
+    if (!initialPriceBased.has(key)) continue
 
-    if(!initialPriceBased.has(key)) continue
-    
-    if (typeof strNum !== 'string' || !/^-?\d+(\.\d+)?$/.test(strNum)) {
-      throw new Error(`${err} 
-        Property "${key}" had the value "${strNum}" type ${typeof strNum}.`)
+    if (typeof strNum !== 'string' || !/^\d+(\.\d+)?$/.test(strNum))  {
+      throw new Error(
+        `If "precision" is set to true all the "open", "high", "low" and "close" values must be numeric strings like "123.45" with no commas or currency symbols. Property "${key}" had the value "${strNum}" type ${typeof strNum}.`
+      )
     }
-
-    if (!priceBased.has(key)) continue
 
     const [integerStr, decimals = ''] = strNum.split('.')
     const integer = Number(integerStr)
-    const decimalPrecision = integer > 0 ? 4 : Math.max(4, decimals.length)
-    multipliers.push(Math.pow(10, decimalPrecision))
+
+    let decimalPrecision = 4
+
+    // Treat any non-zero integer (positive or negative) as "normal"
+    if (Math.abs(integer) === 0) {
+      const decimalsLen = decimals.length
+      const countDecimals = Math.max(4, decimalsLen)
+
+      // index of first non-zero decimal digit, -1 if none
+      const firstNonZeroIndex = decimals.search(/[1-9]/)
+
+      if (firstNonZeroIndex === -1) {
+        // 0, 0.0, 0.0000... -> nothing special to preserve
+        decimalPrecision = countDecimals
+      } else {
+        // Give extra headroom after the first non-zero digit
+        const extra = 5 // tweak as you like
+        const needed = firstNonZeroIndex + 1 + extra
+        decimalPrecision = Math.max(countDecimals, needed)
+      }
+    }
+
+    // Optional: cap exponent to keep numbers sane
+    const multiplier = 10 ** decimalPrecision
+
+    if (multiplier > maxMultiplier) maxMultiplier = multiplier
   }
 
-  if (multipliers.length === 0) return 1
-
-  const maxMultiplier = 10 ** 9 //1000000000
-
-  return Math.min(maxMultiplier, Math.max(...multipliers))
+  return maxMultiplier
 }
+
 
 //this function converts the strNum into a integer * multiplier
 export const addPrecisionAsNumber = (strNum, multiplier) => {
