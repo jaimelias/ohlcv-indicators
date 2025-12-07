@@ -1,5 +1,5 @@
 
-//calcPrecisionMultiplier is calculated once, using the open, high, low and close values of the first row
+//calcPrecisionMultiplier is calculated once in the class constructor, using the open, high, low and close values of the first row
 //the multiplier (min 10000) is store in constructor
 
 export const calcPrecisionMultiplier = main => {

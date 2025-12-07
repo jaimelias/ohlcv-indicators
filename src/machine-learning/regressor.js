@@ -7,7 +7,7 @@ const algo = 'regressor'
 export const regressor = (main, index, trainingSize, {target, predictions, retrain, trainingCols, findGroups, type, modelArgs, precompute, filterCallback, modelConfig, modelClass}) => {
 
     const {lookbackAbs, prefix, flatX, flatY} = precompute
-    const {verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML} = main
+    const {verticalOhlcv, len, instances, scaledGroups, invalidValueIndex, ML, precision, priceBased} = main
     const allModels = ML.models
     const startIndex = (invalidValueIndex + 1)
 
@@ -29,10 +29,16 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
             Y: Array.from({ length: expectedLoops }, () => []),
         }
 
+        const shouldBePriceBased = priceBased.has(target) && precision
+
         for(let x = 0; x < predictions; x++)
         {
             const predictionKey = `${prefix}_${(x+1)}`
             verticalOhlcv[predictionKey] = new Float64Array(len).fill(NaN)
+
+            if(shouldBePriceBased) {
+                priceBased.add(predictionKey)
+            }
 
             if(!allModels.hasOwnProperty(predictionKey))
             {
@@ -143,7 +149,7 @@ export const regressor = (main, index, trainingSize, {target, predictions, retra
         const currTrainY =  (flatY) ? (typeof trainY[loopIdx] === 'undefined') ? null : trainY[loopIdx] : trainY
         const isTrained = dataSetInstance.isTrained[loopIdx]
 
-        const shouldPredict = allModels.hasOwnProperty(predictionKey) && isTrained && allModels[predictionKey].length === expectedLoops
+        const shouldPredict = allModels.hasOwnProperty(predictionKey) && isTrained
 
         //predicts using previously saved models even if current currTrainY is not available
         if(shouldPredict)

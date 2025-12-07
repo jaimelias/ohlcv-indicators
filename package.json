@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node test/test.js",
+    "test-classifier": "node test/test-classifier/test-classifier.js",
+    "test-regressor": "node test/test-regressor/test-regressor.js",
     "build": "npx webpack",
     "cross": "node src/studies/findCrosses2.js"
   },
