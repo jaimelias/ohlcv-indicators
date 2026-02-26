@@ -15,15 +15,7 @@ import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { defaultMapColsCallback } from './src/studies/mapCols.js'
-import { getOrderFromArray } from './src/utilities/order.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
-
-import {
-    defaultYCallback,
-    validRegressors,
-    validClassifiers,
-    exportTrainedModels
-} from './src/machine-learning/ml-config.js'
 
 import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
 
@@ -31,19 +23,17 @@ import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
  * Class OHLCV_INDICATORS
  *
  * This class provides methods for calculating and managing technical indicators 
- * on financial OHLCV (Open, High, Low, Close, Volume) data. It enables users 
- * to parallel compute various technical indicators in 1 single loop for standard indicators and a second loop for ML regressors and classifier.
+ * on financial OHLCV (Open, High, Low, Close, Volume) data. It enables users
  * OHLCV datasets.
  */
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, inputParams = null, chunkProcess = 2000, ML = {}, precision = false}) {
+    constructor({input, ticker = null, inputParams = null, chunkProcess = 2000, precision = false}) {
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
 
         validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
-        validateObject(ML, 'ML', 'constructor')
         validateBoolean(precision, 'precision', 'contructor')
 
         this.chunkProcess = chunkProcess
@@ -78,24 +68,12 @@ export default class OHLCV_INDICATORS {
         this.scaledGroups = {}
         this.isAlreadyComputed = new Set()
 
-        const {classes: mlClasses} = ML
-
-        if(typeof mlClasses !== 'undefined') validateObject(mlClasses, 'ML.classes', 'constructor')
-
-        this.ML = {
-            models: {},
-            classes: mlClasses,
-            metrics: {},
-            featureCols: {}
-        }
-        this.processSecondaryLoop = false
-
         this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
         
         if(inputParams !== null)
         {
             validateInputParams(inputParams, this.len)
-            this.inputParams = inputParams
+            this.inputParams = inputParams.sort((a, b) => a.order - b.order)
             this.compute()
         }
         else
@@ -150,6 +128,8 @@ export default class OHLCV_INDICATORS {
         if (this.isComputed) {
           return this;
         }
+
+        this.inputParams = this.inputParams.sort((a, b) => a.order - b.order)
       
         // Mark as “in progress”
         this.isComputed = false;
@@ -208,9 +188,7 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(methodName)
 
-        const order = getOrderFromArray(orderArr, methodName)
-
-        this.inputParams.push({key: methodName, order, params: [arr, {limit, oneHot}]})
+        this.inputParams.push({key: methodName, params: [arr, {limit, oneHot}]})
         
         return this
     }
@@ -224,8 +202,7 @@ export default class OHLCV_INDICATORS {
         validateArray(colKeys, 'colKeys', methodName)
         validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
 
-        const order = getOrderFromArray(colKeys, methodName)
-        this.inputParams.push({key: methodName, order, params: [colKeys, lookback]})
+        this.inputParams.push({key: methodName, params: [colKeys, lookback]})
         
         return this;
     }
@@ -309,9 +286,7 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        const order = getOrderFromArray([target], methodName)
-
-        this.inputParams.push({key: methodName, order, params: [methodName, size, {target, lag}]})
+        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -329,9 +304,7 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        const order = getOrderFromArray([target], methodName)
-
-        this.inputParams.push({key: methodName, order, params: [methodName, size, {target, lag}]})
+        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -379,9 +352,7 @@ export default class OHLCV_INDICATORS {
         validateNumber(atrLength, {min: 2, max: this.len, allowDecimals: false}, 'options.atrLength', methodName)
         validateNumber(liquidityLookback, {min: 1, max: this.len, allowDecimals: false}, 'options.liquidityLookback', methodName)
 
-        const order = getOrderFromArray([target], methodName)
-
-        this.inputParams.push({key: methodName, order, params: [size, momentum, {target, lag}]})
+        this.inputParams.push({key: methodName, params: [size, momentum, {target, lag}]})
 
         return this
     }
@@ -443,9 +414,7 @@ export default class OHLCV_INDICATORS {
         const instanceKey = `${fast}_${slow}_${signal}${target === 'close' ? '' : `_${target}`}`
         const precomputed = {instanceKey}
 
-        const order = getOrderFromArray([target], methodName)
-
-        this.inputParams.push({key: methodName, order, params: [fast, slow, signal, {target, lag, precomputed}]})
+        this.inputParams.push({key: methodName, params: [fast, slow, signal, {target, lag, precomputed}]})
         
         return this
 
@@ -467,9 +436,7 @@ export default class OHLCV_INDICATORS {
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(height, 'options.height', methodName)
   
-        const order = getOrderFromArray([target], methodName)
-
-        this.inputParams.push({key: methodName, order, params: [size, stdDev, {target, height, range, lag}]});
+        this.inputParams.push({key: methodName, params: [size, stdDev, {target, height, range, lag}]});
     
         return this;
     }
@@ -505,9 +472,7 @@ export default class OHLCV_INDICATORS {
             prefix = 'minmax_'
         }
 
-        const order = getOrderFromArray([target], methodName)
-
-        this.inputParams.push({key: methodName, order, params: [size, {target, lag, parser, prefix, minmax}]})
+        this.inputParams.push({key: methodName, params: [size, {target, lag, parser, prefix, minmax}]})
 
         return this
     }
@@ -599,316 +564,17 @@ export default class OHLCV_INDICATORS {
         
         validateObject(options, 'options', methodName)
 
-        const {group = false, range = [0, 1], lag = 0,  colKeys = []} = options
+        const {range = [0, 1], lag = 0,  colKeys = []} = options
 
         validateArray(colKeys, 'options.colKeys', methodName)
-        validateBoolean(group, 'options.group', methodName)
         validateArrayOfRanges(range, 'options.range', methodName)
         validateArrayOptions(['minmax', 'zscore'], type, 'options.type', methodName)
 
         const groupKey = `${type}_${size}`
-        const groupKeyLen = colKeys.length
-        const precomputed = {groupKey, groupKeyLen}
+        const precomputed = {groupKey}
 
-        let secondaryLoop = false
-
-        const order = getOrderFromArray(colKeys, methodName)
-
-        if(order >= 10)
-        {
-            secondaryLoop = true
-        }
-
-        this.inputParams.push({key: methodName, order, params: [size, colKeys, {type, group, range, lag, precomputed, secondaryLoop}]})
+        this.inputParams.push({key: methodName, params: [size, colKeys, {type, range, lag, precomputed}]})
         return this
-    }
-
-    classifier(trainingSize = 200, options = {})
-    {
-        isAlreadyComputed(this)
-
-        const methodName = 'classifier'
-        validateNumber(trainingSize, {max: this.len, allowDecimals: false}, 'trainingSize', methodName)
-        validateObject(options, 'options', methodName)
-
-        const {
-            retrain = false,
-            trainingCols = [], 
-            type = 'KNN',
-            lookback = 0,
-            findGroups = [],
-            predictions = 2,
-            horizon = 2,
-            modelArgs = undefined,
-            filterCallback = () => true
-        } = options
-
-        if (modelArgs !== undefined && (typeof modelArgs !== 'object' || modelArgs === null || Array.isArray(modelArgs))) throw new TypeError(`"modelArgs" must be either undefined or a plain object in ${type}`);
-
-        const yCallback = options.yCallback ?? defaultYCallback
-
-        if(typeof yCallback !== 'function')
-        {
-            throw new Error(`"yCallback" must be a function in the following format:\n\n---\n\nconst yCallback = ${defaultYCallback.toString()}\n\n---\n\n`)
-        }
-
-        validateArrayOptions(Object.keys(validClassifiers), type, 'options.type', methodName)
-
-        if (!this.ML.classes.hasOwnProperty(type)) {
-            throw new Error(
-                `"${type}" isn’t available because its library wasn’t imported into OHLCV_INDICATORS.ML.`
-            )
-        }
-
-        validateBoolean(retrain, 'options.retrain', methodName)
-        validateArray(trainingCols, 'options.trainingCols', methodName)
-        validateNumber(horizon, {min: 1, max: this.len, allowDecimals: false}, 'options.horizon', methodName)
-        validateNumber(lookback, {max: 0, allowDecimals: false}, 'options.lookback', methodName)
-        validateNumber(predictions, {min: 1, allowDecimals: false}, 'options.predictions', methodName)
-
-        const orderArr = [...trainingCols]
-
-        if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
-        {
-            for (const { type = '', size, groupName = '' } of findGroups) {
-
-                if (!type || (!size && !groupName) || (size && groupName)) {
-                    throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`);
-                }
-
-                orderArr.push(type.toString(), groupName.toString());
-            }
-        }  else {
-            if(trainingCols.length === 0)
-            {
-                throw new Error(`"trainingCols" array is empty in ${methodName}`)
-            }
-        }
-
-        const {shortName, flatY} = validClassifiers[type]
-
-        const prefix = `cla_${shortName}_${trainingSize}_prediction`
-
-        if(this.isAlreadyComputed.has(prefix))
-        {
-            throw new Error(
-            `Each classifier must have a unique pair of “type” and trainingSize.\n` +
-            `This rule ensures that your output columns are labeled unambiguously.\n` +
-            `You provided a duplicate: type="${type}" with trainingSize=${trainingSize}.`
-            );
-        }
-
-        const precompute = {
-            lookbackAbs: Math.abs(lookback) + 1,
-            flatY,
-            prefix
-        }
-        
-        this.isAlreadyComputed.add(prefix)
-
-        const order = getOrderFromArray(orderArr, methodName)
-
-        const modelConfig = validClassifiers[type]
-        const modelClass =  this.ML.classes[type]
-
-        this.inputParams.push({key: methodName, order, params: [trainingSize, {yCallback, predictions, lookback, retrain, trainingCols, findGroups, horizon, type,  modelArgs, precompute, filterCallback, modelConfig, modelClass}]})
-
-
-        return this
-    }
-
-    regressor(trainingSize = 200, options = {})
-    {
-        isAlreadyComputed(this)
-
-        const methodName = 'regressor'
-        
-
-        validateNumber(trainingSize, {max: this.len, allowDecimals: false}, 'trainingSize', methodName)
-        validateObject(options, 'options', methodName)
-
-        const {
-            retrain = false,
-            target = 'close', 
-            predictions =  1, 
-            trainingCols = [], 
-            type = 'SimpleLinearRegression', 
-            lookback = 0,
-            findGroups = [],
-            modelArgs = undefined,
-            filterCallback = () => true
-        } = options
-
-        validateArrayOptions(Object.keys(validRegressors), type, 'type', methodName)
-
-        if (!this.ML.classes.hasOwnProperty(type)) {
-            throw new Error(
-                `"${type}" isn’t available because its library wasn’t imported into OHLCV_INDICATORS.ML.`
-            )
-        }
-        
-        //regressor
-        validateBoolean(retrain, 'options.retrain', methodName)
-        validateString(target, 'options.target', methodName)
-        validateNumber(predictions, {min: 1, allowDecimals: false}, 'predictions', methodName)
-        validateNumber(lookback, {max: 0, allowDecimals: false}, 'lookback', methodName)
-        validateArray(trainingCols, 'options.trainingCols', methodName)
-
-        const {shortName, flatX, flatY} = validRegressors[type]
-        const prefix = `reg_${shortName}_${trainingSize}_${target}_prediction`
-        const orderArr = [...trainingCols]
-
-        if(validateArray(findGroups, 'options.findGroups', 'scaler') && findGroups.length > 0)
-        {
-            for (const { type = '', size, groupName = '' } of findGroups) {
-
-                if (!type || (!size && !groupName) || (size && groupName)) {
-                    throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`);
-                }
-
-                orderArr.push(type.toString(), groupName.toString());
-            }
-
-        }  else {
-            if(trainingCols.length === 0 && flatX === false)
-            {
-                throw new Error(`"trainingCols" array is empty in ${methodName} ${type}`)
-            }
-        }
-
-        if(flatX) {
-            if(trainingCols.length > 0)
-            {
-                throw new Error(`If regressor type is ${type} then leave "options.trainingCols" array empty.`)
-            }
-            if(lookback > 0)
-            {
-                throw new Error(`If regressor type is ${type} then "options.lookback" must be 0.`)
-            }
-            if(findGroups.length > 0)
-            {
-                throw new Error(`If regressor type is ${type} then "options.findGroups" must be null.`)
-            }
-            else {                
-                trainingCols.push(target)
-            }
-        }
-
-        if(this.isAlreadyComputed.has(prefix))
-        {
-            throw new Error(
-            `Each regressor must have a unique "type", "trainingSize" and "target".\n` +
-            `This rule ensures that your output columns are labeled unambiguously.\n` +
-            `You provided a duplicate: type="${type}", trainingSize=${trainingSize} target=${target}.`
-            );
-        }
-
-        const precompute = {
-            lookbackAbs: Math.abs(lookback) + 1,
-            flatX,
-            flatY,
-            prefix
-        }
-
-        this.isAlreadyComputed.add(prefix)
-
-
-        const order = getOrderFromArray(orderArr, methodName)
-
-        const modelConfig = validRegressors[type]
-        const modelClass =  this.ML.classes[type]
-
-        this.inputParams.push({key: methodName, order, params: [trainingSize, {target, predictions, retrain, lookback, trainingCols, findGroups, type,  modelArgs, precompute, filterCallback, modelConfig, modelClass}]})
-
-        return this
-    }
-
-    pca(suffix, trainingSize, options = {})
-    {
-        const methodName = 'pca'
-        validateNumber(trainingSize, {min: 1, max: this.len}, 'trainingSize', methodName)
-        validateString(suffix, 'suffix', methodName)
-        validateObject(options, 'options', methodName)
-
-        const {
-            findGroups = [], 
-            trainingCols = [], 
-            lookback = 0,
-            filterCallback = () => true
-        } = options
-
-        
-        validateArray(trainingCols, 'options.trainigCols', methodName)
-        validateNumber(lookback, {min: 0, max: this.len, allowDecimals: false}, 'options.lookback', methodName)
-        if(typeof options.modelArgs !== 'undefined') {
-            validateObject(options.modelArgs, 'options.modelArgs', methodName)
-        } else {
-            options.modelArgs = {}
-        }
-
-        //modelArgs
-
-        const modelArgs = {
-            showSource: false,
-            storeModel: false,
-            isCovarianceMatrix: false,
-            method: 'NIPALS', //SVD, covarianceMatrix or NIPALS
-            center: true,
-            scale: false,
-            nCompNIPALS: 5,
-            ignoreZeroVariance: false,
-            ...options.modelArgs
-        }
-
-        validateBoolean(modelArgs.showSource, 'options.modelArgs.showSource', methodName)
-        validateBoolean(modelArgs.storeModel, 'options.modelArgs.storeModel', methodName)
-        validateBoolean(modelArgs.isCovarianceMatrix, 'options.modelArgs.isCovarianceMatrix', methodName)
-        validateBoolean(modelArgs.center, 'options.modelArgs.center', methodName)
-        validateBoolean(modelArgs.scale, 'options.modelArgs.scale', methodName)
-        validateBoolean(modelArgs.ignoreZeroVariance, 'options.modelArgs.ignoreZeroVariance', methodName)
-        validateArrayOptions(['SVD', 'NIPALS', 'covarianceMatrix'], modelArgs.method, 'options.modelArgs.method', methodName)
-        validateNumber(modelArgs.nCompNIPALS, {min: 1}, 'options.modelArgs.nCompNIPALS', methodName)
-
-
-
-
-        const orderArr = []
-
-        if(validateArray(findGroups, 'options.findGroups', 'pca') && findGroups.length > 0)
-        {
-            
-            for (const { type = '', size, groupName = '' } of findGroups) {
-
-                if (!type || (!size && !groupName) || (size && groupName)) {
-                    throw new Error(`If "options.findGroups" array is set, each item must be an object that includes the "type" (mandatory) and either "size" or "groupName" (choose 1) used to locate previously scaled (minmax or zscore) groups.`);
-                }
-
-                orderArr.push(type.toString(), groupName.toString())
-            }
-        }
-
-        const order = getOrderFromArray(orderArr, methodName)
-        const prefix = `pca_${suffix}_${trainingSize}`
-
-        if(this.isAlreadyComputed.has(prefix)) {
-            throw new Error(
-            `Each regressor must have a unique "suffix" param.\n` +
-            `This rule ensures that your output columns are labeled unambiguously.\n` +
-            `You provided a duplicate: type="${suffix}".`
-            )
-        }
-
-        const lookbackAbs =  Math.abs(lookback) + 1
-        this.isAlreadyComputed.add(prefix)
-
-        this.inputParams.push({key: methodName, order, params: [{prefix, trainingSize, findGroups, trainingCols, lookbackAbs, modelArgs, filterCallback}]})
-
-        return this
-    }
-
-    exportTrainedModels()
-    {
-        return exportTrainedModels(this)
     }
 
     mapCols(newCols = ['change'], callback = null, options = {}) {
@@ -934,9 +600,7 @@ export default class OHLCV_INDICATORS {
             throw new Error(`Invalid param: If "mapCols.options.isPriceBased" is true, the "constructor.precision" param must be also true.`)
         }
 
-        const order = getOrderFromArray(newCols, methodName)
-
-        this.inputParams.push({key: methodName, order, params: [newCols, callback, {lag, isPriceBased}]})
+        this.inputParams.push({key: methodName, params: [newCols, callback, {lag, isPriceBased}]})
 
         return this
     }

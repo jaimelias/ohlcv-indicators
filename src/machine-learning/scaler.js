@@ -1,11 +1,15 @@
 import { normalizeMinMax, normalizeZScore } from "./ml-utilities.js";
-  
-export const scaler = (main, index, size, colKeys, {type, group, range, lag, precomputed, secondaryLoop}) => {
 
-    
+const isBad = (v) => v == null || !Number.isFinite(v)
 
-    const {groupKey, groupKeyLen} = precomputed
-    const { verticalOhlcv, instances, invalidValueIndex } = main;
+//rowWiseScaler
+
+export const scaler = (main, index, size, colKeys, {type, range, lag, precomputed}) => {
+
+    //this function performs scaling row by row "row wise scaling"
+
+    const {groupKey} = precomputed
+    const { verticalOhlcv, instances } = main
     const prefix = `${type}_${size}`;
   
     if(index === 0) {
@@ -15,8 +19,6 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
       {
         throw new Error(`In scaler method can not repeat params "size" and "options.type" together between indicators.`)
       }
-
-      isAlreadyComputed.add(prefix)
   
       if(!instances.hasOwnProperty('scaler')) {
         instances.scaler = {}
@@ -25,7 +27,7 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
       if(!instances.scaler.hasOwnProperty(prefix))
       {
         instances.scaler[prefix] = {
-          windows: {}
+          extectedFeatures: (lag === 0) ? colKeys.length : colKeys.length + (lag * colKeys.length)
         }
       }
 
@@ -39,103 +41,83 @@ export const scaler = (main, index, size, colKeys, {type, group, range, lag, pre
         const key = `${prefix}_${target}`;
         verticalOhlcv[key] = new Float64Array(len).fill(NaN)
   
-        const winKey = group ? groupKey : target;
-        instances.scaler[prefix].windows[winKey] = [];
-  
         if (!main.scaledGroups[groupKey]) main.scaledGroups[groupKey] = [];
+
         main.scaledGroups[groupKey].push(key);
   
         if (lag > 0) {
-          const lags = Array.from({ length: lag }).map((_, i) => `${key}_lag_${i + 1}`)
-          main.scaledGroups[groupKey].push(...lags)
+          const laggedKeys = Array.from({ length: lag }).map((_, i) => `${key}_lag_${i + 1}`)
+
+          for(const lKey of laggedKeys) {
+            verticalOhlcv[lKey] = new Float64Array(len).fill(NaN)
+          }
+
+          main.scaledGroups[groupKey].push(...laggedKeys)
           features.push(key)
         }
       }
-
-      if(lag > 0)
-      {
-        main.lag(features, lag)
-      }
     }
-
-    if(secondaryLoop === true && index <= invalidValueIndex) true
   
-    const { windows } = instances.scaler[prefix]
+    const { extectedFeatures } = instances.scaler[prefix]
     
     let hasInvalidVal = false
+    const row = {}
+    let countFeatures = 0
 
     // update windows with current values
     for (let x = 0; x < colKeys.length; x++) {
       const target = colKeys[x]
       const col = verticalOhlcv[target]
-
-      if(typeof col === 'undefined')
-      {
-        hasInvalidVal = true
-        break     
-      }
-
       const val = col[index]
 
-      if(Number.isNaN(val) || val === null)
+      if(isBad(val))
       {
         hasInvalidVal = true
         break
       }
 
-      const winKey = group ? groupKey : target
-      const win = windows[winKey]
-  
-      win.push(val)
-      
-      if (win.length > (group ? size * groupKeyLen : size)) {
-        win.shift()
-      }
+      row[target] = val
+      countFeatures++
 
+      if(lag > 0) {
+        for (let step = 1; step <= lag; step++) {
+          const laggedVal = col[index - step]
+
+          if(isBad(laggedVal))
+          {
+            hasInvalidVal = true
+            break
+          }
+          
+          row[`${target}_lag_${step}`] = laggedVal
+          countFeatures++
+        }
+
+        if(hasInvalidVal) break
+      }
     }
 
-    if(hasInvalidVal) return
-  
-    const ready = index + 1 >= size
+    if(hasInvalidVal || countFeatures !== extectedFeatures) return
 
-    if(!ready) return
-  
-    // scale values once enough data
-    for (let x = 0; x < colKeys.length; x++) {
-      const target = colKeys[x]
-      const col = verticalOhlcv[target]
+    const values = Object.values(row)
 
-      if(typeof col === 'undefined')
-      {
-        break     
-      }     
+    if (type === 'minmax') {
+      for(const [key, val] of Object.entries(row)) {
+        const mn = Math.min(...values)
+        const mx = Math.max(...values)
+        const scaled = normalizeMinMax(val, mn, mx, range)
 
-      const val = col[index]
-
-      if(Number.isNaN(val) || val === null)
-      {
-        break
+        main.pushToMain({ index, key: `${prefix}_${key}`, value: scaled})
       }
+    } else if (type === 'zscore') {
+      for(const [key, val] of Object.entries(row)) {
+        const mean = values.reduce((sum, x) => sum + x, 0) / extectedFeatures;
+        const variance = values.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / extectedFeatures
+        const std = Math.sqrt(variance)
+        const scaled = normalizeZScore(val, mean, std)
 
-      const key = `${prefix}_${target}`
-      let scaled = null
-      const winKey = group ? groupKey : target
-      const win = windows[winKey]
-
-      if (type === 'minmax') {
-        const mn = Math.min(...win)
-        const mx = Math.max(...win)
-        scaled = normalizeMinMax(val, mn, mx, range)
-      } else if (type === 'zscore') {
-        const mean = win.reduce((sum, x) => sum + x, 0) / win.length;
-        const variance = win.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / win.length
-        const std = Math.sqrt(variance);
-        scaled = normalizeZScore(val, mean, std)
-      } else {
-        throw new Error(`Unknown scaler type "${type}"`)
+        main.pushToMain({ index, key: `${prefix}_${key}`, value: scaled})
       }
-  
-      main.pushToMain({ index, key, value: scaled})
     }
 }
   

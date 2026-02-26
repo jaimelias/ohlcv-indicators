@@ -22,9 +22,6 @@ import { buildArray } from "../utilities/assignTypes.js";
 import {  inputNumberFormatter } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
 
-import { pca } from "../machine-learning/pca.js";
-import { regressor } from "../machine-learning/regressor.js";
-import { classifier } from "../machine-learning/classifier.js";
 
 // Map indicator keys to their respective functions
 const mainFunctions = {
@@ -49,16 +46,17 @@ const mainFunctions = {
 };
 
 export const mainLoop = (input, main) => {
-  const { len, 
-    inputParams, 
+  const { 
+    len, 
     arrayTypes, 
     verticalOhlcv, 
     verticalOhlcvKeyNames, 
     inputTypes, 
     chunkProcess, 
-    processSecondaryLoop,
-    precisionMultiplier
+    precisionMultiplier,
+    inputParams
   } = main;
+
 
   validateInputParams(inputParams, len)
 
@@ -96,15 +94,10 @@ export const mainLoop = (input, main) => {
           }
         }
     
-        // Process these indicators separately (ensuring their execution order)
-        for (const { key, params, order } of inputParams)
+        // Process these indicators separately (ensuring their execution in the order of initialization)
+        for (const { key, params} of inputParams)
         {
-          for(let orderIdx = 0; orderIdx <= 9; orderIdx++)
-          {
-            if(typeof order !== 'number') throw new Error(`order property of ${key} not found: ${params}`)
-            if(orderIdx !== order) continue
-            mainFunctions[key](main, index, ...params)
-          }
+          mainFunctions[key](main, index, ...params)
         }
       
         input[index] = null //flusing data
@@ -118,34 +111,7 @@ export const mainLoop = (input, main) => {
       }
   }
 
-  const isSecondaryLoopNeeded = inputParams.some(({ key }) => key === 'regressor' || key === 'classifier' || key === 'pca')
-
-  if(isSecondaryLoopNeeded || processSecondaryLoop)
-  {
-    secondaryLoop(main)
-  }
 
   verticalOhlcvKeyNames.push(...Object.keys(verticalOhlcv))
   
-}
-
-export const secondaryLoop = (main) => {
-  const {inputParams, len, invalidValueIndex} = main
-
-  const startIndex = invalidValueIndex + 1
-
-  for(let index = startIndex; index < len; index++)
-  {
-      for (const { key, params, order } of inputParams)
-      {
-        for(let orderIdx = 10; orderIdx <= 20; orderIdx++) {
-          if(typeof order !== 'number') throw new Error(`order property of ${key} not found: ${params}`)
-          if(orderIdx !== order) continue
-          if(key === 'pca') pca(main, index, ...params)
-          if(key === 'classifier') classifier(main, index, ...params)
-          if(key === 'regressor') regressor(main, index, ...params)
-        }
-      }
-  }
-
 }

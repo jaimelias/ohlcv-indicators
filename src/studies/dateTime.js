@@ -12,17 +12,12 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
         const {len, dateType} = main
         if(!dateType) throw Error('dateTime method found and invalid "date" in input ohlcv')
 
-        const startYear = verticalOhlcv.date[0].getUTCFullYear()
-        const currentYear = new Date().getUTCFullYear()
-
         Object.assign(instances, {
             dateTime: {
                 colKeys: [...precompute.colKeys, `${prefix}year`],
                 colKeySizes: {
-                    ...precompute.colKeySizes,
-                    [`${prefix}year`]: (currentYear - startYear) + 1
+                    ...precompute.colKeySizes
                 }
-                ,startYear
             }
         })
 
@@ -45,11 +40,11 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
         }
     }
 
-    const {colKeySizes, startYear} = instances.dateTime
+    const {colKeySizes} = instances.dateTime
 
     const currDate = verticalOhlcv.date[index]
 
-    const dateInfo = getDateInfo(currDate, oneHot, colKeySizes, prefix, startYear)
+    const dateInfo = getDateInfo(currDate, oneHot, colKeySizes)
 
     for(const [key, value] of Object.entries(dateInfo))
     {
@@ -59,25 +54,34 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
 
 
-const getDateInfo = (date, oneHot, colKeySizes, prefix, startYear) => {
+const getDateInfo = (date, oneHot, colKeySizes) => {
 
-    const encode = (value, size) => (oneHot) ? oneHotEncode(value, size) : value
 
-    const output = {
-        [`${prefix}year`]: date.getUTCFullYear(),
-        [`${prefix}month`]: date.getUTCMonth(),
-        [`${prefix}hour`]: date.getUTCHours(),
-        [`${prefix}minute`]: date.getUTCMinutes(),
-        [`${prefix}day_of_the_week`]: date.getUTCDay(),
-        [`${prefix}day_of_the_month`]: date.getUTCDate() - 1,
-    }
+  const year = date.getFullYear();
 
-    for(const [key, size] of Object.entries(colKeySizes))
-    {
-        const value = (key === `${prefix}year`) ? output[key] - startYear: output[key]
-        output[key] = encode(value, size)
-    }
+  //start with 0 values
+  const month = date.getMonth();
+  const hour = date.getHours();
+  const minute = date.getMinutes();
+  const dayOfWeek = date.getDay();
+  const dayOfMonth = date.getDate() - 1; // keep same offset
 
-    return output
-}
+  if (!oneHot) {
+    return {
+      year: year,
+      month: month + 1,  //iso month
+      hour: hour,
+      minute: minute,
+      day_of_the_week: ((dayOfWeek + 6) % 7) + 1, //iso date of the week
+      day_of_the_month: dayOfMonth + 1,  //iso date of the month
+    };
+  }
 
+  return {
+    one_hot_month: oneHotEncode(month, colKeySizes.one_hot_month),
+    one_hot_hour: oneHotEncode(hour, colKeySizes.one_hot_hour),
+    one_hot_minute: oneHotEncode(minute, colKeySizes.one_hot_minute),
+    one_hot_day_of_the_week: oneHotEncode(dayOfWeek, colKeySizes.one_hot_day_of_the_week),
+    one_hot_day_of_the_month: oneHotEncode(dayOfMonth, colKeySizes.one_hot_day_of_the_month),
+  };
+};
