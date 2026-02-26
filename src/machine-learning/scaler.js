@@ -4,13 +4,12 @@ const isBad = (v) => v == null || !Number.isFinite(v)
 
 //rowWiseScaler
 
-export const scaler = (main, index, size, colKeys, {type, range, lag, precomputed}) => {
+export const scaler = (main, index, size, colKeys, {type, range, lookback, precomputed}) => {
 
     //this function performs scaling row by row "row wise scaling"
 
-    const {groupKey} = precomputed
     const { verticalOhlcv, instances } = main
-    const prefix = `${type}_${size}`;
+    const prefix = `${type}_${size}`
   
     if(index === 0) {
       const { len, isAlreadyComputed } = main
@@ -27,7 +26,7 @@ export const scaler = (main, index, size, colKeys, {type, range, lag, precompute
       if(!instances.scaler.hasOwnProperty(prefix))
       {
         instances.scaler[prefix] = {
-          extectedFeatures: (lag === 0) ? colKeys.length : colKeys.length + (lag * colKeys.length)
+          extectedFeatures: (lookback === 0) ? colKeys.length : colKeys.length + (lookback * colKeys.length)
         }
       }
 
@@ -41,18 +40,18 @@ export const scaler = (main, index, size, colKeys, {type, range, lag, precompute
         const key = `${prefix}_${target}`;
         verticalOhlcv[key] = new Float64Array(len).fill(NaN)
   
-        if (!main.scaledGroups[groupKey]) main.scaledGroups[groupKey] = [];
+        if (!main.scaledGroups[prefix]) main.scaledGroups[prefix] = [];
 
-        main.scaledGroups[groupKey].push(key);
+        main.scaledGroups[prefix].push(key);
   
-        if (lag > 0) {
-          const laggedKeys = Array.from({ length: lag }).map((_, i) => `${key}_lag_${i + 1}`)
+        if (lookback > 0) {
+          const laggedKeys = Array.from({ length: lookback }).map((_, i) => `${key}_lag_${i + 1}`)
 
           for(const lKey of laggedKeys) {
             verticalOhlcv[lKey] = new Float64Array(len).fill(NaN)
           }
 
-          main.scaledGroups[groupKey].push(...laggedKeys)
+          main.scaledGroups[prefix].push(...laggedKeys)
           features.push(key)
         }
       }
@@ -79,8 +78,8 @@ export const scaler = (main, index, size, colKeys, {type, range, lag, precompute
       row[target] = val
       countFeatures++
 
-      if(lag > 0) {
-        for (let step = 1; step <= lag; step++) {
+      if(lookback > 0) {
+        for (let step = 1; step <= lookback; step++) {
           const laggedVal = col[index - step]
 
           if(isBad(laggedVal))

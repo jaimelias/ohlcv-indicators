@@ -564,16 +564,16 @@ export default class OHLCV_INDICATORS {
         
         validateObject(options, 'options', methodName)
 
-        const {range = [0, 1], lag = 0,  colKeys = []} = options
+        const {range = [0, 1], lag = false,  colKeys = []} = options
 
         validateArray(colKeys, 'options.colKeys', methodName)
+        validateBoolean(lag, 'options.lag', methodName)
         validateArrayOfRanges(range, 'options.range', methodName)
         validateArrayOptions(['minmax', 'zscore'], type, 'options.type', methodName)
 
-        const groupKey = `${type}_${size}`
-        const precomputed = {groupKey}
+        const lookback = lag ? size - 1 : 0
 
-        this.inputParams.push({key: methodName, params: [size, colKeys, {type, range, lag, precomputed}]})
+        this.inputParams.push({key: methodName, params: [size, colKeys, {type, range, lookback}]})
         return this
     }
 
