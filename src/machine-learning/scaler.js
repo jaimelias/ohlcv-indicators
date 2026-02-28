@@ -4,7 +4,7 @@ const isBad = (v) => v == null || !Number.isFinite(v)
 
 //rowWiseScaler
 
-export const scaler = (main, index, size, colKeys, {type, range, lookback, precomputed}) => {
+export const scaler = (main, index, size, colKeys, {type, range, lookback, weights, euclideanWeights}) => {
 
     //this function performs scaling row by row "row wise scaling"
 
@@ -55,31 +55,46 @@ export const scaler = (main, index, size, colKeys, {type, range, lookback, preco
           features.push(key)
         }
       }
+
+      for(const weKey of Object.keys(weights)) {
+        if (!verticalOhlcv.hasOwnProperty(weKey)) {
+          throw new Error(`Target property "${weKey}" not found in verticalOhlcv`);
+        }
+      }
+
     }
   
     const { extectedFeatures } = instances.scaler[prefix]
     
     let hasInvalidVal = false
     const row = {}
+    const rowValues = []
     let countFeatures = 0
 
-    // update windows with current values
     for (let x = 0; x < colKeys.length; x++) {
       const target = colKeys[x]
       const col = verticalOhlcv[target]
-      const val = col[index]
+      const currWeight = weights?.[target]?.[0] ?? 1
+      const currVal = col[index]
 
-      if(isBad(val))
+      if(isBad(currVal))
       {
         hasInvalidVal = true
         break
       }
 
-      row[target] = val
+      row[target] = {
+        val: currVal, 
+        weight: (euclideanWeights) ? Math.sqrt(currWeight) :  currWeight
+      }
+
+      rowValues.push(currVal)
       countFeatures++
 
       if(lookback > 0) {
         for (let step = 1; step <= lookback; step++) {
+
+          const laggedWeight = weights?.[target]?.[step] ?? 1
           const laggedVal = col[index - step]
 
           if(isBad(laggedVal))
@@ -87,8 +102,13 @@ export const scaler = (main, index, size, colKeys, {type, range, lookback, preco
             hasInvalidVal = true
             break
           }
-          
-          row[`${target}_lag_${step}`] = laggedVal
+
+          row[`${target}_lag_${step}`] = {
+            val: laggedVal, 
+            weight: (euclideanWeights) ? Math.sqrt(laggedWeight) : laggedWeight
+          }
+
+          rowValues.push(laggedVal)
           countFeatures++
         }
 
@@ -98,24 +118,25 @@ export const scaler = (main, index, size, colKeys, {type, range, lookback, preco
 
     if(hasInvalidVal || countFeatures !== extectedFeatures) return
 
-    const values = Object.values(row)
+    if (type === "minmax") {
+      const mn = Math.min(...rowValues);
+      const mx = Math.max(...rowValues);
 
-    if (type === 'minmax') {
-      for(const [key, val] of Object.entries(row)) {
-        const mn = Math.min(...values)
-        const mx = Math.max(...values)
-        const scaled = normalizeMinMax(val, mn, mx, range)
-
-        main.pushToMain({ index, key: `${prefix}_${key}`, value: scaled})
+      for (const [key, { val, weight }] of Object.entries(row)) {
+        const scaled = normalizeMinMax(val, mn, mx, range) * weight;
+        main.pushToMain({ index, key: `${prefix}_${key}`, value: scaled });
       }
-    } else if (type === 'zscore') {
-      for(const [key, val] of Object.entries(row)) {
-        const mean = values.reduce((sum, x) => sum + x, 0) / extectedFeatures;
-        const variance = values.reduce((sum, x) => sum + Math.pow(x - mean, 2), 0) / extectedFeatures
-        const std = Math.sqrt(variance)
-        const scaled = normalizeZScore(val, mean, std)
+    }
 
-        main.pushToMain({ index, key: `${prefix}_${key}`, value: scaled})
+    if (type === "zscore") {
+      const n = rowValues.length;
+      const mean = rowValues.reduce((s, x) => s + x, 0) / n;
+      const variance = rowValues.reduce((s, x) => s + (x - mean) ** 2, 0) / n;
+      const std = Math.sqrt(variance);
+
+      for (const [key, { val, weight }] of Object.entries(row)) {
+        const scaled = normalizeZScore(val, mean, std) * weight;
+        main.pushToMain({ index, key: `${prefix}_${key}`, value: scaled });
       }
     }
 }
