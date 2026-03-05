@@ -1,6 +1,6 @@
 import { normalizeMinMax, normalizeZScore } from "./ml-utilities.js";
 
-const isBad = (v) => v == null || !Number.isFinite(v)
+const isBadNumber = (v) => v == null || !Number.isFinite(v)
 
 //rowWiseScaler
 
@@ -77,7 +77,7 @@ export const scaler = (main, index, size, colKeys, {type, range, lookback, weigh
       const currWeight = weights?.[target]?.[0] ?? 1
       const currVal = col[index]
 
-      if(isBad(currVal))
+      if(isBadNumber(currVal))
       {
         hasInvalidVal = true
         break
@@ -97,7 +97,7 @@ export const scaler = (main, index, size, colKeys, {type, range, lookback, weigh
           const laggedWeight = weights?.[target]?.[step] ?? 1
           const laggedVal = col[index - step]
 
-          if(isBad(laggedVal))
+          if(isBadNumber(laggedVal))
           {
             hasInvalidVal = true
             break

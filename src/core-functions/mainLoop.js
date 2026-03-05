@@ -21,10 +21,12 @@ import { mapCols } from "../studies/mapCols.js";
 import { buildArray } from "../utilities/assignTypes.js";
 import {  inputNumberFormatter } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
+import { priceFeatures } from "../studies/priceFeatures.js";
 
 
 // Map indicator keys to their respective functions
 const mainFunctions = {
+  priceFeatures,
   dateTime,
   heikenAshi,
   rsi,

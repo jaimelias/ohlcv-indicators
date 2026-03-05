@@ -554,6 +554,24 @@ export default class OHLCV_INDICATORS {
         return this           
     }
 
+    priceFeatures(options = {}) {
+        let methodName = 'priceFeatures'
+
+        isAlreadyComputed(this)
+
+        validateObject(options, 'options', methodName)
+
+        const {lag = 0, colKeys = []} = options
+
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateArray(colKeys, 'options.colKeys', methodName)
+
+
+        this.inputParams.push({key: methodName, params: [{lag, colKeys}]})
+
+        return this
+    }
+
     scaler(type = 'zscore', size, options = {})
     {
         let methodName = 'scaler'
