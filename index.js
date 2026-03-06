@@ -629,7 +629,7 @@ export default class OHLCV_INDICATORS {
             validateArrayOfRanges(byFeatureRange, 'options.byFeatureRange', longName)
         }
         
-        if(['minmax', 'byfeature']) {
+        if(['minmax', 'byfeature'].includes(type)) {
             validateArrayOfRanges(minMaxRange, 'options.minMaxRange', longName)
         }
 
