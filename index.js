@@ -582,22 +582,25 @@ export default class OHLCV_INDICATORS {
         
         validateObject(options, 'options', methodName)
 
-        const {range = [0, 1], lag = false,  colKeys = [], weights = {}, euclideanWeights = false} = options
+        const {range = [0, 1], lag = false,  colKeys = [], weights = {}, euclideanWeights = false, byFeatureMinMax = nul} = options
 
         validateArray(colKeys, 'options.colKeys', methodName)
         validateBoolean(lag, 'options.lag', methodName)
         validateArrayOfRanges(range, 'options.range', methodName)
-        validateArrayOptions(['minmax', 'zscore'], type, 'options.type', methodName)
+        validateArrayOptions(['minmax', 'zscore', 'byfeature'], type, 'options.type', methodName)
         validateObject(weights, 'options.weights', methodName)
 
         const lookback = lag ? size - 1 : 0
 
+        if(colKeys.length === 0) {
+            throw new Error(`The property "options.colKeys" must be an array with target keys in ${methodName}.`)
+        }
 
         for(const [key, arr] of Object.entries(weights)) {
             validateArray(arr, `options.weights.${key}`)
 
             if(!lag && arr.size > 0) {
-                throw new Error(`If "options.lag" is set to false "options.weights.${key}" can only contain 1 item (float).`)
+                throw new Error(`If "options.lag" is set to false "options.weights.${key}" can only contain 1 item (float) in ${methodName}.`)
             }
 
             if(arr.length > size) {
@@ -611,7 +614,19 @@ export default class OHLCV_INDICATORS {
 
         }
 
-        this.inputParams.push({key: methodName, params: [size, colKeys, {type, range, lookback, weights, euclideanWeights}]})
+        if (type !== 'byfeature') {
+
+            if(!byFeatureMinMax == null) {
+                throw new Error('"options.byFeatureMinMax" is only valid when "type" is "byfeature".')
+            }
+        }
+        else {
+            validateArrayOfRanges(byFeatureMinMax, 'options.byFeatureMinMax', methodName)
+        }
+        
+
+
+        this.inputParams.push({key: methodName, params: [size, colKeys, {type, range, lookback, weights, euclideanWeights, byFeatureMinMax}]})
         return this
     }
 

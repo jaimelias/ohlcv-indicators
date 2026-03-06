@@ -123,8 +123,8 @@ export const validateArrayOfRanges = (range, paramName, callerName) => {
 
     const [min, max] = range
 
-    validateNumber(min, {min: -100, max, allowDecimals: false}, 'min', callerName)
-    validateNumber(max, {min: min, max: 100, allowDecimals: false}, 'max', callerName)
+    validateNumber(min, {min: -100, max, allowDecimals: false}, `${paramName}[0] (min)`, callerName)
+    validateNumber(max, {min: min, max: 100, allowDecimals: false}, `${paramName}[1] (max)`, callerName)
 
     if(min === max)
     {
