@@ -4,7 +4,7 @@ const isBadNumber = (v) => v == null || !Number.isFinite(v)
 
 //rowWiseScaler
 
-export const scaler = (main, index, size, colKeys, {type, range, lookback, weights, euclideanWeights, byFeatureMinMax}) => {
+export const scaler = (main, index, size, colKeys, {type, minMaxRange, lookback, weights, euclideanWeights, byFeatureRange}) => {
 
     //this function performs scaling row by row "row wise scaling"
 
@@ -123,7 +123,7 @@ export const scaler = (main, index, size, colKeys, {type, range, lookback, weigh
       const mx = Math.max(...rowValues);
 
       for (const [key, { val, weight }] of Object.entries(row)) {
-        const scaled = normalizeMinMax(val, mn, mx, range)
+        const scaled = normalizeMinMax(val, mn, mx, minMaxRange)
         const weigthed = scaled === 0 ? 0 : scaled * weight
         main.pushToMain({ index, key: `${prefix}_${key}`, value: weigthed });
       }
@@ -144,11 +144,11 @@ export const scaler = (main, index, size, colKeys, {type, range, lookback, weigh
 
     if(type === "byfeature") {
 
-      const [bfMin, bfMax] = byFeatureMinMax
+      const [mn, mx] = byFeatureRange
 
       for (const [key, { val, weight }] of Object.entries(row)) {
 
-        const scaled = scaleByFeatureRange(val, bfMin, bfMax)
+        const scaled = normalizeMinMax(val, mn, mx, minMaxRange)
         const weigthed = scaled === 0 ? 0 : scaled * weight
 
         main.pushToMain({ index, key: `${prefix}_${key}`, value: weigthed });
