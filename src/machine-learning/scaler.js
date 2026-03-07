@@ -1,4 +1,4 @@
-import { normalizeMinMax, normalizeZScore, scaleByFeatureRange } from "./ml-utilities.js";
+import { normalizeMinMax, normalizeZScore } from "./ml-utilities.js";
 
 const isBadNumber = (v) => v == null || !Number.isFinite(v)
 

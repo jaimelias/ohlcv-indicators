@@ -585,7 +585,8 @@ export default class OHLCV_INDICATORS {
         
         validateObject(options, 'options', longName)
 
-        const {minMaxRange = null, lag = false,  colKeys = [], weights = {}, euclideanWeights = false, byFeatureRange = null} = options
+        const {minMaxRange = null, lag = false,  colKeys = [], weights = {}, euclideanWeights = false, byFeatureRange = null, deltaSplit = false} = options
+
 
         validateArray(colKeys, 'options.colKeys', longName)
         validateBoolean(lag, 'options.lag', longName)
