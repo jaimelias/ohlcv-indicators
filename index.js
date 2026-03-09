@@ -367,30 +367,11 @@ export default class OHLCV_INDICATORS {
         validateNumber(dPeriod, {min: 1, max, allowDecimals: false}, 'dPeriod', methodName)
         validateObject(options, 'options', methodName)
 
-        let parser = v => v
-        let prefix = ''
-
         const {lag = 0} = options
 
         validateNumber(lag, {min: 0, max, allowDecimals: false}, 'options.lag', methodName)
 
-        let minmax = options.minmax
-
-        if(Array.isArray(minmax) || (typeof minmax === 'boolean' && minmax === true))
-        {
-            if(Array.isArray(minmax)){
-                validateArrayOfRanges(minmax, 'options.minmax', methodName)
-                parser = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
-            } else
-            {
-                validateBoolean(minmax, 'options.minmax', methodName)
-                minmax = [0, 1]
-                parser = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
-            }
-            prefix = 'minmax_'
-        }
-
-        this.inputParams.push({key: methodName, order: 0, params: [kPeriod, kSlowingPeriod, dPeriod, {minmax, prefix, parser, lag}]})
+        this.inputParams.push({key: methodName, order: 0, params: [kPeriod, kSlowingPeriod, dPeriod, {lag}]})
 
         return this
     }
@@ -451,28 +432,11 @@ export default class OHLCV_INDICATORS {
         validateObject(options, 'options', methodName)
         
         const {target = 'close', lag = 0} = options
-        let minmax = options.minmax
+
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        let parser = v => v
-        let prefix = ''
-
-        if(Array.isArray(minmax) || (typeof minmax === 'boolean' && minmax === true))
-        {
-            if(Array.isArray(minmax)){
-                validateArrayOfRanges(minmax, 'options.minmax', methodName)
-                parser = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
-            } else
-            {
-                validateBoolean(minmax, 'options.minmax', methodName)
-                minmax = [0, 1]
-                parser = value => (minmax !== null) ? normalizeMinMax(value, 0, 100, minmax) : value
-            }
-            prefix = 'minmax_'
-        }
-
-        this.inputParams.push({key: methodName, params: [size, {target, lag, parser, prefix, minmax}]})
+        this.inputParams.push({key: methodName, params: [size, {target, lag}]})
 
         return this
     }

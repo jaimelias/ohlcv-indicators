@@ -2,15 +2,15 @@ import { FasterRSI } from 'trading-signals';
 import { FasterSMA } from 'trading-signals';
 
 const defaultTarget = 'close'
-export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) => {
+export const rsi = (main, index, size, { target, lag }) => {
 
   
   
   const { verticalOhlcv, instances } = main;
 
   const suffix = target === defaultTarget ? '' : `_${target}`;
-  const rsiKey = `${prefix}rsi_${size}${suffix}`;
-  const rsiSmaKey = `${prefix}rsi_sma_${size}${suffix}`;
+  const rsiKey = `rsi_${size}${suffix}`;
+  const rsiSmaKey = `rsi_sma_${size}${suffix}`;
 
   // Initialization on the first index.
   if (index === 0) {
@@ -37,18 +37,6 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
       main.lag(baseKeys, lag);
     }
 
-    //[key, key_lag_1, …, key_lag_n] for each key
-    const keyNames = lag > 0
-      ? baseKeys.flatMap(key => [
-          key,
-          ...Array.from({ length: lag }, (_, i) => `${key}_lag_${i + 1}`)
-        ])
-      : baseKeys;
-
-    if (Array.isArray(minmax)) {
-      const group = main.scaledGroups.minmax_rsi ??= [];
-      group.push(...keyNames);
-    }
 
   }
 
@@ -67,7 +55,7 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
 
 
   // Always push the RSI value, using NaN as a fallback.
-  main.pushToMain({ index, key: rsiKey, value: (Number.isNaN(currentRsi)) ? NaN : parser(currentRsi) });
+  main.pushToMain({ index, key: rsiKey, value: (Number.isNaN(currentRsi)) ? NaN : currentRsi });
 
   // Update the SMA indicator only if a valid RSI value is available.
   if (!Number.isNaN(currentRsi)) {
@@ -81,5 +69,5 @@ export const rsi = (main, index, size, { target, lag, parser, prefix, minmax }) 
   }
 
   // Always push the smoothed RSI value.
-  main.pushToMain({ index, key: rsiSmaKey, value: (Number.isNaN(smoothedRsi)) ? NaN : parser(smoothedRsi) });
+  main.pushToMain({ index, key: rsiSmaKey, value: (Number.isNaN(smoothedRsi)) ? NaN : smoothedRsi });
 };

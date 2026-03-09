@@ -1,16 +1,15 @@
 import { FasterStochasticOscillator } from 'trading-signals';
 
-const defaultTarget = 'close'
-export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minmax, prefix, lag, parser}) => {
+export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag}) => {
 
     
 
     const { verticalOhlcv, instances } = main;
 
     const paramsKey = (kPeriod === 14 && kSlowingPeriod === 3 && dPeriod === 3) ? '' : `${kPeriod}_${kSlowingPeriod}_${dPeriod}`
-    const stochD = `${prefix}stoch_d${paramsKey}`;
-    const stochK = `${prefix}stoch_k${paramsKey}`;
-    const instanceKey = `${prefix}${paramsKey}`
+    const stochD = `stoch_d${paramsKey}`;
+    const stochK = `stoch_k${paramsKey}`;
+    const instanceKey = paramsKey
 
   // Initialization on the first index.
     if (index === 0) {
@@ -32,18 +31,6 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minma
             main.lag(baseKeys, lag);
         }
 
-        //[key, key_lag_1, …, key_lag_n] for each key
-        const keyNames = lag > 0
-            ? baseKeys.flatMap(key => [
-                key,
-                ...Array.from({ length: lag }, (_, i) => `${key}_lag_${i + 1}`)
-            ])
-            : baseKeys;
-
-        if (Array.isArray(minmax)) {
-            const group = main.scaledGroups.minmax_rsi ??= [];
-            group.push(...keyNames)
-        }
     }
 
     const close = verticalOhlcv['close'][index]
@@ -60,8 +47,8 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {minma
         stockObj = null
     }
 
-    const kVal = stockObj ? parser(stockObj.stochK) : NaN
-    const dVal = stockObj ? parser(stockObj.stochD) : NaN
+    const kVal = stockObj ? stockObj.stochK : NaN
+    const dVal = stockObj ? stockObj.stochD : NaN
 
     main.pushToMain({ index, key: stochK, value: kVal })
     main.pushToMain({ index, key: stochD, value: dVal })
