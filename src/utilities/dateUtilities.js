@@ -1,6 +1,8 @@
 export const dateOutputFormaters = {
   toString: d => d.toString(),
+  string: d => d.toString(), //fallback
   toISOString: d => d.toISOString(),
+  iso: d => d.toISOString(), //fallback
   toUTCString: d => d.toUTCString(),
   milliseconds: d => d.getTime(),
   seconds: d => d.getTime() / 1000,
