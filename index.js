@@ -92,7 +92,7 @@ export default class OHLCV_INDICATORS {
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
 
-        const {skipNull = true, dateFormat = 'string'} = options
+        const {skipNull = true, dateFormat = 'milliseconds'} = options
 
         validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getData')
         validateObject(options, 'options', 'getData')
@@ -110,7 +110,7 @@ export default class OHLCV_INDICATORS {
 
         this.compute()
 
-        const {dateFormat = 'string'} = options
+        const {dateFormat = 'milliseconds'} = options
         
         validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getData')
 
