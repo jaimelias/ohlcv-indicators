@@ -4,7 +4,7 @@ const isBadNumber = (v) => v == null || !Number.isFinite(v)
 
 //rowWiseScaler
 
-export const scaler = (main, index, size, colKeys, {type, minMaxRange, lookback, weights, euclideanWeights, byFeatureRange}) => {
+export const scaler = (main, index, size, colKeys, {type, minMaxRange, lookback, weights, euclideanWeights, byFeatureRange, offset}) => {
 
     //this function performs scaling row by row "row wise scaling"
 
@@ -71,11 +71,17 @@ export const scaler = (main, index, size, colKeys, {type, minMaxRange, lookback,
     const rowValues = []
     let countFeatures = 0
 
+    const sourceIndex = index - offset
+
+    if(sourceIndex < 0) return 
+
+   
+
     for (let x = 0; x < colKeys.length; x++) {
       const target = colKeys[x]
       const col = verticalOhlcv[target]
       const currWeight = weights?.[target]?.[0] ?? 1
-      const currVal = col[index]
+      const currVal = col[sourceIndex]
 
       if(isBadNumber(currVal))
       {
@@ -95,7 +101,7 @@ export const scaler = (main, index, size, colKeys, {type, minMaxRange, lookback,
         for (let step = 1; step <= lookback; step++) {
 
           const laggedWeight = weights?.[target]?.[step] ?? 1
-          const laggedVal = col[index - step]
+          const laggedVal = col[sourceIndex - step]
 
           if(isBadNumber(laggedVal))
           {

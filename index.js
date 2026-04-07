@@ -549,7 +549,9 @@ export default class OHLCV_INDICATORS {
         
         validateObject(options, 'options', longName)
 
-        const {minMaxRange = null, lag = false,  colKeys = [], weights = {}, euclideanWeights = false, byFeatureRange = null, deltaSplit = false} = options
+        const {minMaxRange = null, lag = false,  colKeys = [], weights = {}, euclideanWeights = false, byFeatureRange = null, offset = 0} = options
+
+         validateNumber(offset, {min: 0, max: this.len, allowDecimals: false}, 'offset', methodName)
 
 
         validateArray(colKeys, 'options.colKeys', longName)
@@ -598,7 +600,7 @@ export default class OHLCV_INDICATORS {
             validateArrayOfRanges(minMaxRange, 'options.minMaxRange', longName)
         }
 
-        this.inputParams.push({key: methodName, params: [size, colKeys, {type, minMaxRange, lookback, weights, euclideanWeights, byFeatureRange}]})
+        this.inputParams.push({key: methodName, params: [size, colKeys, {type, minMaxRange, lookback, weights, euclideanWeights, byFeatureRange, offset}]})
         return this
     }
 
