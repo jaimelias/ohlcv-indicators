@@ -97,7 +97,7 @@ export const mainLoop = (input, main) => {
           }
         }
 
-        const midPrice = (curr.open + curr.close) / 2
+        const midPrice = (verticalOhlcv.open[index] + verticalOhlcv.close[index]) / 2
         
         main.pushToMain({index, key: 'mid_price', value: midPrice})
     
