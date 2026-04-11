@@ -525,13 +525,14 @@ export default class OHLCV_INDICATORS {
 
         validateObject(options, 'options', methodName)
 
-        const {lag = 0, colKeys = []} = options
+        const {lag = 0, colKeys = [], retLogs = false} = options
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateArray(colKeys, 'options.colKeys', methodName)
+        validateBoolean(retLogs, 'retLogs', methodName)
 
 
-        this.inputParams.push({key: methodName, params: [{lag, colKeys}]})
+        this.inputParams.push({key: methodName, params: [{lag, colKeys, retLogs}]})
 
         return this
     }

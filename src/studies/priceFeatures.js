@@ -1,20 +1,23 @@
 
-const getRet = (next, prev) => (next - prev) / prev 
+
 const isBadNumber = (v) => v == null || !Number.isFinite(v)
 
-export const priceFeatures  = (main, index, {lag, colKeys}) => {
+export const priceFeatures  = (main, index, {lag, colKeys, retLogs}) => {
     const { verticalOhlcv } = main
+
+    const getRet = (next, prev) => (retLogs) ? Math.log(next / prev) : (next - prev) / prev
+    const prefix = (retLogs) ? 'ret_log_' : 'ret_'
 
     if(index === 0) {
         const {len} = main
 
         const newCols = {
-            ret_change: new Float64Array(len).fill(NaN),
-            ret_upper_wick: new Float64Array(len).fill(NaN),
-            ret_lower_wick: new Float64Array(len).fill(NaN),
-            ret_gap: new Float64Array(len).fill(NaN),
-            ret_body: new Float64Array(len).fill(NaN),
-            ret_range: new Float64Array(len).fill(NaN)
+            [`${prefix}change`]: new Float64Array(len).fill(NaN),
+            [`${prefix}upper_wick`]: new Float64Array(len).fill(NaN),
+            [`${prefix}lower_wick`]: new Float64Array(len).fill(NaN),
+            [`${prefix}gap`]: new Float64Array(len).fill(NaN),
+            [`${prefix}body`]: new Float64Array(len).fill(NaN),
+            [`${prefix}range`]: new Float64Array(len).fill(NaN)
         }
 
         for(const target of colKeys) {
@@ -24,7 +27,7 @@ export const priceFeatures  = (main, index, {lag, colKeys}) => {
                 );
             }
 
-            newCols[`ret_${target}`] = new Float64Array(len).fill(NaN)
+            newCols[`${prefix}${target}`] = new Float64Array(len).fill(NaN)
         }
 
         Object.assign(verticalOhlcv, newCols)
@@ -47,12 +50,12 @@ export const priceFeatures  = (main, index, {lag, colKeys}) => {
     const lowerWickTop = Math.min(currOpen, currClose)
 
     const row = {
-        ret_change: getRet(currClose, prevClose),
-        ret_upper_wick: getRet(currHigh, upperWickTop),
-        ret_lower_wick: getRet(lowerWickTop, currLow),
-        ret_gap: getRet(currOpen, prevClose),
-        ret_body: getRet(currClose, currOpen),
-        ret_range: getRet(currHigh, currLow)
+        [`${prefix}change`]: getRet(currClose, prevClose),
+        [`${prefix}upper_wick`]: getRet(currHigh, upperWickTop),
+        [`${prefix}lower_wick`]: getRet(lowerWickTop, currLow),
+        [`${prefix}gap`]: getRet(currOpen, prevClose),
+        [`${prefix}body`]: getRet(currClose, currOpen),
+        [`${prefix}range`]: getRet(currHigh, currLow)
     }
 
     let hasInvalidTarget = false
@@ -66,7 +69,7 @@ export const priceFeatures  = (main, index, {lag, colKeys}) => {
         }
 
         const targetRet = getRet(currClose, targetVal)
-        row[`ret_${target}`] = targetRet
+        row[`${prefix}${target}`] = targetRet
     }
 
     if(hasInvalidTarget) return
