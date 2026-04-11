@@ -43,7 +43,7 @@ export default class OHLCV_INDICATORS {
         this.firstRow = this.input[0]
         this.precision = precision
 
-        const initialPriceBasedArr = ['open', 'high', 'low', 'close']
+        const initialPriceBasedArr = ['open', 'high', 'low', 'close', 'mid_price']
         this.initialPriceBased = new Set(initialPriceBasedArr)
         this.priceBased = new Set(initialPriceBasedArr)
         this.precisionMultiplier = calcPrecisionMultiplier(this)

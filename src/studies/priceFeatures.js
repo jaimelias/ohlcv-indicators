@@ -13,6 +13,7 @@ export const priceFeatures  = (main, index, {lag, colKeys, retLogs}) => {
 
         const newCols = {
             [`${prefix}change`]: new Float64Array(len).fill(NaN),
+            [`${prefix}mid_price_change`]: new Float64Array(len).fill(NaN),
             [`${prefix}upper_wick`]: new Float64Array(len).fill(NaN),
             [`${prefix}lower_wick`]: new Float64Array(len).fill(NaN),
             [`${prefix}gap`]: new Float64Array(len).fill(NaN),
@@ -38,19 +39,26 @@ export const priceFeatures  = (main, index, {lag, colKeys, retLogs}) => {
     }
 
     const prevClose = verticalOhlcv.close[index - 1]
+    const prevOpen = verticalOhlcv.open[index - 1]
 
     if(typeof prevClose === 'undefined') return
+
+   
 
     const currOpen = verticalOhlcv.open[index]
     const currHigh = verticalOhlcv.high[index]
     const currLow = verticalOhlcv.low[index]
     const currClose = verticalOhlcv.close[index]
+    
+    const prevMidPrice = (prevClose + prevOpen) / 2
+    const currMidPrice = (currOpen + currClose) / 2
 
     const upperWickTop = Math.max(currOpen, currClose)
     const lowerWickTop = Math.min(currOpen, currClose)
 
     const row = {
         [`${prefix}change`]: getRet(currClose, prevClose),
+        [`${prefix}mid_price_change`]: getRet(currMidPrice, prevMidPrice),
         [`${prefix}upper_wick`]: getRet(currHigh, upperWickTop),
         [`${prefix}lower_wick`]: getRet(lowerWickTop, currLow),
         [`${prefix}gap`]: getRet(currOpen, prevClose),

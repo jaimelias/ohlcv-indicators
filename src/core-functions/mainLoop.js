@@ -66,6 +66,7 @@ export const mainLoop = (input, main) => {
   {
     verticalOhlcv[key] = buildArray(arrayTypes[key], len)
   }
+
   // Process each row in the input
   for (let chunkStart = 0; chunkStart < len; chunkStart += chunkProcess) {
 
@@ -76,12 +77,12 @@ export const mainLoop = (input, main) => {
       
         for(const [key, formaterKey] of Object.entries(inputTypes))
         {
-          const value = curr[key]
+          let value = curr[key]
+
+          if(typeof value === 'undefined') continue
 
           if(inputNumberFormatter.hasOwnProperty(formaterKey))
           {
-            if(typeof value === 'undefined') console.log({index, formaterKey, key})
-
             const formatedValue = inputNumberFormatter[formaterKey](value, precisionMultiplier)
 
             main.pushToMain({index, key, value: formatedValue})
@@ -95,6 +96,10 @@ export const mainLoop = (input, main) => {
             main.pushToMain({index, key, value})
           }
         }
+
+        const midPrice = (curr.open + curr.close) / 2
+        
+        main.pushToMain({index, key: 'mid_price', value: midPrice})
     
         // Process these indicators separately (ensuring their execution in the order of initialization)
         for (const { key, params} of inputParams)
