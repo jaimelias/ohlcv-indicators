@@ -4,11 +4,11 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag})
 
     
 
-    const { verticalOhlcv, instances } = main;
+    const { verticalOhlcv, instances , useFullNames} = main;
 
-    const paramsKey = (kPeriod === 14 && kSlowingPeriod === 3 && dPeriod === 3) ? '' : `${kPeriod}_${kSlowingPeriod}_${dPeriod}`
-    const stochD = `stoch_d${paramsKey}`;
-    const stochK = `stoch_k${paramsKey}`;
+    const paramsKey = ((kPeriod === 14 && kSlowingPeriod === 3 && dPeriod === 3) && !useFullNames) ? '' : `_${kPeriod}_${kSlowingPeriod}_${dPeriod}`
+    const stochD = `stochastic_d${paramsKey}`;
+    const stochK = `stochastic_k${paramsKey}`;
     const instanceKey = paramsKey
 
   // Initialization on the first index.

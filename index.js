@@ -17,8 +17,6 @@ import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { defaultMapColsCallback } from './src/studies/mapCols.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 
-import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
-
 /**
  * Class OHLCV_INDICATORS
  *
@@ -28,13 +26,14 @@ import { normalizeMinMax } from './src/machine-learning/ml-utilities.js'
  */
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, inputParams = null, chunkProcess = 2000, precision = false}) {
+    constructor({input, ticker = null, inputParams = null, chunkProcess = 2000, precision = false, useFullNames = false}) {
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
 
         validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
         validateBoolean(precision, 'precision', 'contructor')
+        validateBoolean(precision, 'useFullNames', 'contructor')
 
         this.chunkProcess = chunkProcess
         
@@ -42,6 +41,7 @@ export default class OHLCV_INDICATORS {
         this.len = this.input.length
         this.firstRow = this.input[0]
         this.precision = precision
+        this.useFullNames = useFullNames
 
         const initialPriceBasedArr = ['open', 'high', 'low', 'close', 'mid_price']
         this.initialPriceBased = new Set(initialPriceBasedArr)
@@ -371,7 +371,7 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(lag, {min: 0, max, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, order: 0, params: [kPeriod, kSlowingPeriod, dPeriod, {lag}]})
+        this.inputParams.push({key: methodName, params: [kPeriod, kSlowingPeriod, dPeriod, {lag}]})
 
         return this
     }
@@ -410,14 +410,11 @@ export default class OHLCV_INDICATORS {
         validateNumber(stdDev, {min: 0.01, max: 50, allowDecimals: true}, 'stdDev', methodName)
         validateObject(options, 'options', methodName)
 
-        const {target = 'close', height = false, range = [],  lag = 0} = options
+        const { lag = 0} = options
 
-        validateString(target, 'options.target', methodName)
-        validateArray(range, 'options.range', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
-        validateBoolean(height, 'options.height', methodName)
   
-        this.inputParams.push({key: methodName, params: [size, stdDev, {target, height, range, lag}]});
+        this.inputParams.push({key: methodName, params: [size, stdDev, {lag}]});
     
         return this;
     }
@@ -450,13 +447,11 @@ export default class OHLCV_INDICATORS {
         validateNumber(offset, {min: 0, max: this.len, allowDecimals: false}, 'offset', methodName)
       
         validateObject(options, 'options', methodName)
-        const { height = false, range = [], lag = 0} = options;
+        const {  lag = 0} = options;
       
-        validateArray(range, 'options.range', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
-        validateBoolean(height, 'options.height', methodName)
       
-        this.inputParams.push({ key: methodName, order: 0, params: [size, offset, { height, range, lag}] });
+        this.inputParams.push({ key: methodName, order: 0, params: [size, offset, {lag}] });
       
         return this;
     }

@@ -1,13 +1,10 @@
-import { FasterEMA, FasterMACD } from 'trading-signals';
+import { FasterEMA, FasterMACD } from 'trading-signals'
 
-const defaultTarget = 'close';
+const defaultTarget = 'close'
 
-export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}) => {
-
-  
-
-  const { verticalOhlcv, instances, priceBased } = main
-  const {instanceKey} = precomputed
+export const macd = (main, index, fast, slow, signal, { target, lag, precomputed }) => {
+  const { verticalOhlcv, instances, priceBased, useFullNames } = main
+  const { instanceKey } = precomputed
 
   // Initialization on the first index.
   if (index === 0) {
@@ -23,13 +20,25 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
       if (o.key === 'macd') numberOfIndicators++
     }
 
-    // Choose a display prefix based on the number of indicators.
-    const displayPrefix = numberOfIndicators > 1 ? `macd_${fast}_${slow}_${signal}` : 'macd'
+    const useIndexedKeys = numberOfIndicators > 1 || useFullNames
+    const indicatorSuffix = `${fast}_${slow}_${signal}`
+
+    const getKey = name => {
+      if (target === defaultTarget) {
+        return useIndexedKeys
+          ? `macd_${name}_${indicatorSuffix}`
+          : `macd_${name}`
+      }
+
+      return useIndexedKeys
+        ? `macd_${name}_${target}_${indicatorSuffix}`
+        : `macd_${name}_${target}`
+    }
 
     // Build the keys.
-    const diffKey = target === defaultTarget ? `${displayPrefix}_diff` : `${displayPrefix}_diff_${target}`
-    const deaKey = target === defaultTarget ? `${displayPrefix}_dea` : `${displayPrefix}_dea_${target}`
-    const histogramKey = target === defaultTarget ? `${displayPrefix}_histogram` : `${displayPrefix}_histogram_${target}`
+    const diffKey = getKey('diff')
+    const deaKey = getKey('dea')
+    const histogramKey = getKey('histogram')
 
     if (!instances.hasOwnProperty('macd')) {
       instances.macd = {
@@ -52,22 +61,34 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
 
     const keyNames = [diffKey, deaKey, histogramKey]
 
-    for(const k of keyNames) {
+    for (const k of keyNames) {
       priceBased.add(k)
     }
 
-    if(lag > 0)
-    {
+    if (lag > 0) {
       main.lag(keyNames, lag)
     }
-
   }
 
   const { numberOfIndicators, settings } = instances.macd
-  const displayPrefix = numberOfIndicators > 1 ? `macd_${fast}_${slow}_${signal}` : 'macd'
-  const diffKey = target === defaultTarget ? `${displayPrefix}_diff` : `${displayPrefix}_diff_${target}`
-  const deaKey = target === defaultTarget ? `${displayPrefix}_dea` : `${displayPrefix}_dea_${target}`
-  const histogramKey = target === defaultTarget ? `${displayPrefix}_histogram` : `${displayPrefix}_histogram_${target}`
+  const useIndexedKeys = numberOfIndicators > 1 || useFullNames
+  const indicatorSuffix = `${fast}_${slow}_${signal}`
+
+  const getKey = name => {
+    if (target === defaultTarget) {
+      return useIndexedKeys
+        ? `macd_${name}_${indicatorSuffix}`
+        : `macd_${name}`
+    }
+
+    return useIndexedKeys
+      ? `macd_${name}_${target}_${indicatorSuffix}`
+      : `macd_${name}_${target}`
+  }
+
+  const diffKey = getKey('diff')
+  const deaKey = getKey('dea')
+  const histogramKey = getKey('histogram')
 
   const macdInstance = settings[instanceKey]
   const value = verticalOhlcv[target][index]
@@ -86,4 +107,4 @@ export const macd = (main, index, fast, slow, signal, {target, lag, precomputed}
   main.pushToMain({ index, key: histogramKey, value: macdResult ? macdResult.histogram : NaN })
 
   return true
-};
+}

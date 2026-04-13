@@ -2,14 +2,25 @@ import { FasterEMA } from 'trading-signals';
 
 export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag = 0, bothNull = false } = {}) => {
   const { verticalOhlcv, instances, len, priceBased } = main;
-  const prefix = (bothNull) ?  'heiken_ashi' : `heiken_ashi_${smoothLength}_${afterSmoothLength}`;
+  const indicatorKey = `${smoothLength}_${afterSmoothLength}`;
   const keys = ['open', 'high', 'low', 'close'];
+
+  const getKey = key =>
+    bothNull
+      ? `heiken_ashi_${key}`
+      : `heiken_ashi_${key}_${indicatorKey}`;
+
+  const crossKey = bothNull
+    ? 'heiken_ashi_cross'
+    : `heiken_ashi_cross_${indicatorKey}`;
+
+  const instanceKey = bothNull
+    ? 'heiken_ashi'
+    : `heiken_ashi_${indicatorKey}`;
 
   // ---- INIT ----
   if (index === 0) {
-    // Initialize state
-    instances[prefix] = {
-      // Only allocate EMAs when smoothing is requested
+    instances[instanceKey] = {
       emaPre: !bothNull
         ? Object.fromEntries(keys.map(k => [k, new FasterEMA(smoothLength)]))
         : null,
@@ -21,13 +32,13 @@ export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag =
       isTrendUp: false,
     };
 
-    const keyNames = keys.map(k => `${prefix}_${k}`);
+    const keyNames = keys.map(getKey);
     const verticalOhlcvSetup = Object.fromEntries(
-      [...keyNames, `${prefix}_cross`].map(v => [v, new Float64Array(len).fill(NaN)])
+      [...keyNames, crossKey].map(v => [v, new Float64Array(len).fill(NaN)])
     );
 
-    for(const k of keyNames) {
-      priceBased.add(k)
+    for (const k of keyNames) {
+      priceBased.add(k);
     }
 
     Object.assign(verticalOhlcv, { ...verticalOhlcvSetup });
@@ -42,7 +53,7 @@ export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag =
   const high = verticalOhlcv.high[index];
   const low = verticalOhlcv.low[index];
   const close = verticalOhlcv.close[index];
-  const inst = instances[prefix];
+  const inst = instances[instanceKey];
 
   let sOpen, sHigh, sLow, sClose;
 
@@ -59,17 +70,16 @@ export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag =
       sLow = inst.emaPre.low.getResult();
       sClose = inst.emaPre.close.getResult();
     } catch {
-      return true; // skip if not enough data
+      return true;
     }
   } else {
-    // No pre-smoothing: use raw OHLC
     sOpen = open;
     sHigh = high;
     sLow = low;
     sClose = close;
   }
 
-  // ---- HEIKEN ASHI CORE (from s*) ----
+  // ---- HEIKEN ASHI CORE ----
   const haClose = (sOpen + sHigh + sLow + sClose) / 4;
   const haOpen = (Number.isNaN(inst.prevHaOpen) || Number.isNaN(inst.prevHaClose))
     ? (sOpen + sClose) / 2
@@ -77,7 +87,6 @@ export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag =
   const haHigh = Math.max(sHigh, haOpen, haClose);
   const haLow = Math.min(sLow, haOpen, haClose);
 
-  // Store for next round
   inst.prevHaOpen = haOpen;
   inst.prevHaClose = haClose;
 
@@ -96,20 +105,19 @@ export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag =
       smLow = inst.emaPost.low.getResult();
       smClose = inst.emaPost.close.getResult();
     } catch {
-      return true; // skip if not enough data
+      return true;
     }
   } else {
-    // No post-smoothing: final values are plain HA
     smOpen = haOpen;
     smHigh = haHigh;
     smLow = haLow;
     smClose = haClose;
   }
 
-  // ---- TREND/CROSS LOGIC (works for both modes) ----
-  const prevCross = index > 0 ? verticalOhlcv[`${prefix}_cross`][index - 1] : 0;
-  const prevHaOpenArr = index > 0 ? verticalOhlcv[`${prefix}_open`][index - 1] : NaN;
-  const prevHaCloseArr = index > 0 ? verticalOhlcv[`${prefix}_close`][index - 1] : NaN;
+  // ---- TREND/CROSS LOGIC ----
+  const prevCross = index > 0 ? verticalOhlcv[crossKey][index - 1] : 0;
+  const prevHaOpenArr = index > 0 ? verticalOhlcv[getKey('open')][index - 1] : NaN;
+  const prevHaCloseArr = index > 0 ? verticalOhlcv[getKey('close')][index - 1] : NaN;
 
   const crossUp = !Number.isNaN(prevHaCloseArr) && prevHaCloseArr <= prevHaOpenArr && smClose > smOpen;
   const crossDown = !Number.isNaN(prevHaCloseArr) && prevHaCloseArr >= prevHaOpenArr && smClose < smOpen;
@@ -127,11 +135,11 @@ export const heikenAshi = (main, index, smoothLength, afterSmoothLength, { lag =
   }
 
   // ---- PUSH OUTPUTS ----
-  main.pushToMain({ index, key: `${prefix}_open`, value: smOpen });
-  main.pushToMain({ index, key: `${prefix}_high`, value: smHigh });
-  main.pushToMain({ index, key: `${prefix}_low`, value: smLow });
-  main.pushToMain({ index, key: `${prefix}_close`, value: smClose });
-  main.pushToMain({ index, key: `${prefix}_cross`, value: cross });
+  main.pushToMain({ index, key: getKey('open'), value: smOpen });
+  main.pushToMain({ index, key: getKey('high'), value: smHigh });
+  main.pushToMain({ index, key: getKey('low'), value: smLow });
+  main.pushToMain({ index, key: getKey('close'), value: smClose });
+  main.pushToMain({ index, key: crossKey, value: cross });
 
   return true;
 };
