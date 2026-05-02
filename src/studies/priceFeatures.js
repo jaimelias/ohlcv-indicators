@@ -3,14 +3,14 @@
 const isBadNumber = (v) => v == null || !Number.isFinite(v)
 
 export const priceFeatures  = (main, index, {lag, colKeys, retLogs}) => {
-    const { verticalOhlcv } = main
+    const { verticalOhlcv, priceBased, scaledGroups } = main
 
     const getRet = (next, prev) => (retLogs) ? Math.log(next / prev) : (next - prev) / prev
     const prefix = (retLogs) ? 'ret_log_' : 'ret_'
 
     if(index === 0) {
         const {len} = main
-
+        
         const newCols = {
             [`${prefix}change`]: new Float64Array(len).fill(NaN),
             [`${prefix}mid_price_change`]: new Float64Array(len).fill(NaN),
@@ -24,14 +24,22 @@ export const priceFeatures  = (main, index, {lag, colKeys, retLogs}) => {
         for(const target of colKeys) {
             if(!verticalOhlcv.hasOwnProperty(target)) {
                 throw new Error(
-                    `Target property ${target} not found in verticalOhlcv for "priceFeatures".`
+                    `Target property in "options.colKey" array "${target}" not found in verticalOhlcv for "priceFeatures".`
                 );
+            }
+
+            else if(!priceBased.has(target)) {
+                 throw new Error(
+                     `Target property in "options.colKey" array "${target}" not found in priceBased for "priceFeatures".`
+                );               
             }
 
             newCols[`${prefix}${target}`] = new Float64Array(len).fill(NaN)
         }
 
         Object.assign(verticalOhlcv, newCols)
+
+        scaledGroups.priceFeatures = Object.keys(newCols)
 
         if(lag) {
             main.lag(Object.keys(newCols), lag)
