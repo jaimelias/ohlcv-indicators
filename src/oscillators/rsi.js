@@ -1,16 +1,17 @@
 import { FasterRSI } from 'trading-signals';
 import { FasterSMA } from 'trading-signals';
+import { mathLog } from '../utilities/math.js';
 
 const defaultTarget = 'close'
-export const rsi = (main, index, size, { target, lag }) => {
+export const rsi = (main, index, size, { target, lag, retLogs }) => {
 
   
   
   const { verticalOhlcv, instances } = main;
 
   const suffix = target === defaultTarget ? '' : `_${target}`;
-  const rsiKey = `rsi_${size}${suffix}`;
-  const rsiSmaKey = `rsi_sma_${size}${suffix}`;
+  const rsiKey = retLogs ? `ret_log_rsi_${size}${suffix}` : `rsi_${size}${suffix}`;
+  const rsiSmaKey = retLogs ? `ret_log_rsi_sma_${size}${suffix}` : `rsi_sma_${size}${suffix}`;
 
   // Initialization on the first index.
   if (index === 0) {
@@ -54,20 +55,21 @@ export const rsi = (main, index, size, { target, lag }) => {
   }
 
 
-  // Always push the RSI value, using NaN as a fallback.
-  main.pushToMain({ index, key: rsiKey, value: (Number.isNaN(currentRsi)) ? NaN : currentRsi });
+    const rsiVal = Number.isNaN(currentRsi) ? NaN : (retLogs ? mathLog(currentRsi, 50) : currentRsi)
 
-  // Update the SMA indicator only if a valid RSI value is available.
-  if (!Number.isNaN(currentRsi)) {
-    instances[rsiSmaKey].update(currentRsi);
-  }
+    main.pushToMain({ index, key: rsiKey, value: rsiVal });
 
-  try {
-    smoothedRsi = instances[rsiSmaKey].getResult();
-  } catch (err) {
-    smoothedRsi = NaN;
-  }
+    if (!Number.isNaN(currentRsi)) {
+      instances[rsiSmaKey].update(currentRsi);
+    }
 
-  // Always push the smoothed RSI value.
-  main.pushToMain({ index, key: rsiSmaKey, value: (Number.isNaN(smoothedRsi)) ? NaN : smoothedRsi });
+    try {
+      smoothedRsi = instances[rsiSmaKey].getResult();
+    } catch (err) {
+      smoothedRsi = NaN;
+    }
+
+    const smoothedRsiVal = Number.isNaN(smoothedRsi) ? NaN : (retLogs ? mathLog(smoothedRsi, 50) : smoothedRsi)
+
+    main.pushToMain({ index, key: rsiSmaKey, value: smoothedRsiVal });
 };

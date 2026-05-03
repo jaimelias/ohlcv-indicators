@@ -367,11 +367,12 @@ export default class OHLCV_INDICATORS {
         validateNumber(dPeriod, {min: 1, max, allowDecimals: false}, 'dPeriod', methodName)
         validateObject(options, 'options', methodName)
 
-        const {lag = 0} = options
+        const {lag = 0, retLogs} = options
 
         validateNumber(lag, {min: 0, max, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'retLogs', methodName)
 
-        this.inputParams.push({key: methodName, params: [kPeriod, kSlowingPeriod, dPeriod, {lag}]})
+        this.inputParams.push({key: methodName, params: [kPeriod, kSlowingPeriod, dPeriod, {lag, retLogs}]})
 
         return this
     }
@@ -428,12 +429,13 @@ export default class OHLCV_INDICATORS {
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateObject(options, 'options', methodName)
         
-        const {target = 'close', lag = 0} = options
+        const {target = 'close', lag = 0, retLogs =  false} = options
 
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'retLogs', methodName)
 
-        this.inputParams.push({key: methodName, params: [size, {target, lag}]})
+        this.inputParams.push({key: methodName, params: [size, {target, lag, retLogs}]})
 
         return this
     }

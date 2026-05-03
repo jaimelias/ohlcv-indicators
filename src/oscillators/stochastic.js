@@ -1,14 +1,14 @@
 import { FasterStochasticOscillator } from 'trading-signals';
+import { mathLog } from '../utilities/math.js';
 
-export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag}) => {
+export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag, retLogs}) => {
 
-    
 
     const { verticalOhlcv, instances , useFullNames} = main;
 
     const paramsKey = ((kPeriod === 14 && kSlowingPeriod === 3 && dPeriod === 3) && !useFullNames) ? '' : `_${kPeriod}_${kSlowingPeriod}_${dPeriod}`
-    const stochD = `stochastic_d${paramsKey}`;
-    const stochK = `stochastic_k${paramsKey}`;
+    const stochD = (retLogs) ? `ret_log_stochastic_d${paramsKey}` : `stochastic_d${paramsKey}`;
+    const stochK = (retLogs) ? `ret_log_stochastic_k${paramsKey}` : `stochastic_k${paramsKey}`;
     const instanceKey = paramsKey
 
   // Initialization on the first index.
@@ -47,8 +47,8 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag})
         stockObj = null
     }
 
-    const kVal = stockObj ? stockObj.stochK : NaN
-    const dVal = stockObj ? stockObj.stochD : NaN
+    const kVal = stockObj ? (retLogs ? mathLog(stockObj.stochK, 50) : stockObj.stochK) : NaN
+    const dVal = stockObj ? (retLogs ? mathLog(stockObj.stochD, 50) : stockObj.stochD) : NaN
 
     main.pushToMain({ index, key: stochK, value: kVal })
     main.pushToMain({ index, key: stochD, value: dVal })
