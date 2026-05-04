@@ -12,6 +12,7 @@
   "author": "https://jaimelias.com/",
   "license": "ISC",
   "dependencies": {
+    "ohlcv-indicators": "^3.5.72",
     "trading-signals": "^5.0.4"
   },
   "devDependencies": {

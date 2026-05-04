@@ -1,9 +1,10 @@
 
 import {FasterATR, FasterWSMA} from 'trading-signals';
+import { mathLog } from '../utilities/math.js';
 
-export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
+export const atr = (main, index, size, {lag, retLogs}) => {
   const { verticalOhlcv, instances, priceBased } = main
-  const baseKeyName = `atr_${size}`
+  const baseKeyName = retLogs ? `ret_log_atr_${size}` : `atr_${size}`
 
   if (index === 0) {
 
@@ -12,10 +13,6 @@ export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
     instances[baseKeyName] = new FasterATR(size, FasterWSMA)
 
     const keyNames = [baseKeyName]
-
-    if(percentage) keyNames.push(`${baseKeyName}_percentage`)
-    if(upper !== null) keyNames.push(`${baseKeyName}_upper`)
-    if(lower !== null) keyNames.push(`${baseKeyName}_lower`)
 
     for(const k of keyNames)
     { 
@@ -46,24 +43,8 @@ export const atr = (main, index, size, {lag, percentage, upper, lower}) => {
 
   }
 
-  if(percentage)
-  {
-    const percentageValue = (Number.isNaN(currAtr)) ? NaN : (currAtr / curr.close)
-    main.pushToMain({ index, key: `${baseKeyName}_percentage`, value: percentageValue });
-  }
-  if(upper !== null)
-  {
-    const upperValue = (Number.isNaN(currAtr)) ? NaN : (curr.close + (currAtr * upper))
-    main.pushToMain({ index, key: `${baseKeyName}_upper`, value: upperValue });
-  }
-  if(lower !== null)
-  {
-    const lowerValue = (Number.isNaN(currAtr)) ? NaN : (curr.close - (currAtr * lower))
-    main.pushToMain({ index, key: `${baseKeyName}_lower`, value: lowerValue });
-  }
-
   // Always push the MA value (even if NaN).
-  main.pushToMain({ index, key: baseKeyName, value: currAtr });
+  main.pushToMain({ index, key: baseKeyName, value: Number.isNaN(currAtr) ? NaN : (retLogs ? mathLog(currAtr, curr.close) : currAtr) });
 
   return true;
 }
