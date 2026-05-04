@@ -262,7 +262,27 @@ export default class OHLCV_INDICATORS {
         const {lag = 0, retLogs = false} = options
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
-        validateBoolean(retLogs, 'options.retLogs', 'atr')
+        validateBoolean(retLogs, 'options.retLogs', methodName)
+
+
+        this.inputParams.push({key: methodName, order: 0, params: [size, {lag, retLogs}]})
+
+        return this
+    }
+
+    adx(size = 14, options = {}) {
+
+        const methodName = 'adx'
+
+        isAlreadyComputed(this)
+
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {lag = 0, retLogs = false} = options
+
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'options.retLogs', methodName)
 
 
         this.inputParams.push({key: methodName, order: 0, params: [size, {lag, retLogs}]})

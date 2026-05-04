@@ -16,6 +16,7 @@ import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
 import { scaler } from "../machine-learning/scaler.js";
 import { atr } from "../volatility/atr.js";
+import { adx } from "../volatility/adx.js";
 import { mapCols } from "../studies/mapCols.js";
 
 import { buildArray } from "../utilities/assignTypes.js";
@@ -32,6 +33,7 @@ const mainFunctions = {
   rsi,
   stochastic,
   atr,
+  adx,
   ema: movingAverages,
   sma: movingAverages,
   vidya,
