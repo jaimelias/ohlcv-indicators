@@ -58,7 +58,7 @@ export const adx = (main, index, size, { lag, retLogs }) => {
 
   const adxVal = Number.isNaN(currentAdx)
     ? NaN
-    : retLogs ? mathLog(currentAdx, 25) : currentAdx;
+    : retLogs ? mathLog(currentAdx, 20) : currentAdx;
 
 
   main.pushToMain({ index, key: adxKey, value: adxVal });

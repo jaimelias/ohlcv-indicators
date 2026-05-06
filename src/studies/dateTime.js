@@ -14,7 +14,7 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
         Object.assign(instances, {
             dateTime: {
-                colKeys: [...precompute.colKeys, `${prefix}year`],
+                colKeys: [...precompute.colKeys, `${prefix}year`].filter(v => v !== 'one_hot_year'),
                 colKeySizes: {
                     ...precompute.colKeySizes
                 }
