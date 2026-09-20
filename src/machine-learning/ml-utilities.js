@@ -3,12 +3,3 @@ export const oneHotEncode = (idx, size) => {
     vec[idx] = 1
     return vec
 }
-
-export const normalizeMinMax = (value, min, max, [validMin, validMax]) => {
-    const clamped = Math.min(Math.max(value, min), max)
-    return ((clamped - min) / (max - min)) * (validMax - validMin) + validMin
-}
-  
-export const normalizeZScore = (value, mean, std) => {
-    return std === 0 ? 0 : (value - mean) / std
-}

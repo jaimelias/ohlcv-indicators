@@ -6,7 +6,6 @@ import {
     validateArrayOptions, 
     validateBoolean, 
     validateNumber, 
-    validateArrayOfRanges,
     validateInputParams,
     validateString
 } from './src/utilities/validators.js'
@@ -534,8 +533,8 @@ export default class OHLCV_INDICATORS {
         return this           
     }
 
-    priceFeatures(options = {}) {
-        let methodName = 'priceFeatures'
+    candleFeatures(options = {}) {
+        let methodName = 'candleFeatures'
 
         isAlreadyComputed(this)
 
@@ -550,74 +549,6 @@ export default class OHLCV_INDICATORS {
 
         this.inputParams.push({key: methodName, params: [{lag, colKeys, retLogs}]})
 
-        return this
-    }
-
-    scaler(type = 'zscore', size, options = {})
-    {
-        let methodName = 'scaler'
-
-        isAlreadyComputed(this)
-
-        validateArrayOptions(['minmax', 'zscore', 'byfeature'], type, 'options.type', methodName)
-        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
-
-        const longName = `${methodName}(${type}, ${size}, options = {})`
-        
-        validateObject(options, 'options', longName)
-
-        const {minMaxRange = null, lag = false,  colKeys = [], weights = {}, euclideanWeights = false, byFeatureRange = null, offset = 0} = options
-
-         validateNumber(offset, {min: 0, max: this.len, allowDecimals: false}, 'offset', methodName)
-
-
-        validateArray(colKeys, 'options.colKeys', longName)
-        validateBoolean(lag, 'options.lag', longName)
-        
-        
-        validateObject(weights, 'options.weights', longName)
-
-        const lookback = lag ? size - 1 : 0
-
-        if(colKeys.length === 0) {
-            throw new Error(`The property "options.colKeys" must be an array with target keys in ${longName}.`)
-        }
-
-
-
-        for(const [key, arr] of Object.entries(weights)) {
-            validateArray(arr, `options.weights.${key}`)
-
-            if(!lag && arr.size > 0) {
-                throw new Error(`If "options.lag" is set to false "options.weights.${key}" can only contain 1 item (float) in ${longName}.`)
-            }
-
-            if(arr.length > size) {
-                throw new Error(`The length of the property "options.weights.${key}" can not be longer than "size" in ${longName}.`)
-            }
-
-            for(let x = 0; x < arr.length; x++) {
-                const val = arr[x]
-                validateNumber(val, {min: 0.01, max: 10, allowDecimals: true}, `options.weights.${key}[${x}]`, longName)
-            }
-
-        }
-
-        if (type !== 'byfeature') {
-
-            if(!byFeatureRange == null) {
-                throw new Error('"options.byFeatureRange" is only valid when "type" is "byfeature".')
-            }
-        }
-        else {
-            validateArrayOfRanges(byFeatureRange, 'options.byFeatureRange', longName)
-        }
-        
-        if(['minmax', 'byfeature'].includes(type)) {
-            validateArrayOfRanges(minMaxRange, 'options.minMaxRange', longName)
-        }
-
-        this.inputParams.push({key: methodName, params: [size, colKeys, {type, minMaxRange, lookback, weights, euclideanWeights, byFeatureRange, offset}]})
         return this
     }
 

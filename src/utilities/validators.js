@@ -111,29 +111,6 @@ export const validateNumber = (value, options, paramName, callerName) => {
 };
 
 
-export const validateArrayOfRanges = (range, paramName, callerName) => {
-
-    validateArray(range, paramName, callerName)
-
-    if (range.length !== 2) {
-        throw new Error(
-          `Invalid "${paramName}" array length: expected 2 items, but got ${range.length} in "${callerName}.${paramName}".`
-        );
-    }
-
-    const [min, max] = range
-
-    validateNumber(min, {min: -100, max, allowDecimals: false}, `${paramName}[0] (min)`, callerName)
-    validateNumber(max, {min: min, max: 100, allowDecimals: false}, `${paramName}[1] (max)`, callerName)
-
-    if(min === max)
-    {
-        throw new Error(`Invalid "min" can not be equal to "max" property in "${callerName}.${paramName}".`)
-    }
-
-    return true
-}
-
 export const validateString = (txt, paramName, callerName) => {
 
   if(typeof txt !== 'string' || !txt.length) throw new Error(`Invalid "${paramName}" property in "${callerName}". Only strings are accepted.`)

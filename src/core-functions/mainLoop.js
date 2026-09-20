@@ -14,7 +14,6 @@ import { volumeDelta } from "../oscillators/volumeDelta.js";
 import { lag } from "../studies/lag.js";
 import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
-import { scaler } from "../machine-learning/scaler.js";
 import { atr } from "../volatility/atr.js";
 import { adx } from "../volatility/adx.js";
 import { mapCols } from "../studies/mapCols.js";
@@ -22,12 +21,12 @@ import { mapCols } from "../studies/mapCols.js";
 import { buildArray } from "../utilities/assignTypes.js";
 import {  inputNumberFormatter } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
-import { priceFeatures } from "../studies/priceFeatures.js";
+import { candleFeatures } from "../studies/candleFeatures.js";
 
 
 // Map indicator keys to their respective functions
 const mainFunctions = {
-  priceFeatures,
+  candleFeatures,
   dateTime,
   heikenAshi,
   rsi,
@@ -44,7 +43,6 @@ const mainFunctions = {
   bollingerBands,
   volumeOscillator,
   mapCols,
-  scaler,
   crossPairs,
   lag
 };

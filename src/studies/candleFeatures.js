@@ -2,7 +2,7 @@
 
 const isBadNumber = (v) => v == null || !Number.isFinite(v)
 
-export const priceFeatures  = (main, index, {lag, colKeys, retLogs}) => {
+export const candleFeatures  = (main, index, {lag, colKeys, retLogs}) => {
     const { verticalOhlcv, priceBased, scaledGroups } = main
 
     const getRet = (next, prev) => (retLogs) ? Math.log(next / prev) : (next - prev) / prev
@@ -24,13 +24,13 @@ export const priceFeatures  = (main, index, {lag, colKeys, retLogs}) => {
         for(const target of colKeys) {
             if(!verticalOhlcv.hasOwnProperty(target)) {
                 throw new Error(
-                    `Target property in "options.colKey" array "${target}" not found in verticalOhlcv for "priceFeatures".`
+                    `Target property in "options.colKey" array "${target}" not found in verticalOhlcv for "candleFeatures".`
                 );
             }
 
             else if(!priceBased.has(target)) {
                  throw new Error(
-                     `Target property in "options.colKey" array "${target}" not found in priceBased for "priceFeatures".`
+                     `Target property in "options.colKey" array "${target}" not found in priceBased for "candleFeatures".`
                 );               
             }
 
@@ -39,7 +39,7 @@ export const priceFeatures  = (main, index, {lag, colKeys, retLogs}) => {
 
         Object.assign(verticalOhlcv, newCols)
 
-        scaledGroups.priceFeatures = Object.keys(newCols)
+        scaledGroups.candleFeatures = Object.keys(newCols)
 
         if(lag) {
             main.lag(Object.keys(newCols), lag)
