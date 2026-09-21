@@ -1,6 +1,7 @@
 import { FasterEMA } from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
 import { isPositiveInteger } from '../utilities/numberUtilities.js';
+import { validateInputValues } from '../utilities/validators.js';
 
 export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
 
@@ -8,13 +9,13 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
     const key = `volume_oscillator_${fast}_${slow}`
 
     if (index === 0) {
+        validateInputValues({ volume: true }, verticalOhlcv, index, 'volumeOscillator');
 
         const {len} = main
         Object.assign(instances, {
             [key]: {
                 fastEMA: new FasterEMA(fast),
                 slowEMA: new FasterEMA(slow),
-                hasInvalidInputValue: false
             }
         })
 
@@ -31,19 +32,13 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
         }
     }
 
-    const { fastEMA, slowEMA, hasInvalidInputValue } = instances[key];
+    const { fastEMA, slowEMA } = instances[key];
 
     const volume = verticalOhlcv.volume[index];
 
-    if(hasInvalidInputValue) {
+    if(volume === 0) {
         return;
     }
-    if(!isPositiveInteger(volume)) {
-        instances[key].hasInvalidInputValue = true;
-        return;
-    };
-
-    
 
     fastEMA.update(volume);
     slowEMA.update(volume);

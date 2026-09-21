@@ -1,5 +1,6 @@
 import { FasterStochasticOscillator } from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
+import { validateInputValues } from '../utilities/validators.js';
 
 export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag, retLogs}) => {
 
@@ -13,6 +14,7 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag, 
 
   // Initialization on the first index.
     if (index === 0) {
+        validateInputValues({ high: true, low: true, close: true }, verticalOhlcv, index, 'stochastic');
 
         const {len } = main;
 

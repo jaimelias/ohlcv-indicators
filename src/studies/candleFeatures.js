@@ -1,4 +1,4 @@
-
+import { validateInputValues } from '../utilities/validators.js'
 
 const isBadNumber = (v) => v == null || !Number.isFinite(v)
 
@@ -9,6 +9,8 @@ export const candleFeatures  = (main, index, {lag, colKeys, retLogs}) => {
     const prefix = (retLogs) ? 'ret_log_' : 'ret_'
 
     if(index === 0) {
+        validateInputValues({ open: true, high: true, low: true, close: true }, verticalOhlcv, index, 'candleFeatures')
+
         const {len} = main
         
         const newCols = {
@@ -22,6 +24,8 @@ export const candleFeatures  = (main, index, {lag, colKeys, retLogs}) => {
         }
 
         for(const target of colKeys) {
+            validateInputValues({ [target]: true }, verticalOhlcv, index, 'candleFeatures')
+
             if(!verticalOhlcv.hasOwnProperty(target)) {
                 throw new Error(
                     `Target property in "options.colKey" array "${target}" not found in verticalOhlcv for "candleFeatures".`

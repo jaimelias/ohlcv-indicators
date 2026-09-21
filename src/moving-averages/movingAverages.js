@@ -1,5 +1,6 @@
 
 import {FasterEMA, FasterSMA} from 'trading-signals';
+import { validateInputValues } from '../utilities/validators.js';
 
 const indicatorClasses = {
   ema: FasterEMA, 
@@ -13,6 +14,7 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
   const keyName = `${methodName}_${size}${suffix}`
 
   if (index === 0) {
+    validateInputValues({ [target]: true }, verticalOhlcv, index, methodName)
 
     const {len} = main
 

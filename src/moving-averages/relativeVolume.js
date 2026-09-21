@@ -1,5 +1,6 @@
 import { FasterSMA } from 'trading-signals';
 import { isPositiveInteger } from '../utilities/numberUtilities.js';
+import { validateInputValues } from '../utilities/validators.js';
 
 
 export const relativeVolume = (main, index, size, {lag}) => {
@@ -9,12 +10,13 @@ export const relativeVolume = (main, index, size, {lag}) => {
   
 
   if (index === 0) {
+    validateInputValues({ volume: true }, verticalOhlcv, index, 'relativeVolume');
+
     const { len } = main;
 
     instances[key] = {
       instance: new FasterSMA(size),
-      prevRelativeVolumeSma: NaN,
-      hasInvalidInputValue: false
+      prevRelativeVolumeSma: NaN
     };
     
     verticalOhlcv[key] = new Float64Array(len).fill(NaN);
@@ -27,15 +29,9 @@ export const relativeVolume = (main, index, size, {lag}) => {
   }
 
   const volume = verticalOhlcv.volume[index];
-  const { hasInvalidInputValue } = instances[key];
 
-  if(hasInvalidInputValue) {
+  if(volume === 0) {
     return;
-  }
-
-  if(!isPositiveInteger(volume)) {
-     instances[key].hasInvalidInputValue = true;
-    return
   }
   
   const smaInstance = instances[key].instance;
@@ -49,14 +45,15 @@ export const relativeVolume = (main, index, size, {lag}) => {
   }
 
   const prevSma = instances[key].prevRelativeVolumeSma;
-  let currRelativeVolume = NaN;
+
+  // Save the current SMA for the next nonzero-volume row.
+  instances[key].prevRelativeVolumeSma = smaValue;
 
   if(Number.isNaN(smaValue) || Number.isNaN(prevSma)) {
     return
   }
 
-  // Only calculate relative volume if both current SMA and previous SMA are valid numbers and prevSma is not zero.
-  currRelativeVolume = volume / prevSma;
+  let currRelativeVolume =  volume / prevSma;
 
   main.pushToMain({ index, key, value: currRelativeVolume });
   instances[key].prevRelativeVolumeSma = smaValue;

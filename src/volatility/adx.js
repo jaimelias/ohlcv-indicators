@@ -1,5 +1,6 @@
 import { FasterADX } from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
+import { validateInputValues } from '../utilities/validators.js';
 
 export const adx = (main, index, size, { lag, retLogs }) => {
   const { verticalOhlcv, instances, useFullNames } = main;
@@ -10,6 +11,8 @@ export const adx = (main, index, size, { lag, retLogs }) => {
 
   // Initialization on the first index.
   if (index === 0) {
+    validateInputValues({ high: true, low: true, close: true }, verticalOhlcv, index, 'adx');
+
     const { len } = main;
 
     if (!verticalOhlcv.hasOwnProperty('high')) {

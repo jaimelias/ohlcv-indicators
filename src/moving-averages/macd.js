@@ -1,4 +1,5 @@
 import { FasterEMA, FasterMACD } from 'trading-signals'
+import { validateInputValues } from '../utilities/validators.js'
 
 const defaultTarget = 'close'
 
@@ -8,6 +9,8 @@ export const macd = (main, index, fast, slow, signal, { target, lag, precomputed
 
   // Initialization on the first index.
   if (index === 0) {
+    validateInputValues({ [target]: true }, verticalOhlcv, index, 'macd')
+
     const { inputParams, len } = main
 
     if (!verticalOhlcv.hasOwnProperty(target)) {

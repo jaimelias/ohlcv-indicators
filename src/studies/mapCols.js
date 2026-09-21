@@ -1,9 +1,15 @@
+import { validateInputValues } from '../utilities/validators.js'
+
 export const mapCols = (main, index, newCols, callback, {lag, isPriceBased}) => {
 
     const {verticalOhlcv, len, priceBased, precision} = main
 
     if(index === 0)
     {
+        if (callback === defaultMapColsCallback) {
+            validateInputValues({ open: true, close: true }, verticalOhlcv, index, 'mapCols')
+        }
+
         for(const key of newCols)
         {
             if(verticalOhlcv.hasOwnProperty(key)) {

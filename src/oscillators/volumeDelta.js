@@ -1,4 +1,5 @@
 import { isPositiveInteger } from '../utilities/numberUtilities.js';
+import { validateInputValues } from '../utilities/validators.js';
 
 
 export const volumeDelta = (main, index, { lag = 0 }) => {
@@ -6,8 +7,10 @@ export const volumeDelta = (main, index, { lag = 0 }) => {
   const key = 'volume_delta';
 
   if (index === 0) {
+    validateInputValues({ open: true, close: true, volume: true }, verticalOhlcv, index, 'volumeDelta');
+
     if (!instances[key]) {
-      instances[key] = { isBuyVolume: true, cross: 0, hasInvalidInputValue: false };
+      instances[key] = { isBuyVolume: true, cross: 0};
     }
 
     const keyNames = [
@@ -34,14 +37,9 @@ export const volumeDelta = (main, index, { lag = 0 }) => {
   // inputs
   const volume = verticalOhlcv.volume[index];
 
-
-  if(hasInvalidInputValue) {
-      return;
+  if(volume === 0) {
+    return;
   }
-  if(!isPositiveInteger(volume)) {
-      instances[key].hasInvalidInputValue = true;
-      return;
-  };
 
 
   const open      = verticalOhlcv.open[index];

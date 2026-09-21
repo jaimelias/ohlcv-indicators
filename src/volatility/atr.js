@@ -1,6 +1,7 @@
 
 import {FasterATR, FasterWSMA} from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
+import { validateInputValues } from '../utilities/validators.js';
 
 export const atr = (main, index, size, {lag, retLogs}) => {
   const { verticalOhlcv, instances, priceBased } = main
@@ -9,6 +10,8 @@ export const atr = (main, index, size, {lag, retLogs}) => {
   if (index === 0) {
 
     const {instances, verticalOhlcv, len} = main
+
+    validateInputValues({ high: true, low: true, close: true }, verticalOhlcv, index, 'atr')
 
     instances[baseKeyName] = new FasterATR(size, FasterWSMA)
 

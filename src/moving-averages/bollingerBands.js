@@ -1,4 +1,5 @@
 import { FasterBollingerBands } from 'trading-signals'
+import { validateInputValues } from '../utilities/validators.js'
 
 export const bollingerBands = (main, index, size, stdDev, { lag } = {}) => {
   const { verticalOhlcv, instances, useFullNames } = main
@@ -9,6 +10,8 @@ export const bollingerBands = (main, index, size, stdDev, { lag } = {}) => {
   // Initialization on the first call.
   if (index === 0) {
     const { inputParams, verticalOhlcv, len, priceBased } = main
+
+    validateInputValues({ [target]: true }, verticalOhlcv, index, 'bollingerBands')
 
     if (!(target in verticalOhlcv)) {
       throw new Error(`bollingerBands could not find target "${target}"`)

@@ -1,3 +1,5 @@
+import { validateInputValues } from '../utilities/validators.js'
+
 export const donchianChannels = (main, index, size, offset, options) => {
   const { verticalOhlcv, instances, len, inputParams, priceBased, useFullNames } = main
   const { lag: outputLag = 0 } = options
@@ -5,6 +7,8 @@ export const donchianChannels = (main, index, size, offset, options) => {
 
   // ---- INIT (only at first bar) ----
   if (index === 0) {
+    validateInputValues({ high: true, low: true }, verticalOhlcv, index, 'donchianChannels')
+
     const numberOfIndicators = inputParams.filter(o => o.key === 'donchianChannels').length
     const useIndexedKeys = numberOfIndicators > 1 || useFullNames
 

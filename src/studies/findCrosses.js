@@ -1,6 +1,7 @@
 import { oneHotEncode } from "../machine-learning/ml-utilities.js"
 import { buildArray } from "../utilities/assignTypes.js"
 import { addPrecisionAsNumber } from "../utilities/precisionMultiplier.js"
+import { validateInputValues } from "../utilities/validators.js"
 const eq = (fast, slow) => fast === slow
 const gt = (fast, slow) => fast > slow
 const lt = (fast, slow) => fast < slow
@@ -143,6 +144,16 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, limit}) => {
 
     if(index === 0)
     {
+        validateInputValues(
+            {
+                ...(fast === 'price' ? { high: true, low: true, close: true } : { [fast]: true }),
+                ...(typeof slow === 'number' ? {} : { [slow]: true })
+            },
+            verticalOhlcv,
+            index,
+            'crossPairs'
+        )
+
         // allow numeric 'slow' as a constant column
         if (typeof slow === 'number') {
 

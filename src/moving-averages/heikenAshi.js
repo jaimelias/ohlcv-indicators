@@ -1,4 +1,5 @@
 import { FasterEMA } from 'trading-signals';
+import { validateInputValues } from '../utilities/validators.js';
 
 const isBadNumber = v => v == null || !Number.isFinite(v);
 
@@ -40,6 +41,8 @@ export const heikenAshi = (
 
   // ---- INIT ----
   if (index === 0) {
+    validateInputValues({ open: true, high: true, low: true, close: true }, verticalOhlcv, index, 'heikenAshi');
+
     instances[instanceKey] = {
       emaPre: !bothNull
         ? Object.fromEntries(ohlcKeys.map(k => [k, new FasterEMA(smoothLength)]))

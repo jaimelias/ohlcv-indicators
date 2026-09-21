@@ -1,6 +1,7 @@
 import { FasterRSI } from 'trading-signals';
 import { FasterSMA } from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
+import { validateInputValues } from '../utilities/validators.js';
 
 const defaultTarget = 'close'
 export const rsi = (main, index, size, { target, lag, retLogs }) => {
@@ -15,6 +16,7 @@ export const rsi = (main, index, size, { target, lag, retLogs }) => {
 
   // Initialization on the first index.
   if (index === 0) {
+    validateInputValues({ [target]: true }, verticalOhlcv, index, 'rsi');
 
     const {len } = main;
 
