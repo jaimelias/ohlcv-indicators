@@ -26,7 +26,7 @@ export const mapCols = (main, index, newCols, callback, {lag, isPriceBased}) => 
 
     const cols = callback({index, main})
 
-    if(cols == null) return true
+    if(cols == null) return;
 
     for(const [key, value] of Object.entries(cols))
     {

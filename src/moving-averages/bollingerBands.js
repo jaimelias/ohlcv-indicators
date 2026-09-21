@@ -75,6 +75,4 @@ export const bollingerBands = (main, index, size, stdDev, { lag } = {}) => {
   main.pushToMain({ index, key: `${prefix}_upper${suffix}`, value: upper })
   main.pushToMain({ index, key: `${prefix}_middle${suffix}`, value: middle })
   main.pushToMain({ index, key: `${prefix}_lower${suffix}`, value: lower })
-
-  return true
 }

@@ -84,7 +84,7 @@ export const heikenAshi = (
     isBadNumber(low) ||
     isBadNumber(close)
   ) {
-    return true;
+    return;
   }
 
   let sOpen, sHigh, sLow, sClose;
@@ -102,7 +102,7 @@ export const heikenAshi = (
       sLow = inst.emaPre.low.getResult();
       sClose = inst.emaPre.close.getResult();
     } catch {
-      return true;
+      return;
     }
   } else {
     sOpen = open;
@@ -117,7 +117,7 @@ export const heikenAshi = (
     isBadNumber(sLow) ||
     isBadNumber(sClose)
   ) {
-    return true;
+    return;
   }
 
   // ---- HEIKEN ASHI CORE ----
@@ -151,7 +151,7 @@ export const heikenAshi = (
       smLow = inst.emaPost.low.getResult();
       smClose = inst.emaPost.close.getResult();
     } catch {
-      return true;
+      return;
     }
   } else {
     smOpen = haOpen;
@@ -170,7 +170,7 @@ export const heikenAshi = (
     smLow <= 0 ||
     smClose <= 0
   ) {
-    return true;
+    return;
   }
 
   // ---- TREND/CROSS LOGIC ----
@@ -229,6 +229,4 @@ export const heikenAshi = (
 
   // Do not add return logs to cross.
   main.pushToMain({ index, key: crossKey, value: cross });
-
-  return true;
 };

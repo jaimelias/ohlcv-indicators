@@ -2,9 +2,7 @@ export const pushToMain = ({main, index, key, value}) => {
 
     const {verticalOhlcv} = main
 
-    verticalOhlcv[key][index] = value    
-
-    return true
+    verticalOhlcv[key][index] = value
 }
 
 export const areKeyValuesValid = (main, index, keyNames) => {

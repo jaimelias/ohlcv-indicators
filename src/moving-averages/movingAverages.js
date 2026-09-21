@@ -54,6 +54,4 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
 
   // Always push the MA value (even if NaN).
   main.pushToMain({ index, key: keyName, value: currMa })
-
-  return true
 }

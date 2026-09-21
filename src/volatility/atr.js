@@ -46,5 +46,4 @@ export const atr = (main, index, size, {lag, retLogs}) => {
   // Always push the MA value (even if NaN).
   main.pushToMain({ index, key: baseKeyName, value: Number.isNaN(currAtr) ? NaN : (retLogs ? mathLog(currAtr, curr.close) : currAtr) });
 
-  return true;
 }

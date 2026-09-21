@@ -55,7 +55,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
     outKeys.forEach(key =>
       main.pushToMain({ index, key, value: NaN })
     )
-    return true
+    return;
   }
 
   const { high: highs, low: lows } = verticalOhlcv
@@ -78,5 +78,4 @@ export const donchianChannels = (main, index, size, offset, options) => {
   main.pushToMain({ index, key: getKey('basis'), value: basis })
   main.pushToMain({ index, key: getKey('lower'), value: lower })
 
-  return true
 }

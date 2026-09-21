@@ -1,29 +1,49 @@
+import { isPositiveInteger } from '../utilities/numberUtilities.js';
+
+
 export const volumeDelta = (main, index, { lag = 0 }) => {
   const { verticalOhlcv, instances, len } = main;
-  const groupName = 'volume_delta';
+  const key = 'volume_delta';
 
   if (index === 0) {
-    if (!instances[groupName]) instances[groupName] = { isBuyVolume: true, cross: 0 };
+    if (!instances[key]) {
+      instances[key] = { isBuyVolume: true, cross: 0, hasInvalidInputValue: false };
+    }
 
-    const keys = [
-      `${groupName}_open`,
-      `${groupName}_high`,
-      `${groupName}_low`,
-      `${groupName}_close`,
-      `${groupName}_cross`,
+    const keyNames = [
+      `${key}_high`,
+      `${key}_low`,
+      `${key}_close`,
+      `${key}_cross`,
     ];
 
     // allocate outputs
-    for (const k of keys) verticalOhlcv[k] = new Float64Array(len).fill(NaN);
+    Object.assign( 
+        verticalOhlcv, 
+        Object.fromEntries(keyNames.map(k => [k, new Float64Array(len).fill(NaN)]))
+    );
 
     // optional lag
-    if (lag > 0) main.lag(keys, lag);
+    if (lag > 0) main.lag(keyNames, lag);
   }
 
-  const inst = instances[groupName];
+  const inst = instances[key];
+
+  const {hasInvalidInputValue} = inst
 
   // inputs
-  const vol       = verticalOhlcv.volume[index];
+  const volume = verticalOhlcv.volume[index];
+
+
+  if(hasInvalidInputValue) {
+      return;
+  }
+  if(!isPositiveInteger(volume)) {
+      instances[key].hasInvalidInputValue = true;
+      return;
+  };
+
+
   const open      = verticalOhlcv.open[index];
   const close     = verticalOhlcv.close[index];
   const prevClose = index > 0 ? verticalOhlcv.close[index - 1] : NaN;
@@ -55,20 +75,16 @@ export const volumeDelta = (main, index, { lag = 0 }) => {
     }
   }
   
-
-  const delta = Number.isFinite(vol) ? (isBuy ? vol : -vol) : NaN;
+  const delta = isBuy ? volume : -volume;
 
   // delta "candle"
-  const openVal  = Number.isNaN(delta) ? NaN : 0;
   const closeVal = delta;
-  const highVal  = Number.isNaN(delta) ? NaN : Math.max(delta, 0);
-  const lowVal   = Number.isNaN(delta) ? NaN : Math.min(delta, 0);
+  const highVal  = Math.max(delta, 0);
+  const lowVal   = Math.min(delta, 0);
 
-  main.pushToMain({ index, key: `${groupName}_open`,  value: openVal });
-  main.pushToMain({ index, key: `${groupName}_high`,  value: highVal });
-  main.pushToMain({ index, key: `${groupName}_low`,   value: lowVal });
-  main.pushToMain({ index, key: `${groupName}_close`, value: closeVal });
-  main.pushToMain({ index, key: `${groupName}_cross`, value: inst.cross });
+  main.pushToMain({ index, key: `${key}_high`,  value: highVal });
+  main.pushToMain({ index, key: `${key}_low`,   value: lowVal });
+  main.pushToMain({ index, key: `${key}_close`, value: closeVal });
+  main.pushToMain({ index, key: `${key}_cross`, value: inst.cross });
 
-  return true;
 };

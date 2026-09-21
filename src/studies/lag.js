@@ -46,5 +46,4 @@ export const lag = (main, index, colKeys, lookback) => {
     }
   }
 
-  return true
 }

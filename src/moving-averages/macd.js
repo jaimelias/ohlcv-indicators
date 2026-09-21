@@ -105,6 +105,4 @@ export const macd = (main, index, fast, slow, signal, { target, lag, precomputed
   main.pushToMain({ index, key: diffKey, value: macdResult ? macdResult.macd : NaN })
   main.pushToMain({ index, key: deaKey, value: macdResult ? macdResult.signal : NaN })
   main.pushToMain({ index, key: histogramKey, value: macdResult ? macdResult.histogram : NaN })
-
-  return true
 }

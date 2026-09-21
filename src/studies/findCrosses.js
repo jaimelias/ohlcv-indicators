@@ -228,5 +228,4 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, limit}) => {
 
   }
 
-  return true
 }

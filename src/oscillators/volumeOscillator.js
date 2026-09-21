@@ -14,15 +14,16 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
             [key]: {
                 fastEMA: new FasterEMA(fast),
                 slowEMA: new FasterEMA(slow),
-                hasInvalidVolumeValue: false
+                hasInvalidInputValue: false
             }
         })
 
         const keyNames = (retLogs) ? [key, `ret_log_${key}`]: [key];
 
-        const verticalOhlcvSetup = Object.fromEntries(keyNames.map(k => [k, new Float64Array(len).fill(NaN)]));
-
-        Object.assign( verticalOhlcv, verticalOhlcvSetup);
+        Object.assign( 
+            verticalOhlcv, 
+            Object.fromEntries(keyNames.map(k => [k, new Float64Array(len).fill(NaN)]))
+        );
 
         if(lag > 0)
         {
@@ -30,15 +31,15 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
         }
     }
 
-    const { fastEMA, slowEMA, hasInvalidVolumeValue } = instances[key];
+    const { fastEMA, slowEMA, hasInvalidInputValue } = instances[key];
 
     const volume = verticalOhlcv.volume[index];
 
-    if(hasInvalidVolumeValue) {
+    if(hasInvalidInputValue) {
         return;
     }
     if(!isPositiveInteger(volume)) {
-        instances[key].hasInvalidVolumeValue = true;
+        instances[key].hasInvalidInputValue = true;
         return;
     };
 
@@ -77,6 +78,4 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
     }
 
     main.pushToMain({index, key, value:  volumeOscValue})
-
-    return true;
 };

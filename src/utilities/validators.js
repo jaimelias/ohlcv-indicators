@@ -117,3 +117,38 @@ export const validateString = (txt, paramName, callerName) => {
 
   return true
 }
+
+
+const PRICE_KEYS = new Set(["open", "high", "low", "close"]);
+
+export const validateInputValues = (
+  requiredParams,
+  verticalOhlcv,
+  index,
+  callbackName
+) => {
+  if (index !== 0) return true;
+
+  const invalidParams = [];
+
+  for (const key of Object.keys(requiredParams)) {
+    const value = verticalOhlcv[key]?.[index];
+
+    const isValid = PRICE_KEYS.has(key)
+      ? Number.isFinite(value) && value > 0
+      : key === "volume"
+        ? Number.isInteger(value) && value >= 0
+        : Number.isFinite(value);
+
+    if (!isValid) invalidParams.push(key);
+  }
+
+  if (invalidParams.length > 0) {
+    throw new TypeError(
+      `Invalid or missing input value(s) [${invalidParams.join(", ")}] ` +
+      `at index 0 in "${callbackName}".`
+    );
+  }
+
+  return true;
+};
