@@ -70,6 +70,17 @@ export const mainLoop = (input, main) => {
     verticalOhlcv[key] = buildArray(arrayTypes[key], len)
   }
 
+  // Callbacks can modify inputTypes through main; retain dynamic lookup for them.
+  const inputColumns = executionParams.some(({ key }) => key === 'mapCols')
+    ? null
+    : Object.entries(inputTypes).map(([key, formatterKey]) => {
+        const numeric = inputNumberFormatter.hasOwnProperty(formatterKey)
+        const formatter = numeric
+          ? inputNumberFormatter[formatterKey]
+          : dateFormaters.hasOwnProperty(formatterKey) ? dateFormaters[formatterKey] : null
+        return { key, formatter, numeric }
+      })
+
   // Process each row in the input
   for (let chunkStart = 0; chunkStart < len; chunkStart += chunkProcess) {
 
@@ -78,25 +89,36 @@ export const mainLoop = (input, main) => {
       for (let index = chunkStart; index < chunkEnd; index++) {
         const curr = input[index]
       
-        for(const [key, formaterKey] of Object.entries(inputTypes))
-        {
-          let value = curr[key]
+        if (inputColumns !== null) {
+          for (const { key, formatter, numeric } of inputColumns) {
+            const value = curr[key]
+            if (typeof value === 'undefined') continue
 
-          if(typeof value === 'undefined') continue
-
-          if(inputNumberFormatter.hasOwnProperty(formaterKey))
-          {
-            const formatedValue = inputNumberFormatter[formaterKey](value, precisionMultiplier)
-
-            main.pushToMain({index, key, value: formatedValue})
+            const formattedValue = formatter === null ? value
+              : numeric ? formatter(value, precisionMultiplier) : formatter(value)
+            main.pushToMain({ index, key, value: formattedValue })
           }
-          else if(dateFormaters.hasOwnProperty(formaterKey))
+        } else {
+          for(const [key, formaterKey] of Object.entries(inputTypes))
           {
-            main.pushToMain({index, key, value: dateFormaters[formaterKey](value)})
-          }
-          else
-          {
-            main.pushToMain({index, key, value})
+            let value = curr[key]
+
+            if(typeof value === 'undefined') continue
+
+            if(inputNumberFormatter.hasOwnProperty(formaterKey))
+            {
+              const formatedValue = inputNumberFormatter[formaterKey](value, precisionMultiplier)
+
+              main.pushToMain({index, key, value: formatedValue})
+            }
+            else if(dateFormaters.hasOwnProperty(formaterKey))
+            {
+              main.pushToMain({index, key, value: dateFormaters[formaterKey](value)})
+            }
+            else
+            {
+              main.pushToMain({index, key, value})
+            }
           }
         }
 

@@ -10,7 +10,6 @@ import {
     validateString
 } from './src/utilities/validators.js'
 import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
-import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
@@ -96,7 +95,9 @@ export default class OHLCV_INDICATORS {
         this.scaledGroups = {}
         this.isAlreadyComputed = new Set()
 
-        this.pushToMain = ({index, key, value}) => pushToMain({main: this, index, key, value})
+        this.pushToMain = ({index, key, value}) => {
+            this.verticalOhlcv[key][index] = value
+        }
         
         if(inputParams !== null)
         {

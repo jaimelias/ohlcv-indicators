@@ -100,4 +100,4 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 - Preserve unrelated working-tree changes; indicator files are frequently edited together.
 - Do not edit `dist/ohlcv-indicators.min.js` manually. Run `npm run build` after source changes that should ship in the browser bundle.
 - Use deterministic local OHLCV arrays to test warm-up boundaries, zero/invalid inputs, lagged columns, multiple configurations, `retLogs`, `precision: true`, and both `getData()` modes.
-- Run `git diff --check`, `node --test tests/*.test.js`, and `npm run build`. `npm test` uses the local integration harness and may require its configured market-data service.
+- Run `git diff --check`, `npm test`, and `npm run build`. `test/test.js` runs deterministic local regression checks by default; `npm test -- --live` runs the optional integration demo against its configured market-data service.

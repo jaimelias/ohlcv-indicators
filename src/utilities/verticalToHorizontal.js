@@ -13,31 +13,34 @@ export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, da
   const maxStartIndex = Math.max(skipNullIndex, startIndex)
   const diffLen = len - maxStartIndex
   const result = Array.from({ length: diffLen }, () => ({}))
-  const formatter = {}
-  
-  for(const key of verticalOhlcvKeyNames) {
-      if(precision && priceBased.has(key)) {
-          formatter[key] = (num, mul) => num == null || Number.isNaN(num)
-              ? num
-              : outputNumberFormatter.precisionNumberCleanString(num, mul)
-      }
-      else {
-          formatter[key] = v => v
-      }
-  }
 
   for(const [key, arr] of Object.entries(verticalOhlcv)){
     if(verticalOhlcvTempCols.has(key)) continue
 
-    for (let i = maxStartIndex; i < len; i++)
+    if(key === 'date')
     {
-      if(key === 'date')
+      const formatter = dateOutputFormaters[dateFormat]
+      for (let i = maxStartIndex; i < len; i++)
       {
-        result[i - maxStartIndex][key] = dateOutputFormaters[dateFormat](arr[i])
-      } 
-      else
+        result[i - maxStartIndex][key] = formatter(arr[i])
+      }
+    }
+    else if(precision && priceBased.has(key))
+    {
+      const formatter = outputNumberFormatter.precisionNumberCleanString
+      for (let i = maxStartIndex; i < len; i++)
       {
-        result[i - maxStartIndex][key] = formatter[key](arr[i], precisionMultiplier)
+        const value = arr[i]
+        result[i - maxStartIndex][key] = value == null || Number.isNaN(value)
+          ? value
+          : formatter(value, precisionMultiplier)
+      }
+    }
+    else
+    {
+      for (let i = maxStartIndex; i < len; i++)
+      {
+        result[i - maxStartIndex][key] = arr[i]
       }
     }
   }

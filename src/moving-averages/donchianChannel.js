@@ -25,7 +25,10 @@ export const donchianChannels = (main, index, size, offset, options) => {
     }
 
     instances.donchian_channel.numberOfIndicators = numberOfIndicators
-    instances.donchian_channel.settings[indicatorKey] = { maxDeque: [], minDeque: [] }
+    instances.donchian_channel.settings[indicatorKey] = {
+      maxDeque: { indices: [], head: 0, length: 0 },
+      minDeque: { indices: [], head: 0, length: 0 }
+    }
 
     initializeColumns(main, keys.map(key => ({ key, priceBased: true })), { lag: outputLag })
   }
@@ -49,9 +52,17 @@ export const donchianChannels = (main, index, size, offset, options) => {
   const { high: highs, low: lows } = verticalOhlcv
 
   const update = (dq, arr, cmp) => {
-    while (dq.length && dq[0] < start) dq.shift()
-    while (dq.length && cmp(arr[dq.at(-1)], arr[current])) dq.pop()
-    dq.push(current)
+    const { indices } = dq
+    while (dq.length && indices[dq.head] < start) {
+      dq.head = (dq.head + 1) % size
+      dq.length--
+    }
+    while (dq.length && cmp(arr[indices[(dq.head + dq.length - 1) % size]], arr[current])) {
+      dq.length--
+    }
+    // Reuse at most size slots instead of moving entries or growing with the input.
+    indices[(dq.head + dq.length) % size] = current
+    dq.length++
   }
 
   update(maxDeque, highs, (a, b) => a <= b)
@@ -61,8 +72,8 @@ export const donchianChannels = (main, index, size, offset, options) => {
   if (start < 0) return
 
   const hasBounds = maxDeque.length && minDeque.length
-  const upper = hasBounds ? highs[maxDeque[0]] : NaN
-  const lower = hasBounds ? lows[minDeque[0]] : NaN
+  const upper = hasBounds ? highs[maxDeque.indices[maxDeque.head]] : NaN
+  const lower = hasBounds ? lows[minDeque.indices[minDeque.head]] : NaN
   const basis = hasBounds ? (upper + lower) / 2 : NaN
 
   main.pushToMain({ index, key: getKey('upper'), value: upper })
