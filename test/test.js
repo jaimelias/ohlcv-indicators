@@ -3,6 +3,8 @@ import { performance } from 'node:perf_hooks'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import OHLCV_INDICATORS from '../index.js'
+import * as Core from '../src/core-indicators/index.js'
+import * as TradingSignals from 'trading-signals'
 
 // npm test: offline deterministic regressions.
 // npm test -- --baseline /path/to/pre-change/index.js --benchmark --rows 10000 --repeats 7
@@ -118,9 +120,114 @@ const indicatorCases = [
         keys: () => ['close_lag_1', 'close_lag_2', 'volume_lag_1', 'volume_lag_2'], autoLag: false }
 ]
 
+const coreCases = [
+    ...['FasterEMA', 'FasterSMA', 'FasterWSMA', 'FasterRSI'].map(name => ({ name, create: (lib, size) => new lib[name](size) })),
+    ...['FasterTR', 'FasterATR', 'FasterDX', 'FasterADX'].map(name => ({ name, candle: true, create: (lib, size) => new lib[name](size) })),
+    { name: 'FasterBollingerBands', create: (lib, size) => new lib.FasterBollingerBands(size, 2) },
+    { name: 'FasterMACD', create: (lib, size) => new lib.FasterMACD(new lib.FasterEMA(size), new lib.FasterEMA(size + 2), new lib.FasterEMA(3)) },
+    { name: 'FasterStochasticOscillator', candle: true, create: (lib, size) => new lib.FasterStochasticOscillator(size, 3, 2) }
+]
+const readCoreResult = instance => {
+    try { return { value: instance.getResult() } }
+    catch (error) { return { error: error.name, message: error.message } }
+}
+const retainedStorage = (value, seen = new Set()) => {
+    if (value === null || typeof value !== 'object' || seen.has(value)) return { slots: 0, bytes: 0 }
+    seen.add(value)
+    if (ArrayBuffer.isView(value)) return { slots: 0, bytes: value.byteLength }
+    const total = { slots: Array.isArray(value) ? value.length : 0, bytes: 0 }
+    for (const item of Object.values(value)) {
+        const storage = retainedStorage(item, seen)
+        total.slots += storage.slots; total.bytes += storage.bytes
+    }
+    return total
+}
+
 const runRegressions = Baseline => {
     let passed = 0
     const check = (name, callback) => { callback(); console.log(`PASS ${name}`); passed++ }
+    for (const test of coreCases) check(`core ${test.name}: exact trading-signals 5.0.4 compatibility`, () => {
+        for (const size of [1, 2, 7, 32]) for (const pattern of ['mixed', 'zero', 'invalid', 'coercion']) for (const replacements of [false, true]) {
+            const current = test.create(Core, size), reference = test.create(TradingSignals, size)
+            assert.deepStrictEqual(readCoreResult(current), readCoreResult(reference))
+            let previousObject, previousSnapshot
+            for (let index = 0; index < 180; index++) {
+                let value = pattern === 'zero' ? (index % 2 ? -0 : 0) : 100 + Math.sin(index / 3) * 10
+                if (pattern === 'invalid') {
+                    if (index === 13) value = NaN
+                    if (index === 41) value = Infinity
+                    if (index === 83) value = -Infinity
+                }
+                if (pattern === 'coercion') {
+                    if (index === 9) value = null
+                    if (index === 10) value = undefined
+                    if (index === 11) value = '2'
+                    if (index === 12) value = true
+                    if (index === 13) value = '3'
+                }
+                const input = test.candle ? { high: value + 2, low: value - 2, close: value } : value
+                const replace = replacements && index % 5 === 0
+                const expected = reference.update(input, replace)
+                const actual = current.update(input, replace)
+                assert.deepStrictEqual(actual, expected, `${test.name}: update ${index}, size ${size}, ${pattern}`)
+                assert.equal(current.isStable, reference.isStable)
+                assert.deepStrictEqual(readCoreResult(current), readCoreResult(reference))
+                for (const property of ['highest', 'lowest', 'previousResult', 'pdi', 'mdi']) {
+                    assert.deepStrictEqual(current[property], reference[property], `${test.name}.${property}`)
+                }
+                if (actual && typeof actual === 'object') {
+                    if (previousObject) {
+                        assert.notStrictEqual(actual, previousObject)
+                        assert.deepStrictEqual(previousObject, previousSnapshot)
+                    }
+                    previousObject = actual; previousSnapshot = { ...actual }
+                }
+            }
+        }
+    })
+    check('core storage stays bounded and Wilder smoothing releases its seed window', () => {
+        for (const test of coreCases) {
+            const instance = test.create(Core, 32)
+            let warmedStorage
+            for (let index = 0; index < 8192; index++) {
+                const value = 100 + Math.sin(index / 7)
+                instance.update(test.candle ? { high: value + 2, low: value - 2, close: value } : value)
+                if (index === 511) warmedStorage = retainedStorage(instance)
+            }
+            assert.deepStrictEqual(retainedStorage(instance), warmedStorage, `${test.name}: retained storage grows with history`)
+        }
+        const wsma = new Core.FasterWSMA(32)
+        wsma.updates(Array.from({ length: 32 }, (_, index) => index))
+        assert.equal(wsma.isStable, true)
+        assert.deepStrictEqual(retainedStorage(wsma), { slots: 0, bytes: 0 })
+        const rsi = new Core.FasterRSI(32)
+        for (let index = 0; index < 10000; index++) rsi.update(100 + index % 17)
+        assert.deepStrictEqual(retainedStorage(rsi), { slots: 0, bytes: 0 })
+    })
+    check('core candle windows retain reference semantics, including reused objects', () => {
+        for (const test of coreCases.filter(test => test.candle)) {
+            const current = test.create(Core, 3), reference = test.create(TradingSignals, 3)
+            const candles = [{ high: 4, low: 1, close: 2 }, { high: 5, low: 2, close: 3 }]
+            for (let index = 0; index < 80; index++) {
+                const candle = candles[index % 2]
+                candle.high = 100 + index; candle.low = 90 + index; candle.close = 95 + index
+                assert.deepStrictEqual(current.update(candle), reference.update(candle))
+                assert.deepStrictEqual(readCoreResult(current), readCoreResult(reference))
+            }
+        }
+    })
+    check('core batch and replacement helpers preserve readiness and extrema', () => {
+        for (const name of ['FasterEMA', 'FasterSMA', 'FasterWSMA']) {
+            const current = new Core[name](3), reference = new TradingSignals[name](3)
+            const prices = [1, , 2, 3, 4]
+            assert.deepStrictEqual(current.updates(prices), reference.updates(prices))
+            for (const value of [0, NaN, 7, -0]) {
+                assert.deepStrictEqual(current.replace(value), reference.replace(value))
+                assert.deepStrictEqual(readCoreResult(current), readCoreResult(reference))
+                assert.deepStrictEqual([current.highest, current.lowest], [reference.highest, reference.lowest])
+            }
+        }
+    })
     check('coverage includes every public indicator method', () => {
         const lifecycle = new Set(['constructor', '_registerIndicator', 'exportConfig', 'compute', 'getData', 'getLastValues'])
         const methods = Object.getOwnPropertyNames(OHLCV_INDICATORS.prototype).filter(name => !lifecycle.has(name))
@@ -376,6 +483,43 @@ const benchmark = Baseline => {
     }])))
 }
 
+const benchmarkCore = () => {
+    const rows = Number(option('--rows') ?? 10000), repeats = Number(option('--repeats') ?? 7)
+    const prices = Array.from({ length: rows }, (_, index) => 100 + Math.sin(index / 7) * 10)
+    const candles = prices.map(close => ({ high: close + 2, low: close - 2, close }))
+    const results = {}
+    for (const test of coreCases) {
+        const samples = { reference: [], core: [] }, storage = {}, last = {}
+        const entries = [['reference', TradingSignals], ['core', Core]]
+        for (let repetition = -2; repetition < repeats; repetition++) {
+            for (const [name, lib] of repetition % 2 ? [...entries].reverse() : entries) {
+                const instance = test.create(lib, 32), input = test.candle ? candles : prices
+                const start = performance.now()
+                for (const value of input) instance.update(value)
+                const elapsed = performance.now() - start
+                if (repetition >= 0) samples[name].push(elapsed)
+                last[name] = readCoreResult(instance)
+                if (repetition === repeats - 1) storage[name] = retainedStorage(instance)
+            }
+        }
+        assert.deepStrictEqual(last.core, last.reference)
+        const median = values => {
+            const sorted = [...values].sort((a, b) => a - b), mid = Math.floor(sorted.length / 2)
+            return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+        }
+        results[test.name] = {
+            'reference ms': Number(median(samples.reference).toFixed(3)),
+            'core ms': Number(median(samples.core).toFixed(3)),
+            'reference array slots': storage.reference.slots,
+            'core array slots': storage.core.slots,
+            'core typed bytes': storage.core.bytes
+        }
+    }
+    console.log(`\nCore benchmark: ${rows} updates, period 32, 2 warm-ups, ${repeats} samples; median milliseconds`)
+    console.log('Storage counts describe retained arrays only, not total heap or peak/transient allocations.')
+    console.table(results)
+}
+
 if (args.includes('--live')) {
     const { getNasdaqOHLCV } = await import('./utilities/fetchNasdaq.js')
     const input = await getNasdaqOHLCV({ symbol: 'TQQQ', interval: '1d', type: 'index', limit: 1000 })
@@ -385,5 +529,5 @@ if (args.includes('--live')) {
     const path = option('--baseline')
     const Baseline = path ? (await import(pathToFileURL(resolve(path)).href)).default : null
     runRegressions(Baseline)
-    if (args.includes('--benchmark')) benchmark(Baseline)
+    if (args.includes('--benchmark')) { benchmark(Baseline); benchmarkCore() }
 }

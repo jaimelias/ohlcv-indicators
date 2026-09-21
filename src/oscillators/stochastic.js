@@ -1,4 +1,4 @@
-import { FasterStochasticOscillator } from 'trading-signals';
+import { FasterStochasticOscillator } from '../core-indicators/index.js';
 import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
@@ -28,16 +28,11 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag, 
     const close = verticalOhlcv['close'][index]
     const low = verticalOhlcv['low'][index]
     const high = verticalOhlcv['high'][index]
-    let stockObj = null
 
   // Update the stochastic indicator.
     instances[instanceKey].update({close, low, high})
 
-    try {
-        stockObj = instances[instanceKey].getResult()
-    } catch (err) {
-        stockObj = null
-    }
+    const stockObj = instances[instanceKey].isStable ? instances[instanceKey].getResult() : null
 
     const kVal = stockObj ? (retLogs ? mathLog(stockObj.stochK, 50) : stockObj.stochK) : NaN
     const dVal = stockObj ? (retLogs ? mathLog(stockObj.stochD, 50) : stockObj.stochD) : NaN

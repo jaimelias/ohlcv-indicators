@@ -1,4 +1,4 @@
-import { FasterEMA } from 'trading-signals';
+import { FasterEMA } from '../core-indicators/index.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
 
@@ -92,14 +92,12 @@ export const heikenAshi = (
     inst.emaPre.low.update(low);
     inst.emaPre.close.update(close);
 
-    try {
-      sOpen = inst.emaPre.open.getResult();
-      sHigh = inst.emaPre.high.getResult();
-      sLow = inst.emaPre.low.getResult();
-      sClose = inst.emaPre.close.getResult();
-    } catch {
-      return;
-    }
+    if (!inst.emaPre.open.isStable || !inst.emaPre.high.isStable ||
+        !inst.emaPre.low.isStable || !inst.emaPre.close.isStable) return;
+    sOpen = inst.emaPre.open.getResult();
+    sHigh = inst.emaPre.high.getResult();
+    sLow = inst.emaPre.low.getResult();
+    sClose = inst.emaPre.close.getResult();
   } else {
     sOpen = open;
     sHigh = high;
@@ -141,14 +139,12 @@ export const heikenAshi = (
     inst.emaPost.low.update(haLow);
     inst.emaPost.close.update(haClose);
 
-    try {
-      smOpen = inst.emaPost.open.getResult();
-      smHigh = inst.emaPost.high.getResult();
-      smLow = inst.emaPost.low.getResult();
-      smClose = inst.emaPost.close.getResult();
-    } catch {
-      return;
-    }
+    if (!inst.emaPost.open.isStable || !inst.emaPost.high.isStable ||
+        !inst.emaPost.low.isStable || !inst.emaPost.close.isStable) return;
+    smOpen = inst.emaPost.open.getResult();
+    smHigh = inst.emaPost.high.getResult();
+    smLow = inst.emaPost.low.getResult();
+    smClose = inst.emaPost.close.getResult();
   } else {
     smOpen = haOpen;
     smHigh = haHigh;

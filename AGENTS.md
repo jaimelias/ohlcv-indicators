@@ -25,7 +25,8 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 - Add an output to `main.priceBased` only when it remains in scaled price units. Ratios, percentages, return logs, counters, dates, volume, and one-hot vectors are not price-based.
 - `retLogs` outputs use natural log ratios through `mathLog(a, b)` where applicable. Logged values are dimensionless.
 - Keep output names deterministic. When multiple configurations are supported, include enough parameters and target information to prevent collisions.
-- `trading-signals` supplies the stateful EMA, SMA, RSI, MACD, Bollinger Bands, stochastic, ATR, and ADX implementations.
+- `src/core-indicators/` supplies compatible numeric EMA, SMA, WSMA, RSI, MACD, Bollinger Bands, stochastic, ATR, and ADX implementations. Use cheap `isStable` checks before `getResult()`; do not use exceptions for routine warm-up. The installed `trading-signals@5.0.4` remains a test oracle, not a production import.
+- Preserve reference arithmetic order, warm-up, zero/NaN behavior, and update/replacement sequencing in core classes. SMA/Bollinger use bounded chronological rings rather than rolling sums that change rounding. RSI history and MACD counters must stay bounded; WSMA releases its seed window. Runtime state must never enter exported config.
 
 ## Configuration export and replay guards
 
@@ -76,6 +77,7 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 ## Minimum required helpers
 
 - `src/core-functions/mainLoop.js` — handler registry and chronological execution engine.
+- `src/core-indicators/index.js` — compatible `Faster*` class exports; `src/core-indicators/README.md` records storage choices and reference-compatibility constraints.
 - `src/core-functions/initializeColumns.js` — output allocation using `main.len`, explicit type/fill overrides, price metadata, collision checks, and lag registration from the same declarations.
 - `src/core-functions/pushToMain.js` — column writes and per-row validity checks.
 - `src/utilities/assignTypes.js` — input type inference, typed-array allocation, and array-type lookup used by lagging.

@@ -1,5 +1,5 @@
 
-import {FasterEMA, FasterSMA} from 'trading-signals';
+import {FasterEMA, FasterSMA} from '../core-indicators/index.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
 
@@ -36,13 +36,7 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
   // Update the moving average instance.
   instance.update(value)
 
-  let currMa = NaN
-
-  try {
-    currMa = instance.getResult()
-  } catch (err) {
-
-  }
+  const currMa = instance.isStable ? instance.getResult() : NaN
 
   // Always push the MA value (even if NaN).
   main.pushToMain({ index, key: keyName, value: currMa })

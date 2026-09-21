@@ -1,4 +1,4 @@
-import { FasterEMA } from 'trading-signals';
+import { FasterEMA } from '../core-indicators/index.js';
 import { mathLog } from '../utilities/math.js';
 import { isPositiveInteger } from '../utilities/numberUtilities.js';
 import { validateInputValues } from '../utilities/validators.js';
@@ -36,20 +36,8 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
     fastEMA.update(volume);
     slowEMA.update(volume);
 
-    let fastValue = NaN;
-    let slowValue = NaN;
-
-    try {
-        fastValue = fastEMA.getResult();
-    } catch (err) {
-        
-    }
-
-    try {
-        slowValue = slowEMA.getResult();
-    } catch (err) {
-
-    }
+    const fastValue = fastEMA.isStable ? fastEMA.getResult() : NaN;
+    const slowValue = slowEMA.isStable ? slowEMA.getResult() : NaN;
 
     let volumeOscValue = NaN
     let volumeOscRetLog = NaN

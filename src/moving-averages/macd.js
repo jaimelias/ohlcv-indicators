@@ -1,4 +1,4 @@
-import { FasterEMA, FasterMACD } from 'trading-signals'
+import { FasterEMA, FasterMACD } from '../core-indicators/index.js'
 import { validateInputValues } from '../utilities/validators.js'
 import { initializeColumns } from '../core-functions/initializeColumns.js'
 
@@ -85,12 +85,7 @@ export const macd = (main, index, fast, slow, signal, { target, lag, precomputed
   const value = verticalOhlcv[target][index]
   macdInstance.update(value)
 
-  let macdResult = {}
-  try {
-    macdResult = macdInstance.getResult()
-  } catch (err) {
-    // If the result is unavailable, macdResult remains NaN.
-  }
+  const macdResult = macdInstance.isStable ? macdInstance.getResult() : null
 
   // Always push values; use NaN as fallback when macdResult is missing.
   main.pushToMain({ index, key: diffKey, value: macdResult ? macdResult.macd : NaN })

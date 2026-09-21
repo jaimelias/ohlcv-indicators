@@ -1,4 +1,4 @@
-import { FasterSMA } from 'trading-signals';
+import { FasterSMA } from '../core-indicators/index.js';
 import { isPositiveInteger } from '../utilities/numberUtilities.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
@@ -31,12 +31,7 @@ export const relativeVolume = (main, index, size, {lag}) => {
   const smaInstance = instances[key].instance;
   smaInstance.update(volume);
 
-  let smaValue = NaN;
-  try {
-    smaValue = smaInstance.getResult();
-  } catch (err) {
-
-  }
+  const smaValue = smaInstance.isStable ? smaInstance.getResult() : NaN;
 
   const prevSma = instances[key].prevRelativeVolumeSma;
 

@@ -1,4 +1,4 @@
-import { FasterBollingerBands } from 'trading-signals'
+import { FasterBollingerBands } from '../core-indicators/index.js'
 import { validateInputValues } from '../utilities/validators.js'
 import { initializeColumns } from '../core-functions/initializeColumns.js'
 
@@ -53,12 +53,7 @@ export const bollingerBands = (main, index, size, stdDev, { lag } = {}) => {
   const value = verticalOhlcv[target][index]
   instance.update(value)
 
-  let result = {}
-  try {
-    result = instance.getResult()
-  } catch (err) {
-    // If not available, result stays {}.
-  }
+  const result = instance.isStable ? instance.getResult() : null
 
   const upper = result?.upper ?? NaN
   const middle = result?.middle ?? NaN

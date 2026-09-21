@@ -1,5 +1,4 @@
-import { FasterRSI } from 'trading-signals';
-import { FasterSMA } from 'trading-signals';
+import { FasterRSI, FasterSMA } from '../core-indicators/index.js';
 import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
@@ -34,17 +33,11 @@ export const rsi = (main, index, size, { target, lag, retLogs }) => {
   }
 
   const value = verticalOhlcv[target][index];
-  let currentRsi = NaN;
-  let smoothedRsi = NaN;
 
   // Update the RSI indicator.
   instances[rsiKey].update(value);
 
-  try {
-    currentRsi = instances[rsiKey].getResult();
-  } catch (err) {
-    currentRsi = NaN;
-  }
+  const currentRsi = instances[rsiKey].isStable ? instances[rsiKey].getResult() : NaN;
 
 
     const rsiVal = Number.isNaN(currentRsi) ? NaN : (retLogs ? mathLog(currentRsi, 50) : currentRsi)
@@ -55,11 +48,7 @@ export const rsi = (main, index, size, { target, lag, retLogs }) => {
       instances[rsiSmaKey].update(currentRsi);
     }
 
-    try {
-      smoothedRsi = instances[rsiSmaKey].getResult();
-    } catch (err) {
-      smoothedRsi = NaN;
-    }
+    const smoothedRsi = instances[rsiSmaKey].isStable ? instances[rsiSmaKey].getResult() : NaN;
 
     const smoothedRsiVal = Number.isNaN(smoothedRsi) ? NaN : (retLogs ? mathLog(smoothedRsi, 50) : smoothedRsi)
 

@@ -1,5 +1,5 @@
 
-import {FasterATR, FasterWSMA} from 'trading-signals';
+import {FasterATR, FasterWSMA} from '../core-indicators/index.js';
 import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
@@ -29,12 +29,7 @@ export const atr = (main, index, size, {lag, retLogs}) => {
 
   // Update the moving average instance.
   instance.update(curr);
-  let currAtr = NaN;
-  try {
-    currAtr = instance.getResult();
-  } catch (err) {
-
-  }
+  const currAtr = instance.isStable ? instance.getResult() : NaN;
 
   // Always push the MA value (even if NaN).
   main.pushToMain({ index, key: baseKeyName, value: Number.isNaN(currAtr) ? NaN : (retLogs ? mathLog(currAtr, curr.close) : currAtr) });

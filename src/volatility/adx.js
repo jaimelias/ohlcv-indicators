@@ -1,4 +1,4 @@
-import { FasterADX } from 'trading-signals';
+import { FasterADX } from '../core-indicators/index.js';
 import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
@@ -37,18 +37,10 @@ export const adx = (main, index, size, { lag, retLogs }) => {
   const low = verticalOhlcv.low[index];
   const close = verticalOhlcv.close[index];
 
-  let currentAdx = NaN;
-
   // Update the ADX indicator.
   instances[instanceKey].update({ high, low, close });
 
-  try {
-    currentAdx = instances[instanceKey].getResult();
-
-    instances[instanceKey].get
-  } catch (err) {
-    currentAdx = NaN;
-  }
+  const currentAdx = instances[instanceKey].isStable ? instances[instanceKey].getResult() : NaN;
 
 
   const adxVal = Number.isNaN(currentAdx)
