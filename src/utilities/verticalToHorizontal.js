@@ -17,7 +17,9 @@ export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, da
   
   for(const key of verticalOhlcvKeyNames) {
       if(precision && priceBased.has(key)) {
-          formatter[key] = (num, mul) => outputNumberFormatter.precisionNumberCleanString(num, mul)
+          formatter[key] = (num, mul) => num == null || Number.isNaN(num)
+              ? num
+              : outputNumberFormatter.precisionNumberCleanString(num, mul)
       }
       else {
           formatter[key] = v => v

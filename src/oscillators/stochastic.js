@@ -1,6 +1,7 @@
 import { FasterStochasticOscillator } from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag, retLogs}) => {
 
@@ -16,22 +17,11 @@ export const stochastic = (main, index, kPeriod, kSlowingPeriod, dPeriod, {lag, 
     if (index === 0) {
         validateInputValues({ high: true, low: true, close: true }, verticalOhlcv, index, 'stochastic');
 
-        const {len } = main;
-
         Object.assign(instances, {
             [instanceKey]: new FasterStochasticOscillator(kPeriod, kSlowingPeriod, dPeriod)
         })
 
-        Object.assign(verticalOhlcv, {
-            [stochD]: new Float64Array(len).fill(NaN),
-            [stochK]: new Float64Array(len).fill(NaN),
-        })
-
-        const baseKeys = [stochD, stochK]
-
-        if (lag > 0) {
-            main.lag(baseKeys, lag);
-        }
+        initializeColumns(main, [{ key: stochD }, { key: stochK }], { lag });
 
     }
 

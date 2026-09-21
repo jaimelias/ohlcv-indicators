@@ -2,6 +2,7 @@ import { oneHotEncode } from "../machine-learning/ml-utilities.js"
 import { buildArray } from "../utilities/assignTypes.js"
 import { addPrecisionAsNumber } from "../utilities/precisionMultiplier.js"
 import { validateInputValues } from "../utilities/validators.js"
+import { initializeColumns } from "../core-functions/initializeColumns.js"
 const eq = (fast, slow) => fast === slow
 const gt = (fast, slow) => fast > slow
 const lt = (fast, slow) => fast < slow
@@ -184,12 +185,10 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, limit}) => {
 
         const crossArrType = (limit !== null && limit <= 125) ? 'Int8Array' : 'Float64Array'
 
-        verticalOhlcv[crossName] = buildArray(crossArrType, len, 0)
-
-        if(oneHot)
-        {
-            verticalOhlcv[`one_hot_${crossName}`] = buildArray('Array', len, null)
-        }
+        initializeColumns(main, [
+            { key: crossName, type: crossArrType, fill: 0 },
+            { key: `one_hot_${crossName}`, type: 'Array', enabled: oneHot }
+        ])
 
     }  else if(index + 1 === len) {
         // sanity checks

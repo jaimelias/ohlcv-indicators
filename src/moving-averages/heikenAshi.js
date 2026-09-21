@@ -1,5 +1,6 @@
 import { FasterEMA } from 'trading-signals';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 const isBadNumber = v => v == null || !Number.isFinite(v);
 
@@ -10,7 +11,7 @@ export const heikenAshi = (
   afterSmoothLength,
   { lag = 0, bothNull = false, retLogs = true } = {}
 ) => {
-  const { verticalOhlcv, instances, len, scaledGroups } = main;
+  const { verticalOhlcv, instances, scaledGroups } = main;
   const indicatorKey = `${smoothLength}_${afterSmoothLength}`;
   const ohlcKeys = ['open', 'high', 'low', 'close'];
 
@@ -59,18 +60,10 @@ export const heikenAshi = (
 
     const keyNames = featureKeys.map(getKey);
 
-    const verticalOhlcvSetup = Object.fromEntries(
-      [...keyNames, crossKey].map(k => [k, new Float64Array(len).fill(NaN)])
-    );
-
-    Object.assign(verticalOhlcv, verticalOhlcvSetup);
+    initializeColumns(main, [...keyNames, crossKey].map(key => ({ key })), { lag });
 
     if (scaledGroups) {
       scaledGroups.heikenAshi = keyNames;
-    }
-
-    if (lag > 0) {
-      main.lag(keyNames, lag);
     }
   }
 

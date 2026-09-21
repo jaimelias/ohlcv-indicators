@@ -1,6 +1,7 @@
 
 import {FasterEMA, FasterSMA} from 'trading-signals';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 const indicatorClasses = {
   ema: FasterEMA, 
@@ -16,8 +17,6 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
   if (index === 0) {
     validateInputValues({ [target]: true }, verticalOhlcv, index, methodName)
 
-    const {len} = main
-
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(
         `Target property ${target} not found in verticalOhlcv for ${methodName}.`
@@ -27,16 +26,7 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
     // Create the main moving average instance.
     instances[keyName] = new indicatorClasses[methodName](size)
 
-    verticalOhlcv[keyName] = new Float64Array(len).fill(NaN)
-
-    if(priceBased.has(target)){
-      priceBased.add(keyName)
-    }
-
-    if(lag > 0)
-    {
-      main.lag([keyName], lag)
-    }
+    initializeColumns(main, [{ key: keyName, priceBased: priceBased.has(target) }], { lag })
   }
 
   // Retrieve the current price value

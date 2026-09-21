@@ -1,5 +1,6 @@
 import { FasterBollingerBands } from 'trading-signals'
 import { validateInputValues } from '../utilities/validators.js'
+import { initializeColumns } from '../core-functions/initializeColumns.js'
 
 export const bollingerBands = (main, index, size, stdDev, { lag } = {}) => {
   const { verticalOhlcv, instances, useFullNames } = main
@@ -9,7 +10,7 @@ export const bollingerBands = (main, index, size, stdDev, { lag } = {}) => {
 
   // Initialization on the first call.
   if (index === 0) {
-    const { inputParams, verticalOhlcv, len, priceBased } = main
+    const { inputParams, verticalOhlcv, priceBased } = main
 
     validateInputValues({ [target]: true }, verticalOhlcv, index, 'bollingerBands')
 
@@ -40,21 +41,9 @@ export const bollingerBands = (main, index, size, stdDev, { lag } = {}) => {
       `${prefix}_lower${suffix}`,
     ]
 
-    if (priceBased.has(target)) {
-      for (const k of keyNames) {
-        priceBased.add(k)
-      }
-    }
-
-    const verticalOhlcvSetup = Object.fromEntries(
-      keyNames.map(v => [v, new Float64Array(len).fill(NaN)])
-    )
-
-    Object.assign(verticalOhlcv, { ...verticalOhlcvSetup })
-
-    if (lag > 0) {
-      main.lag(keyNames, lag)
-    }
+    initializeColumns(main, keyNames.map(key => ({
+      key, priceBased: priceBased.has(target)
+    })), { lag })
   }
 
   const { numberOfIndicators } = instances.bollinger_bands

@@ -1,10 +1,10 @@
-import { buildArray, getArrayType } from "../utilities/assignTypes.js"
+import { initializeColumns } from "../core-functions/initializeColumns.js"
 
 export const lag = (main, index, colKeys, lookback) => {
 
   
   
-  const { verticalOhlcv, len, priceBased } = main
+  const { verticalOhlcv, priceBased } = main
 
   if(index === 0)
   {
@@ -16,29 +16,30 @@ export const lag = (main, index, colKeys, lookback) => {
       }
 
       const addToPriceBased = priceBased.has(targetKey)
+      const type = Array.isArray(verticalOhlcv[targetKey]) ? 'Array' : 'Float64Array'
+      const columns = []
 
       for (let step = 1; step <= lookback; step++) {
         const key = `${targetKey}_lag_${step}`
 
-        if(addToPriceBased) priceBased.add(key)
-
-        const thisArrType = getArrayType(targetKey, verticalOhlcv[targetKey])
-
-        verticalOhlcv[key] = buildArray(thisArrType, len)
+        columns.push({ key, type, priceBased: addToPriceBased, includeInLag: false })
       }   
+
+      initializeColumns(main, columns)
     }
   }
 
   for (const targetKey of colKeys) {
     const currentColumn = verticalOhlcv[targetKey]
+    const missingValue = Array.isArray(currentColumn) ? null : NaN
 
     // Populate the lagged values each tick:
     for (let step = 1; step <= lookback; step++) {
       const key = `${targetKey}_lag_${step}`
       const laggedIndex = index - step
       const value =
-        laggedIndex < 0 || currentColumn[laggedIndex] === undefined
-          ? null
+        laggedIndex < 0 || currentColumn[laggedIndex] == null
+          ? missingValue
           : currentColumn[laggedIndex]
 
       main.pushToMain({ index, key, value })

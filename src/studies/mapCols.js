@@ -1,8 +1,9 @@
 import { validateInputValues } from '../utilities/validators.js'
+import { initializeColumns } from '../core-functions/initializeColumns.js'
 
-export const mapCols = (main, index, newCols, callback, {lag, isPriceBased}) => {
+export const mapCols = (main, index, newCols, callback, {lag, isPriceBased, callbackParams = {}}) => {
 
-    const {verticalOhlcv, len, priceBased, precision} = main
+    const {verticalOhlcv, precision} = main
 
     if(index === 0)
     {
@@ -15,22 +16,14 @@ export const mapCols = (main, index, newCols, callback, {lag, isPriceBased}) => 
             if(verticalOhlcv.hasOwnProperty(key)) {
                 throw new Error(`New property "${key}" already exist in "verticalOhlcv" and can not be modified using mapCols.`)
             }
-
-            verticalOhlcv[key] = new Array(len).fill(0)
-
-            if(precision && isPriceBased)
-            {
-                priceBased.add(key)
-            }
         }
 
-        if(lag > 0)
-        {
-            main.lag(newCols, lag)
-        }
+        initializeColumns(main, newCols.map(key => ({
+            key, type: 'Array', priceBased: precision && isPriceBased
+        })), { lag })
     }
 
-    const cols = callback({index, main})
+    const cols = callback({index, main, params: callbackParams})
 
     if(cols == null) return;
 

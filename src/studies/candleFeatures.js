@@ -1,4 +1,5 @@
 import { validateInputValues } from '../utilities/validators.js'
+import { initializeColumns } from '../core-functions/initializeColumns.js'
 
 const isBadNumber = (v) => v == null || !Number.isFinite(v)
 
@@ -11,17 +12,10 @@ export const candleFeatures  = (main, index, {lag, colKeys, retLogs}) => {
     if(index === 0) {
         validateInputValues({ open: true, high: true, low: true, close: true }, verticalOhlcv, index, 'candleFeatures')
 
-        const {len} = main
-        
-        const newCols = {
-            [`${prefix}change`]: new Float64Array(len).fill(NaN),
-            [`${prefix}mid_price_change`]: new Float64Array(len).fill(NaN),
-            [`${prefix}upper_wick`]: new Float64Array(len).fill(NaN),
-            [`${prefix}lower_wick`]: new Float64Array(len).fill(NaN),
-            [`${prefix}gap`]: new Float64Array(len).fill(NaN),
-            [`${prefix}body`]: new Float64Array(len).fill(NaN),
-            [`${prefix}range`]: new Float64Array(len).fill(NaN)
-        }
+        const columns = [
+            'change', 'mid_price_change', 'upper_wick', 'lower_wick',
+            'gap', 'body', 'range'
+        ].map(name => ({ key: `${prefix}${name}` }))
 
         for(const target of colKeys) {
             validateInputValues({ [target]: true }, verticalOhlcv, index, 'candleFeatures')
@@ -38,16 +32,10 @@ export const candleFeatures  = (main, index, {lag, colKeys, retLogs}) => {
                 );               
             }
 
-            newCols[`${prefix}${target}`] = new Float64Array(len).fill(NaN)
+            columns.push({ key: `${prefix}${target}` })
         }
 
-        Object.assign(verticalOhlcv, newCols)
-
-        scaledGroups.candleFeatures = Object.keys(newCols)
-
-        if(lag) {
-            main.lag(Object.keys(newCols), lag)
-        }
+        scaledGroups.candleFeatures = initializeColumns(main, columns, { lag })
     }
 
     const prevClose = verticalOhlcv.close[index - 1]

@@ -13,8 +13,8 @@ import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { pushToMain } from './src/core-functions/pushToMain.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
-import { defaultMapColsCallback } from './src/studies/mapCols.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
+import { CONFIG_VERSION, copyConfig, freezeConfig, registerMapCallback, resolveMapCallback, exportInputParams } from './src/utilities/config.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -25,14 +25,41 @@ import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
  */
 
 export default class OHLCV_INDICATORS {
-    constructor({input, ticker = null, inputParams = null, chunkProcess = 2000, precision = false, useFullNames = false}) {
+    constructor({input, ticker = null, chunkProcess = 2000, config = {}}) {
+
+        if (config === null || Array.isArray(config) || typeof config !== 'object') {
+            throw new TypeError('Constructor "config" must be a plain object.')
+        }
+        const savedConfig = copyConfig(config)
+        const configKeys = ['schemaVersion', 'precision', 'useFullNames', 'inputParams', 'dateFormat', 'skipNull', 'timeZone']
+        for (const key of Object.keys(savedConfig)) {
+            if (!configKeys.includes(key)) throw new Error(`Unknown configuration option "${key}".`)
+        }
+        const {
+            schemaVersion = CONFIG_VERSION,
+            precision = false,
+            useFullNames = false,
+            inputParams = null,
+            dateFormat = 'milliseconds',
+            skipNull = true,
+            timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        } = savedConfig
+
+        if (schemaVersion !== CONFIG_VERSION) throw new Error(`Unsupported configuration schemaVersion: ${schemaVersion}.`)
+        validateBoolean(skipNull, 'config.skipNull', 'constructor')
+        validateString(dateFormat, 'config.dateFormat', 'constructor')
+        validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'config.dateFormat', 'constructor')
+        validateString(timeZone, 'config.timeZone', 'constructor')
+        const resolvedTimeZone = new Intl.DateTimeFormat('en-US', { timeZone }).resolvedOptions().timeZone
+        this.config = Object.freeze({ schemaVersion, precision, useFullNames, dateFormat, skipNull, timeZone: resolvedTimeZone })
+        this.timeZone = resolvedTimeZone
 
         validateArray(input, 'input', (ticker !== null) ? `contructor ${ticker}` : 'constuctor')
         if(input.length === 0) throw Error('input OHLCV must not be empty: ' + ticker)
 
         validateNumber(chunkProcess, {min: 100, max: 50000, allowDecimals: false}, 'chunkProcess', 'constructor')
         validateBoolean(precision, 'precision', 'contructor')
-        validateBoolean(precision, 'useFullNames', 'contructor')
+        validateBoolean(useFullNames, 'config.useFullNames', 'constructor')
 
         this.chunkProcess = chunkProcess
         
@@ -56,6 +83,8 @@ export default class OHLCV_INDICATORS {
 
         this.dateType = this.inputTypes.date ? this.inputTypes.date : null;
         this.isComputed = false
+        this.isComputing = false
+        this.executionParams = []
 
         this.instances = {}
         this.verticalOhlcv = {}
@@ -72,12 +101,12 @@ export default class OHLCV_INDICATORS {
         if(inputParams !== null)
         {
             validateInputParams(inputParams, this.len)
-            this.inputParams = inputParams.sort((a, b) => a.order - b.order)
+            this.inputParams = freezeConfig(copyConfig(inputParams))
             this.compute()
         }
         else
         {
-            this.inputParams = []
+            this.inputParams = Object.freeze([])
         }
 
         
@@ -86,12 +115,27 @@ export default class OHLCV_INDICATORS {
     }
 
 
+    static registerMapCallback(name, callback) {
+        registerMapCallback(name, callback)
+        return this
+    }
+
+    exportConfig() {
+        return { ...this.config, inputParams: exportInputParams(this.inputParams) }
+    }
+
+    _registerIndicator(job) {
+        isAlreadyComputed(this)
+        this.inputParams = Object.freeze([...this.inputParams, freezeConfig(copyConfig(job, true))])
+        return this
+    }
+
     getData(options = {}) {
 
         //getData method returns the last object (row) of the new OHLCV with indicators: {open, high, low, close, rsi_14, bollinger_bands_upper}
         this.compute()
 
-        const {skipNull = true, dateFormat = 'milliseconds'} = options
+        const {skipNull = this.config.skipNull, dateFormat = this.config.dateFormat} = options
 
         validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getData')
         validateObject(options, 'options', 'getData')
@@ -109,7 +153,7 @@ export default class OHLCV_INDICATORS {
 
         this.compute()
 
-        const {dateFormat = 'milliseconds'} = options
+        const {dateFormat = this.config.dateFormat} = options
         
         validateArrayOptions(Object.keys(dateOutputFormaters), dateFormat, 'dateFormat', 'getData')
 
@@ -128,7 +172,13 @@ export default class OHLCV_INDICATORS {
           return this;
         }
 
-        this.inputParams = this.inputParams.sort((a, b) => a.order - b.order)
+        if (this.isComputing) throw new Error('Computation is already in progress.')
+
+        this.executionParams = copyConfig(this.inputParams, true)
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        for (const job of this.executionParams) {
+            if (job.key === 'mapCols') job.params[1] = resolveMapCallback(job.params[1])
+        }
       
         // Mark as “in progress”
         this.isComputed = false;
@@ -139,7 +189,12 @@ export default class OHLCV_INDICATORS {
         // Only run the full loop once (or when new data appears later,
         // if you extend this to reset isComputed elsewhere)
         if (this.len > 0) {
-            mainLoop(this.input, this)
+            this.isComputing = true
+            try {
+                mainLoop(this.input, this)
+            } finally {
+                this.isComputing = false
+            }
 
             this.isComputed = true;
 
@@ -187,7 +242,7 @@ export default class OHLCV_INDICATORS {
 
         this.isAlreadyComputed.add(methodName)
 
-        this.inputParams.push({key: methodName, params: [arr, {limit, oneHot}]})
+        this._registerIndicator({key: methodName, params: [arr, {limit, oneHot}]})
         
         return this
     }
@@ -201,7 +256,7 @@ export default class OHLCV_INDICATORS {
         validateArray(colKeys, 'colKeys', methodName)
         validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
 
-        this.inputParams.push({key: methodName, params: [colKeys, lookback]})
+        this._registerIndicator({key: methodName, params: [colKeys, lookback]})
         
         return this;
     }
@@ -223,7 +278,7 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, order: 0, params: [size, {lag}]})
+        this._registerIndicator({key: methodName, order: 0, params: [size, {lag}]})
  
         return this
     }
@@ -244,7 +299,7 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, order: 0, params: [{lag}]})
+        this._registerIndicator({key: methodName, order: 0, params: [{lag}]})
  
         return this
     }
@@ -264,7 +319,7 @@ export default class OHLCV_INDICATORS {
         validateBoolean(retLogs, 'options.retLogs', methodName)
 
 
-        this.inputParams.push({key: methodName, order: 0, params: [size, {lag, retLogs}]})
+        this._registerIndicator({key: methodName, order: 0, params: [size, {lag, retLogs}]})
 
         return this
     }
@@ -284,7 +339,7 @@ export default class OHLCV_INDICATORS {
         validateBoolean(retLogs, 'options.retLogs', methodName)
 
 
-        this.inputParams.push({key: methodName, order: 0, params: [size, {lag, retLogs}]})
+        this._registerIndicator({key: methodName, order: 0, params: [size, {lag, retLogs}]})
 
         return this
     }
@@ -303,7 +358,7 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
+        this._registerIndicator({key: methodName, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -321,7 +376,7 @@ export default class OHLCV_INDICATORS {
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
 
-        this.inputParams.push({key: methodName, params: [methodName, size, {target, lag}]})
+        this._registerIndicator({key: methodName, params: [methodName, size, {target, lag}]})
 
         return this
     }
@@ -347,13 +402,15 @@ export default class OHLCV_INDICATORS {
 
         const order = 0
 
-        this.inputParams.push({key: methodName, order, params: [smoothLength, afterSmoothLength, {lag, bothNull, retLogs}]})
+        this._registerIndicator({key: methodName, order, params: [smoothLength, afterSmoothLength, {lag, bothNull, retLogs}]})
 
         return this
     }
 
     stochastic(kPeriod = 14, kSlowingPeriod = 3, dPeriod = 3, options = {}){
         const methodName = 'stochastic'
+
+        isAlreadyComputed(this)
 
         const {len: max} = this
 
@@ -367,7 +424,7 @@ export default class OHLCV_INDICATORS {
         validateNumber(lag, {min: 0, max, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(retLogs, 'retLogs', methodName)
 
-        this.inputParams.push({key: methodName, params: [kPeriod, kSlowingPeriod, dPeriod, {lag, retLogs}]})
+        this._registerIndicator({key: methodName, params: [kPeriod, kSlowingPeriod, dPeriod, {lag, retLogs}]})
 
         return this
     }
@@ -391,7 +448,7 @@ export default class OHLCV_INDICATORS {
         const instanceKey = `${fast}_${slow}_${signal}${target === 'close' ? '' : `_${target}`}`
         const precomputed = {instanceKey}
 
-        this.inputParams.push({key: methodName, params: [fast, slow, signal, {target, lag, precomputed}]})
+        this._registerIndicator({key: methodName, params: [fast, slow, signal, {target, lag, precomputed}]})
         
         return this
 
@@ -410,7 +467,7 @@ export default class OHLCV_INDICATORS {
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
   
-        this.inputParams.push({key: methodName, params: [size, stdDev, {lag}]});
+        this._registerIndicator({key: methodName, params: [size, stdDev, {lag}]});
     
         return this;
     }
@@ -430,7 +487,7 @@ export default class OHLCV_INDICATORS {
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(retLogs, 'retLogs', methodName)
 
-        this.inputParams.push({key: methodName, params: [size, {target, lag, retLogs}]})
+        this._registerIndicator({key: methodName, params: [size, {target, lag, retLogs}]})
 
         return this
     }
@@ -448,7 +505,7 @@ export default class OHLCV_INDICATORS {
       
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
       
-        this.inputParams.push({ key: methodName, order: 0, params: [size, offset, {lag}] });
+        this._registerIndicator({ key: methodName, order: 0, params: [size, offset, {lag}] });
       
         return this;
     }
@@ -473,7 +530,7 @@ export default class OHLCV_INDICATORS {
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
         validateBoolean(retLogs, 'retLogs', methodName)
 
-        this.inputParams.push({key: methodName, order: 0, params: [fastsize, slowsize, {lag, retLogs}]})
+        this._registerIndicator({key: methodName, order: 0, params: [fastsize, slowsize, {lag, retLogs}]})
         return this           
     }
     dateTime(options = {})
@@ -507,7 +564,7 @@ export default class OHLCV_INDICATORS {
             colKeys: Object.keys(colKeySizes)
         }
 
-        this.inputParams.push({key: methodName, order: 0, params: [{lag, oneHot, precompute}]})
+        this._registerIndicator({key: methodName, order: 0, params: [{lag, oneHot, precompute}]})
         return this           
     }
 
@@ -525,7 +582,7 @@ export default class OHLCV_INDICATORS {
         validateBoolean(retLogs, 'retLogs', methodName)
 
 
-        this.inputParams.push({key: methodName, params: [{lag, colKeys, retLogs}]})
+        this._registerIndicator({key: methodName, params: [{lag, colKeys, retLogs}]})
 
         return this
     }
@@ -538,12 +595,14 @@ export default class OHLCV_INDICATORS {
 
         if(typeof callback === 'undefined' || callback === null)
         {
-            callback = defaultMapColsCallback
+            callback = 'default'
         }
 
         validateObject(options, 'options', methodName)
 
-        const {lag = 0, isPriceBased = false} = options
+        const {lag = 0, isPriceBased = false, callbackParams = {}} = options
+        resolveMapCallback(callback)
+        const savedCallbackParams = copyConfig(callbackParams)
 
         validateArray(newCols, 'newCols', methodName)
         validateNumber(lag, {min: 0, allowDecimals: false}, 'options.lag', methodName)
@@ -553,7 +612,7 @@ export default class OHLCV_INDICATORS {
             throw new Error(`Invalid param: If "mapCols.options.isPriceBased" is true, the "constructor.precision" param must be also true.`)
         }
 
-        this.inputParams.push({key: methodName, params: [newCols, callback, {lag, isPriceBased}]})
+        this._registerIndicator({key: methodName, params: [newCols, callback, {lag, isPriceBased, callbackParams: savedCallbackParams}]})
 
         return this
     }

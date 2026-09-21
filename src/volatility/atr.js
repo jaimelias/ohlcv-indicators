@@ -2,31 +2,21 @@
 import {FasterATR, FasterWSMA} from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 export const atr = (main, index, size, {lag, retLogs}) => {
-  const { verticalOhlcv, instances, priceBased } = main
+  const { verticalOhlcv, instances } = main
   const baseKeyName = retLogs ? `ret_log_atr_${size}` : `atr_${size}`
 
   if (index === 0) {
 
-    const {instances, verticalOhlcv, len} = main
+    const {instances, verticalOhlcv} = main
 
     validateInputValues({ high: true, low: true, close: true }, verticalOhlcv, index, 'atr')
 
     instances[baseKeyName] = new FasterATR(size, FasterWSMA)
 
-    const keyNames = [baseKeyName]
-
-    for(const k of keyNames)
-    { 
-      verticalOhlcv[k] = new Float64Array(len).fill(NaN)
-      priceBased.add(k)
-    }
-
-    if(lag > 0)
-    {
-      main.lag(keyNames, lag)
-    }
+    initializeColumns(main, [{ key: baseKeyName, priceBased: true }], { lag })
   }
 
   // Retrieve the current price value.

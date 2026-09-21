@@ -29,7 +29,7 @@ export const buildArray = (arrayType, len, fallbackValue) => {
 
   
   // Ctor.from({ length }, mapFn) works for Array *and* all TypedArrays
-  return Ctor.from({ length: len }, () => fillValue)
+  return new Ctor(len).fill(fillValue)
 }
 
 export const assignTypes = main => {

@@ -1,6 +1,7 @@
 import { FasterADX } from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 export const adx = (main, index, size, { lag, retLogs }) => {
   const { verticalOhlcv, instances, useFullNames } = main;
@@ -12,8 +13,6 @@ export const adx = (main, index, size, { lag, retLogs }) => {
   // Initialization on the first index.
   if (index === 0) {
     validateInputValues({ high: true, low: true, close: true }, verticalOhlcv, index, 'adx');
-
-    const { len } = main;
 
     if (!verticalOhlcv.hasOwnProperty('high')) {
       throw new Error('Property high not found in verticalOhlcv for adx.');
@@ -31,14 +30,7 @@ export const adx = (main, index, size, { lag, retLogs }) => {
       [instanceKey]: new FasterADX(size)
     });
 
-    Object.assign(verticalOhlcv, {
-      [adxKey]: new Float64Array(len).fill(NaN)
-    })
-
-
-    if (lag > 0) {
-      main.lag([adxKey], lag);
-    }
+    initializeColumns(main, [{ key: adxKey }], { lag });
   }
 
   const high = verticalOhlcv.high[index];

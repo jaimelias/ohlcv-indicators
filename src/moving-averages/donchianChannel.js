@@ -1,7 +1,8 @@
 import { validateInputValues } from '../utilities/validators.js'
+import { initializeColumns } from '../core-functions/initializeColumns.js'
 
 export const donchianChannels = (main, index, size, offset, options) => {
-  const { verticalOhlcv, instances, len, inputParams, priceBased, useFullNames } = main
+  const { verticalOhlcv, instances, len, inputParams, useFullNames } = main
   const { lag: outputLag = 0 } = options
   const indicatorKey = `${size}_${offset}`
 
@@ -19,10 +20,6 @@ export const donchianChannels = (main, index, size, offset, options) => {
 
     const keys = ['upper', 'basis', 'lower'].map(getKey)
 
-    for (const k of keys) {
-      priceBased.add(k)
-    }
-
     if (!instances.donchian_channel) {
       instances.donchian_channel = { numberOfIndicators, settings: {} }
     }
@@ -30,14 +27,7 @@ export const donchianChannels = (main, index, size, offset, options) => {
     instances.donchian_channel.numberOfIndicators = numberOfIndicators
     instances.donchian_channel.settings[indicatorKey] = { maxDeque: [], minDeque: [] }
 
-    Object.assign(
-      verticalOhlcv,
-      Object.fromEntries(keys.map(k => [k, new Float64Array(len).fill(NaN)]))
-    )
-
-    if (outputLag > 0) {
-      main.lag(keys, outputLag)
-    }
+    initializeColumns(main, keys.map(key => ({ key, priceBased: true })), { lag: outputLag })
   }
 
   // ---- PER-BAR COMPUTATION ----
@@ -53,14 +43,8 @@ export const donchianChannels = (main, index, size, offset, options) => {
   const current = index - offset
   const start = current - size + 1
 
-  const outKeys = ['upper', 'basis', 'lower'].map(getKey)
-
-  if (start < 0 || current + 1 > len) {
-    outKeys.forEach(key =>
-      main.pushToMain({ index, key, value: NaN })
-    )
-    return;
-  }
+  // No source candle is available yet.
+  if (current < 0 || current >= len) return
 
   const { high: highs, low: lows } = verticalOhlcv
 
@@ -72,6 +56,9 @@ export const donchianChannels = (main, index, size, offset, options) => {
 
   update(maxDeque, highs, (a, b) => a <= b)
   update(minDeque, lows, (a, b) => a >= b)
+
+  // Collect warm-up candles, but leave outputs as NaN until the window is complete.
+  if (start < 0) return
 
   const hasBounds = maxDeque.length && minDeque.length
   const upper = hasBounds ? highs[maxDeque[0]] : NaN

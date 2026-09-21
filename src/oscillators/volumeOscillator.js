@@ -2,6 +2,7 @@ import { FasterEMA } from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
 import { isPositiveInteger } from '../utilities/numberUtilities.js';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
 
@@ -11,7 +12,6 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
     if (index === 0) {
         validateInputValues({ volume: true }, verticalOhlcv, index, 'volumeOscillator');
 
-        const {len} = main
         Object.assign(instances, {
             [key]: {
                 fastEMA: new FasterEMA(fast),
@@ -19,17 +19,10 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
             }
         })
 
-        const keyNames = (retLogs) ? [key, `ret_log_${key}`]: [key];
-
-        Object.assign( 
-            verticalOhlcv, 
-            Object.fromEntries(keyNames.map(k => [k, new Float64Array(len).fill(NaN)]))
-        );
-
-        if(lag > 0)
-        {
-            main.lag(keyNames, lag)
-        }
+        initializeColumns(main, [
+            { key },
+            { key: `ret_log_${key}`, enabled: retLogs }
+        ], { lag });
     }
 
     const { fastEMA, slowEMA } = instances[key];

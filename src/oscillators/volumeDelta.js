@@ -1,9 +1,10 @@
 import { isPositiveInteger } from '../utilities/numberUtilities.js';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 
 export const volumeDelta = (main, index, { lag = 0 }) => {
-  const { verticalOhlcv, instances, len } = main;
+  const { verticalOhlcv, instances } = main;
   const key = 'volume_delta';
 
   if (index === 0) {
@@ -20,14 +21,7 @@ export const volumeDelta = (main, index, { lag = 0 }) => {
       `${key}_cross`,
     ];
 
-    // allocate outputs
-    Object.assign( 
-        verticalOhlcv, 
-        Object.fromEntries(keyNames.map(k => [k, new Float64Array(len).fill(NaN)]))
-    );
-
-    // optional lag
-    if (lag > 0) main.lag(keyNames, lag);
+    initializeColumns(main, keyNames.map(key => ({ key })), { lag });
   }
 
   const inst = instances[key];

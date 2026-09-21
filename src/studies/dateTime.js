@@ -1,4 +1,5 @@
 import {oneHotEncode} from '../machine-learning/ml-utilities.js'
+import { initializeColumns } from '../core-functions/initializeColumns.js'
 
 export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
@@ -9,11 +10,16 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
     if(index === 0)
     {
-        const {len, dateType} = main
+        const {dateType} = main
         if(!dateType) throw Error('dateTime method found and invalid "date" in input ohlcv')
 
         Object.assign(instances, {
             dateTime: {
+                formatter: new Intl.DateTimeFormat('en-US-u-ca-gregory-nu-latn', {
+                    timeZone: main.timeZone,
+                    year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short',
+                    hour: 'numeric', minute: 'numeric', hourCycle: 'h23'
+                }),
                 colKeys: [...precompute.colKeys, `${prefix}year`].filter(v => v !== 'one_hot_year'),
                 colKeySizes: {
                     ...precompute.colKeySizes
@@ -23,28 +29,18 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
         const { colKeys } = instances.dateTime
 
-        // choose your ctor, fill-value and type-name once
-        const ctor     = oneHot ? Array     : Int16Array
-        const fillVal  = oneHot ? null      : NaN
-
-        // single loop instead of three
-        for (const key of colKeys) {
-
-            verticalOhlcv[key] = new ctor(len).fill(fillVal)
-
-        }
-
-        // finally, apply lag once
-        if (lag > 0) {
-        main.lag(colKeys, lag)
-        }
+        initializeColumns(main, colKeys.map(key => ({
+            key,
+            type: oneHot ? 'Array' : 'Int16Array',
+            fill: oneHot ? null : 0
+        })), { lag })
     }
 
-    const {colKeySizes} = instances.dateTime
+    const {colKeySizes, formatter} = instances.dateTime
 
     const currDate = verticalOhlcv.date[index]
 
-    const dateInfo = getDateInfo(currDate, oneHot, colKeySizes)
+    const dateInfo = getDateInfo(currDate, oneHot, colKeySizes, formatter)
 
     for(const [key, value] of Object.entries(dateInfo))
     {
@@ -54,17 +50,16 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
 
 
-const getDateInfo = (date, oneHot, colKeySizes) => {
+const getDateInfo = (date, oneHot, colKeySizes, formatter) => {
 
 
-  const year = date.getFullYear();
-
-  //start with 0 values
-  const month = date.getMonth();
-  const hour = date.getHours();
-  const minute = date.getMinutes();
-  const dayOfWeek = date.getDay();
-  const dayOfMonth = date.getDate() - 1; // keep same offset
+  const parts = Object.fromEntries(formatter.formatToParts(date).map(({ type, value }) => [type, value]));
+  const year = Number(parts.year);
+  const month = Number(parts.month) - 1;
+  const hour = Number(parts.hour);
+  const minute = Number(parts.minute);
+  const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(parts.weekday);
+  const dayOfMonth = Number(parts.day) - 1;
 
   if (!oneHot) {
     return {

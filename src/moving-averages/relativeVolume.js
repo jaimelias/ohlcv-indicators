@@ -1,6 +1,7 @@
 import { FasterSMA } from 'trading-signals';
 import { isPositiveInteger } from '../utilities/numberUtilities.js';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 
 export const relativeVolume = (main, index, size, {lag}) => {
@@ -12,19 +13,12 @@ export const relativeVolume = (main, index, size, {lag}) => {
   if (index === 0) {
     validateInputValues({ volume: true }, verticalOhlcv, index, 'relativeVolume');
 
-    const { len } = main;
-
     instances[key] = {
       instance: new FasterSMA(size),
       prevRelativeVolumeSma: NaN
     };
     
-    verticalOhlcv[key] = new Float64Array(len).fill(NaN);
-
-    if(lag > 0)
-    {
-      main.lag([key], lag)
-    }
+    initializeColumns(main, [{ key }], { lag });
 
   }
 

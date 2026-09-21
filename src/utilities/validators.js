@@ -5,7 +5,14 @@ export const validateInputParams = (inputParams, len) => {
         throw new Error('Property "inputParams" must be an "Array" or "Set".')
     }
 
-    for (const { params } of inputParams) {
+    for (const job of inputParams) {
+        if (!job || typeof job.key !== 'string' || !Array.isArray(job.params)) {
+            throw new TypeError('Each inputParams entry must have an indicator key and a params array.')
+        }
+        if (job.order !== undefined && !Number.isFinite(job.order)) {
+            throw new TypeError('Indicator order must be a finite number when provided.')
+        }
+        const { params } = job
         for (const v of params) {
             if (typeof v === 'number' && v > len) {
                 console.log(v, len);
@@ -16,6 +23,7 @@ export const validateInputParams = (inputParams, len) => {
 }
 
 export const isAlreadyComputed = main => {
+    if(main.isComputing === true) throw Error('You cannot add indicators while computation is in progress.')
     if(main.isComputed === true) throw Error('ohlcv is already computed, you can not add new indicators after "compute", "getLastValues" or "getData" methods are called.')
 }
 

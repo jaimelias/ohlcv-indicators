@@ -54,11 +54,16 @@ export const mainLoop = (input, main) => {
     inputTypes, 
     chunkProcess, 
     precisionMultiplier,
-    inputParams
+    executionParams
   } = main;
 
 
-  validateInputParams(inputParams, len)
+  validateInputParams(executionParams, len)
+  for (const { key } of executionParams) {
+    if (!Object.prototype.hasOwnProperty.call(mainFunctions, key)) {
+      throw new Error(`Unknown indicator "${key}" in configuration.`)
+    }
+  }
 
   for(const key of Object.keys(inputTypes))
   {
@@ -100,7 +105,7 @@ export const mainLoop = (input, main) => {
         main.pushToMain({index, key: 'mid_price', value: midPrice})
     
         // Process these indicators separately (ensuring their execution in the order of initialization)
-        for (const { key, params} of inputParams)
+        for (const { key, params} of executionParams)
         {
           mainFunctions[key](main, index, ...params)
         }

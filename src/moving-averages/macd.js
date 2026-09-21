@@ -1,17 +1,18 @@
 import { FasterEMA, FasterMACD } from 'trading-signals'
 import { validateInputValues } from '../utilities/validators.js'
+import { initializeColumns } from '../core-functions/initializeColumns.js'
 
 const defaultTarget = 'close'
 
 export const macd = (main, index, fast, slow, signal, { target, lag, precomputed }) => {
-  const { verticalOhlcv, instances, priceBased, useFullNames } = main
+  const { verticalOhlcv, instances, useFullNames } = main
   const { instanceKey } = precomputed
 
   // Initialization on the first index.
   if (index === 0) {
     validateInputValues({ [target]: true }, verticalOhlcv, index, 'macd')
 
-    const { inputParams, len } = main
+    const { inputParams } = main
 
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(`Target property ${target} not found in verticalOhlcv for macd.`)
@@ -56,21 +57,8 @@ export const macd = (main, index, fast, slow, signal, { target, lag, precomputed
       new FasterEMA(signal)
     )
 
-    Object.assign(verticalOhlcv, {
-      [diffKey]: new Float64Array(len).fill(NaN),
-      [deaKey]: new Float64Array(len).fill(NaN),
-      [histogramKey]: new Float64Array(len).fill(NaN),
-    })
-
     const keyNames = [diffKey, deaKey, histogramKey]
-
-    for (const k of keyNames) {
-      priceBased.add(k)
-    }
-
-    if (lag > 0) {
-      main.lag(keyNames, lag)
-    }
+    initializeColumns(main, keyNames.map(key => ({ key, priceBased: true })), { lag })
   }
 
   const { numberOfIndicators, settings } = instances.macd

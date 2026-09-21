@@ -2,6 +2,7 @@ import { FasterRSI } from 'trading-signals';
 import { FasterSMA } from 'trading-signals';
 import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
+import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 const defaultTarget = 'close'
 export const rsi = (main, index, size, { target, lag, retLogs }) => {
@@ -18,8 +19,6 @@ export const rsi = (main, index, size, { target, lag, retLogs }) => {
   if (index === 0) {
     validateInputValues({ [target]: true }, verticalOhlcv, index, 'rsi');
 
-    const {len } = main;
-
     if (!verticalOhlcv.hasOwnProperty(target)) {
       throw new Error(`Target property ${target} not found in verticalOhlcv for rsi.`);
     }
@@ -29,16 +28,7 @@ export const rsi = (main, index, size, { target, lag, retLogs }) => {
       [rsiSmaKey]: new FasterSMA(size)
     })
 
-    Object.assign(verticalOhlcv, {
-      [rsiKey]: new Float64Array(len).fill(NaN),
-      [rsiSmaKey]: new Float64Array(len).fill(NaN),
-    })
-
-    const baseKeys = [rsiKey, rsiSmaKey]
-
-    if (lag > 0) {
-      main.lag(baseKeys, lag);
-    }
+    initializeColumns(main, [{ key: rsiKey }, { key: rsiSmaKey }], { lag });
 
 
   }
