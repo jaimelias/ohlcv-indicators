@@ -1,11 +1,10 @@
 import { FasterEMA } from 'trading-signals';
+import { mathLog } from '../utilities/math.js';
+import { isPositiveInteger } from '../utilities/numberUtilities.js';
 
-export const volumeOscillator = (main, index, fast, slow, {lag}) => {
-
-    
+export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
 
     const {verticalOhlcv, instances} = main
-    const value = verticalOhlcv.volume[index]
     const key = `volume_oscillator_${fast}_${slow}`
 
     if (index === 0) {
@@ -14,22 +13,39 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
         Object.assign(instances, {
             [key]: {
                 fastEMA: new FasterEMA(fast),
-                slowEMA: new FasterEMA(slow)
+                slowEMA: new FasterEMA(slow),
+                hasInvalidVolumeValue: false
             }
         })
 
-        verticalOhlcv[key] = new Float64Array(len).fill(NaN)
+        const keyNames = (retLogs) ? [key, `ret_log_${key}`]: [key];
+
+        const verticalOhlcvSetup = Object.fromEntries(keyNames.map(k => [k, new Float64Array(len).fill(NaN)]));
+
+        Object.assign( verticalOhlcv, verticalOhlcvSetup);
 
         if(lag > 0)
         {
-            main.lag([key], lag)
+            main.lag(keyNames, lag)
         }
     }
 
-    const { fastEMA, slowEMA } = instances[key];
+    const { fastEMA, slowEMA, hasInvalidVolumeValue } = instances[key];
 
-    fastEMA.update(value);
-    slowEMA.update(value);
+    const volume = verticalOhlcv.volume[index];
+
+    if(hasInvalidVolumeValue) {
+        return;
+    }
+    if(!isPositiveInteger(volume)) {
+        instances[key].hasInvalidVolumeValue = true;
+        return;
+    };
+
+    
+
+    fastEMA.update(volume);
+    slowEMA.update(volume);
 
     let fastValue = NaN;
     let slowValue = NaN;
@@ -47,10 +63,17 @@ export const volumeOscillator = (main, index, fast, slow, {lag}) => {
     }
 
     let volumeOscValue = NaN
+    let volumeOscRetLog = NaN
 
-    if(!Number.isNaN(fastValue) && !Number.isNaN(slowValue))
-    {
-        volumeOscValue = 100 * (fastValue - slowValue) / slowValue
+    if(Number.isNaN(fastValue) || Number.isNaN(slowValue)) {
+        return;
+    }
+
+    volumeOscValue = 100 * (fastValue - slowValue) / slowValue
+
+    if(retLogs) {
+        volumeOscRetLog = mathLog(fastValue, slowValue)
+        main.pushToMain({index, key: `ret_log_${key}`, value:  volumeOscRetLog})
     }
 
     main.pushToMain({index, key, value:  volumeOscValue})

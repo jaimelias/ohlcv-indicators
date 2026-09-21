@@ -4,7 +4,6 @@ import { rsi } from "../oscillators/rsi.js";
 import { stochastic } from "../oscillators/stochastic.js";
 import { movingAverages } from "../moving-averages/movingAverages.js";
 import { heikenAshi } from "../moving-averages/heikenAshi.js";
-import { vidya } from "../moving-averages/vidya.js";
 import { macd } from "../moving-averages/macd.js";
 import { relativeVolume } from "../moving-averages/relativeVolume.js";
 import { donchianChannels } from "../moving-averages/donchianChannel.js";
@@ -35,7 +34,6 @@ const mainFunctions = {
   adx,
   ema: movingAverages,
   sma: movingAverages,
-  vidya,
   macd,
   volumeDelta,
   relativeVolume,

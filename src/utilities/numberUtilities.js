@@ -1,5 +1,7 @@
 import { addPrecisionAsNumber, revertPrecisionAsNumber } from "./precisionMultiplier.js";
 
+export const isPositiveInteger = n => Number.isInteger(n) && n >= 0;
+
 export const inputNumberFormatter = {
   number: n => n,
   numberCleanString: n => Number(n),

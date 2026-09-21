@@ -352,29 +352,6 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    vidya(size = 14, momentum = 20, options = {}) {
-
-        const methodName = 'vidya'
-
-        isAlreadyComputed(this)
-
-        validateNumber(size, {min: 2, max: this.len, allowDecimals: false}, 'size', methodName)
-        validateNumber(momentum, {min: 1, max: this.len, allowDecimals: false}, 'momentum', methodName)
-        validateObject(options, 'options', methodName)
-
-        const {target = 'close', lag = 0, atrLength = 200, bandDistance = 2, liquidityLookback = 20} = options
-
-        validateString(target, 'options.target', methodName)
-        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
-        validateNumber(bandDistance, {min: 0.01, max: 10, allowDecimals: true}, 'options.bandDistance', methodName)
-        validateNumber(atrLength, {min: 2, max: this.len, allowDecimals: false}, 'options.atrLength', methodName)
-        validateNumber(liquidityLookback, {min: 1, max: this.len, allowDecimals: false}, 'options.liquidityLookback', methodName)
-
-        this.inputParams.push({key: methodName, params: [size, momentum, {target, lag}]})
-
-        return this
-    }
-
     stochastic(kPeriod = 14, kSlowingPeriod = 3, dPeriod = 3, options = {}){
         const methodName = 'stochastic'
 
@@ -491,11 +468,12 @@ export default class OHLCV_INDICATORS {
         validateNumber(slowsize, {min: fastsize, max: this.len, allowDecimals: false}, 'slowsize', methodName)
         validateObject(options, 'options', methodName)
 
-        const {lag = 0} = options
+        const {lag = 0, retLogs = false} = options
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'retLogs', methodName)
 
-        this.inputParams.push({key: methodName, order: 0, params: [fastsize, slowsize, {lag}]})
+        this.inputParams.push({key: methodName, order: 0, params: [fastsize, slowsize, {lag, retLogs}]})
         return this           
     }
     dateTime(options = {})
