@@ -119,8 +119,6 @@ export const validateString = (txt, paramName, callerName) => {
 }
 
 
-const PRICE_KEYS = new Set(["open", "high", "low", "close"]);
-
 export const validateInputValues = (
   requiredParams,
   verticalOhlcv,
@@ -134,11 +132,9 @@ export const validateInputValues = (
   for (const key of Object.keys(requiredParams)) {
     const value = verticalOhlcv[key]?.[index];
 
-    const isValid = PRICE_KEYS.has(key)
-      ? Number.isFinite(value) && value > 0
-      : key === "volume"
-        ? Number.isInteger(value) && value >= 0
-        : Number.isFinite(value);
+    const isValid = key === "volume"
+      ? Number.isInteger(value) && value >= 0
+      : Number.isFinite(value) && value > 0;
 
     if (!isValid) invalidParams.push(key);
   }
