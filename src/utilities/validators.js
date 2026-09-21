@@ -142,7 +142,7 @@ export const validateInputValues = (
   if (invalidParams.length > 0) {
     throw new TypeError(
       `Invalid or missing input value(s) [${invalidParams.join(", ")}] ` +
-      `at index 0 in "${callbackName}".`
+      `at index ${index} in "${callbackName}".`
     );
   }
 
