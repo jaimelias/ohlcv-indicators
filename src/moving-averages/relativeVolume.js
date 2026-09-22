@@ -1,12 +1,12 @@
 import { FasterSMA } from '../core-indicators/index.js';
-import { isPositiveInteger } from '../utilities/numberUtilities.js';
+import { mathLog } from '../utilities/math.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
 
 
-export const relativeVolume = (main, index, size, {lag}) => {
+export const relativeVolume = (main, index, size, {lag, retLogs = false}) => {
 
-  const key = `relative_volume_${size}`;
+  const key = `${retLogs ? 'ret_log_' : ''}relative_volume_${size}`;
   const { instances, verticalOhlcv } = main;
   
 
@@ -42,9 +42,13 @@ export const relativeVolume = (main, index, size, {lag}) => {
     return
   }
 
-  let currRelativeVolume =  volume / prevSma;
+  const ratio = volume / prevSma;
+  const currRelativeVolume = retLogs
+    ? volume > 0 && prevSma > 0 && ratio > 0 && Number.isFinite(ratio)
+      ? mathLog(ratio, 1)
+      : NaN
+    : ratio;
 
   main.pushToMain({ index, key, value: currRelativeVolume });
-  instances[key].prevRelativeVolumeSma = smaValue;
 
 };

@@ -6,15 +6,12 @@
   "type": "module",
   "scripts": {
     "test": "node test/test.js",
+    "test-benchmark": "npm test -- --benchmark --rows 20000 --repeats 9",
     "build": "npx webpack",
     "cross": "node src/studies/findCrosses2.js"
   },
   "author": "https://jaimelias.com/",
   "license": "ISC",
-  "dependencies": {
-    "ohlcv-indicators": "^3.5.72",
-    "trading-signals": "^5.0.4"
-  },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/plugin-proposal-class-properties": "^7.18.6",

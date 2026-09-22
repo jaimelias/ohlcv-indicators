@@ -13,7 +13,6 @@ export const heikenAshi = (
 ) => {
   const { verticalOhlcv, instances, scaledGroups } = main;
   const indicatorKey = `${smoothLength}_${afterSmoothLength}`;
-  const ohlcKeys = ['open', 'high', 'low', 'close'];
 
   const getRet = (next, prev) => retLogs
     ? Math.log(next / prev)
@@ -24,13 +23,6 @@ export const heikenAshi = (
   const paramsKey = bothNull ? '' : `_${indicatorKey}`;
 
   const getKey = key => `${prefix}heiken_ashi_${key}${paramsKey}`;
-
-  const featureKeys = [
-    'body',
-    'upper_wick',
-    'lower_wick',
-    'range'
-  ];
 
   const crossKey = bothNull
     ? 'heiken_ashi_cross'
@@ -43,6 +35,8 @@ export const heikenAshi = (
   // ---- INIT ----
   if (index === 0) {
     validateInputValues({ open: true, high: true, low: true, close: true }, verticalOhlcv, index, 'heikenAshi');
+    const ohlcKeys = ['open', 'high', 'low', 'close'];
+    const featureKeys = ['body', 'upper_wick', 'lower_wick', 'range'];
 
     instances[instanceKey] = {
       emaPre: !bothNull
@@ -206,18 +200,15 @@ export const heikenAshi = (
   const bodyTop = Math.max(smOpen, smClose);
   const bodyBottom = Math.min(smOpen, smClose);
 
-  const row = {
-    [getKey('body')]: getRet(smClose, smOpen),
-    [getKey('upper_wick')]: getRet(smHigh, bodyTop),
-    [getKey('lower_wick')]: getRet(bodyBottom, smLow),
-    [getKey('range')]: getRet(smHigh, smLow),
-  };
+  const body = getRet(smClose, smOpen);
+  const upperWick = getRet(smHigh, bodyTop);
+  const lowerWick = getRet(bodyBottom, smLow);
+  const range = getRet(smHigh, smLow);
 
-  for (const [key, value] of Object.entries(row)) {
-    if (!isBadNumber(value)) {
-      main.pushToMain({ index, key, value });
-    }
-  }
+  if (!isBadNumber(body)) main.pushToMain({ index, key: getKey('body'), value: body });
+  if (!isBadNumber(upperWick)) main.pushToMain({ index, key: getKey('upper_wick'), value: upperWick });
+  if (!isBadNumber(lowerWick)) main.pushToMain({ index, key: getKey('lower_wick'), value: lowerWick });
+  if (!isBadNumber(range)) main.pushToMain({ index, key: getKey('range'), value: range });
 
   // Do not add return logs to cross.
   main.pushToMain({ index, key: crossKey, value: cross });

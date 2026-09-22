@@ -2,17 +2,18 @@
 import {FasterEMA, FasterSMA} from '../core-indicators/index.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
+import { mathLog } from '../utilities/math.js';
 
 const indicatorClasses = {
   ema: FasterEMA, 
   sma: FasterSMA
 }
 
-export const movingAverages = (main, index, methodName, size, { target, lag }) => {
+export const movingAverages = (main, index, methodName, size, { target, lag, retLogs = false }) => {
 
   const { verticalOhlcv, instances, priceBased } = main
   const suffix = (target !== 'close') ?  `_${target}` : ''
-  const keyName = `${methodName}_${size}${suffix}`
+  const keyName = `${retLogs ? 'ret_log_' : ''}${methodName}_${size}${suffix}`
 
   if (index === 0) {
     validateInputValues({ [target]: true }, verticalOhlcv, index, methodName)
@@ -26,7 +27,7 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
     // Create the main moving average instance.
     instances[keyName] = new indicatorClasses[methodName](size)
 
-    initializeColumns(main, [{ key: keyName, priceBased: priceBased.has(target) }], { lag })
+    initializeColumns(main, [{ key: keyName, priceBased: !retLogs && priceBased.has(target) }], { lag })
   }
 
   // Retrieve the current price value
@@ -38,6 +39,15 @@ export const movingAverages = (main, index, methodName, size, { target, lag }) =
 
   const currMa = instance.isStable ? instance.getResult() : NaN
 
-  // Always push the MA value (even if NaN).
-  main.pushToMain({ index, key: keyName, value: currMa })
+  let output = currMa
+  if (retLogs) {
+    const ratio = value / currMa
+    // Log-relative distance is defined only for finite, positive ratios and operands.
+    output = value > 0 && currMa > 0 && ratio > 0 && Number.isFinite(ratio)
+      ? mathLog(ratio, 1)
+      : NaN
+  }
+
+  // Always push the selected value (even if NaN).
+  main.pushToMain({ index, key: keyName, value: output })
 }

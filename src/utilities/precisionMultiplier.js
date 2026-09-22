@@ -51,8 +51,14 @@ export const calcPrecisionMultiplier = main => {
 }
 
 
+// Keep the existing decimal-width rule, including scientific-notation multipliers.
+export const getPrecisionDecimals = multiplier => {
+  const mulStr = String(multiplier)
+  return multiplier === 1 ? 0 : mulStr.length - 1
+}
+
 //this function converts the strNum into a integer * multiplier
-export const addPrecisionAsNumber = (strNum, multiplier) => {
+export const addPrecisionAsNumber = (strNum, multiplier, cachedDecimals) => {
   if (typeof strNum !== 'string') throw new Error('addPrecisionExact expects a string when precision=true')
 
   const negative = strNum.charAt(0) === '-'
@@ -60,8 +66,7 @@ export const addPrecisionAsNumber = (strNum, multiplier) => {
   const [intPart, decPart = ''] = s.split('.')
 
   // Compute decimals from multiplier (multiplier expected as 10^decimals)
-  const mulStr = String(multiplier);
-  const decimals = (multiplier === 1) ? 0 : (mulStr.length - 1)
+  const decimals = cachedDecimals === undefined ? getPrecisionDecimals(multiplier) : cachedDecimals
 
   const decPadded = decPart.padEnd(decimals, '0').slice(0, decimals); // pad or trim
   const integerString = intPart + decPadded // e.g. "12" + "3400" => "123400"
@@ -75,7 +80,7 @@ export const addPrecisionAsNumber = (strNum, multiplier) => {
 
 
 //this function converts the outputs the number generated in addPrecisionAsNumber / multiplier
-export const revertPrecisionAsNumber = (num, multiplier) => {
+export const revertPrecisionAsNumber = (num, multiplier, cachedDecimals) => {
   if (typeof num !== 'number' || !Number.isFinite(num)) {
     throw new Error('revertPrecisionAsNumber expects a finite number')
   }
@@ -86,7 +91,7 @@ export const revertPrecisionAsNumber = (num, multiplier) => {
   // Make sure we're working with an integer, mirroring addPrecisionAsNumber
   abs = Math.trunc(abs)
 
-  const decimals = (multiplier === 1) ? 0 : (String(multiplier).length - 1)
+  const decimals = cachedDecimals === undefined ? getPrecisionDecimals(multiplier) : cachedDecimals
 
   if (decimals === 0) {
     // No fractional part; just restore sign

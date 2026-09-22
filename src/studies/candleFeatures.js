@@ -56,14 +56,34 @@ export const candleFeatures  = (main, index, {lag, colKeys, retLogs}) => {
     const upperWickTop = Math.max(currOpen, currClose)
     const lowerWickTop = Math.min(currOpen, currClose)
 
+    const change = getRet(currClose, prevClose)
+    const midPriceChange = getRet(currMidPrice, prevMidPrice)
+    const upperWick = getRet(currHigh, upperWickTop)
+    const lowerWick = getRet(lowerWickTop, currLow)
+    const gap = getRet(currOpen, prevClose)
+    const body = getRet(currClose, currOpen)
+    const range = getRet(currHigh, currLow)
+
+    if (colKeys.length === 0) {
+        main.pushToMain({ index, key: `${prefix}change`, value: change })
+        main.pushToMain({ index, key: `${prefix}mid_price_change`, value: midPriceChange })
+        main.pushToMain({ index, key: `${prefix}upper_wick`, value: upperWick })
+        main.pushToMain({ index, key: `${prefix}lower_wick`, value: lowerWick })
+        main.pushToMain({ index, key: `${prefix}gap`, value: gap })
+        main.pushToMain({ index, key: `${prefix}body`, value: body })
+        main.pushToMain({ index, key: `${prefix}range`, value: range })
+        return
+    }
+
+    // Keep optional-target overwrite/order semantics and all-or-nothing validation.
     const row = {
-        [`${prefix}change`]: getRet(currClose, prevClose),
-        [`${prefix}mid_price_change`]: getRet(currMidPrice, prevMidPrice),
-        [`${prefix}upper_wick`]: getRet(currHigh, upperWickTop),
-        [`${prefix}lower_wick`]: getRet(lowerWickTop, currLow),
-        [`${prefix}gap`]: getRet(currOpen, prevClose),
-        [`${prefix}body`]: getRet(currClose, currOpen),
-        [`${prefix}range`]: getRet(currHigh, currLow)
+        [`${prefix}change`]: change,
+        [`${prefix}mid_price_change`]: midPriceChange,
+        [`${prefix}upper_wick`]: upperWick,
+        [`${prefix}lower_wick`]: lowerWick,
+        [`${prefix}gap`]: gap,
+        [`${prefix}body`]: body,
+        [`${prefix}range`]: range
     }
 
     let hasInvalidTarget = false

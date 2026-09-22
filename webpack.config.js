@@ -41,17 +41,6 @@ export default {
             plugins: ['@babel/plugin-proposal-class-properties']
           }
         }
-      },
-      {
-        test: /\.js$/,
-        include: /node_modules\/trading-signals/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env'],
-            plugins: ['@babel/plugin-proposal-class-properties']
-          }
-        }
       }
     ]
   }

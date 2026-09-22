@@ -7,7 +7,7 @@ import { initializeColumns } from '../core-functions/initializeColumns.js';
 export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
 
     const {verticalOhlcv, instances} = main
-    const key = `volume_oscillator_${fast}_${slow}`
+    const key = retLogs ? `ret_log_volume_oscillator_${fast}_${slow}` : `volume_oscillator_${fast}_${slow}`
 
     if (index === 0) {
         validateInputValues({ volume: true }, verticalOhlcv, index, 'volumeOscillator');
@@ -19,10 +19,7 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
             }
         })
 
-        initializeColumns(main, [
-            { key },
-            { key: `ret_log_${key}`, enabled: retLogs }
-        ], { lag });
+        initializeColumns(main, [{ key }], { lag });
     }
 
     const { fastEMA, slowEMA } = instances[key];
@@ -46,12 +43,9 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
         return;
     }
 
-    volumeOscValue = 100 * (fastValue - slowValue) / slowValue
-
-    if(retLogs) {
-        volumeOscRetLog = mathLog(fastValue, slowValue)
-        main.pushToMain({index, key: `ret_log_${key}`, value:  volumeOscRetLog})
-    }
+    volumeOscValue = retLogs
+        ?  mathLog(fastValue, slowValue)
+        : 100 * (fastValue - slowValue) / slowValue
 
     main.pushToMain({index, key, value:  volumeOscValue})
 };

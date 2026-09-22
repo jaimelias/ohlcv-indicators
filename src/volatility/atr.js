@@ -16,7 +16,7 @@ export const atr = (main, index, size, {lag, retLogs}) => {
 
     instances[baseKeyName] = new FasterATR(size, FasterWSMA)
 
-    initializeColumns(main, [{ key: baseKeyName, priceBased: true }], { lag })
+    initializeColumns(main, [{ key: baseKeyName, priceBased: !retLogs }], { lag })
   }
 
   // Retrieve the current price value.

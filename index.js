@@ -275,11 +275,12 @@ export default class OHLCV_INDICATORS {
         validateNumber(size, {min:1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateObject(options, 'options', methodName)
 
-        const { lag = 0} = options;
+        const { lag = 0, retLogs = false } = options;
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'options.retLogs', methodName)
 
-        this._registerIndicator({key: methodName, order: 0, params: [size, {lag}]})
+        this._registerIndicator({key: methodName, order: 0, params: [size, {lag, retLogs}]})
  
         return this
     }
@@ -354,12 +355,13 @@ export default class OHLCV_INDICATORS {
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateObject(options, 'options', methodName)
 
-        const {target = 'close', lag = 0} = options
+        const {target = 'close', lag = 0, retLogs = false} = options
 
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'options.retLogs', methodName)
 
-        this._registerIndicator({key: methodName, params: [methodName, size, {target, lag}]})
+        this._registerIndicator({key: methodName, params: [methodName, size, {target, lag, retLogs}]})
 
         return this
     }
@@ -372,12 +374,13 @@ export default class OHLCV_INDICATORS {
         validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
         validateObject(options, 'options', methodName)
 
-        const {target = 'close', lag = 0} = options
+        const {target = 'close', lag = 0, retLogs = false} = options
 
         validateString(target, 'options.target', methodName)
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'options.retLogs', methodName)
 
-        this._registerIndicator({key: methodName, params: [methodName, size, {target, lag}]})
+        this._registerIndicator({key: methodName, params: [methodName, size, {target, lag, retLogs}]})
 
         return this
     }
@@ -464,11 +467,12 @@ export default class OHLCV_INDICATORS {
         validateNumber(stdDev, {min: 0.01, max: 50, allowDecimals: true}, 'stdDev', methodName)
         validateObject(options, 'options', methodName)
 
-        const { lag = 0} = options
+        const { lag = 0, retLogs = false } = options
 
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'options.retLogs', methodName)
   
-        this._registerIndicator({key: methodName, params: [size, stdDev, {lag}]});
+        this._registerIndicator({key: methodName, params: [size, stdDev, {lag, retLogs}]});
     
         return this;
     }
@@ -492,6 +496,21 @@ export default class OHLCV_INDICATORS {
 
         return this
     }
+    mfi(size = 14, options = {}) {
+        const methodName = 'mfi'
+
+        isAlreadyComputed(this)
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
+
+        const {lag = 0, retLogs = false} = options
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'options.retLogs', methodName)
+
+        this._registerIndicator({key: methodName, params: [size, {lag, retLogs}]})
+        return this
+    }
+
     donchianChannels(size = 20, offset = 0, options = {}) {
 
         const methodName = 'donchianChannels'
@@ -502,11 +521,12 @@ export default class OHLCV_INDICATORS {
         validateNumber(offset, {min: 0, max: this.len, allowDecimals: false}, 'offset', methodName)
       
         validateObject(options, 'options', methodName)
-        const {  lag = 0} = options;
+        const { lag = 0, retLogs = false } = options;
       
         validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+        validateBoolean(retLogs, 'options.retLogs', methodName)
       
-        this._registerIndicator({ key: methodName, order: 0, params: [size, offset, {lag}] });
+        this._registerIndicator({ key: methodName, order: 0, params: [size, offset, {lag, retLogs}] });
       
         return this;
     }

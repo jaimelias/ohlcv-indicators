@@ -1,11 +1,9 @@
 # Core indicators
 
-Local numeric replacements for the `Faster*` implementations used from
-`trading-signals@5.0.4`. The existing constructor arguments, `update(value,
+Local numeric `Faster*` indicator implementations. The existing constructor arguments, `update(value,
 replace?)`, `isStable`, and `getResult()` interface remain available. The
 numeric series also retain result/extrema and replacement semantics. These
-are not replacements for the arbitrary-precision `Big` classes or a promise
-of compatibility with other trading-signals versions.
+use ordinary JavaScript numbers, not arbitrary-precision decimal arithmetic.
 
 ```js
 import { FasterEMA } from './index.js'
@@ -45,11 +43,12 @@ of previously supplied objects. Private buffer layouts intentionally differ.
 
 ## Verification
 
-`npm test` compares the core classes directly with the installed
-trading-signals reference, checks bounded retained storage, and exercises all
+`npm test` checks known core results and fixed behavior traces captured before
+runtime optimizations, checks bounded retained storage, and exercises all
 public indicators, precision/log modes, lags, callbacks, and config replay.
-The dependency is retained as a regression oracle; production source imports
-only these local classes. Preserve the reference version in the lockfile.
+These checks are self-contained: no third-party indicator library or test
+oracle is installed. Preserve the trace expectations unless intentionally
+changing the corresponding behavior.
 
 `node test/test.js --baseline /path/to/original/index.js --benchmark` also
 compares the full pipeline with a pre-change checkout. Benchmarks report

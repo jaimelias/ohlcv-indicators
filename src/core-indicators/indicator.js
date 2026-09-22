@@ -1,5 +1,4 @@
 /*!
- * Portions adapted from trading-signals 5.0.4.
  * MIT License
  * Copyright (c) 2020 Benny Neugebauer
  *

@@ -1,6 +1,7 @@
 import { areKeyValuesValid } from "./pushToMain.js";
 import { validateInputParams } from "../utilities/validators.js";
 import { rsi } from "../oscillators/rsi.js";
+import { mfi } from "../oscillators/mfi.js";
 import { stochastic } from "../oscillators/stochastic.js";
 import { movingAverages } from "../moving-averages/movingAverages.js";
 import { heikenAshi } from "../moving-averages/heikenAshi.js";
@@ -21,6 +22,7 @@ import { buildArray } from "../utilities/assignTypes.js";
 import {  inputNumberFormatter } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
 import { candleFeatures } from "../studies/candleFeatures.js";
+import { getPrecisionDecimals } from "../utilities/precisionMultiplier.js";
 
 
 // Map indicator keys to their respective functions
@@ -29,6 +31,7 @@ const mainFunctions = {
   dateTime,
   heikenAshi,
   rsi,
+  mfi,
   stochastic,
   atr,
   adx,
@@ -80,6 +83,9 @@ export const mainLoop = (input, main) => {
           : dateFormaters.hasOwnProperty(formatterKey) ? dateFormaters[formatterKey] : null
         return { key, formatter, numeric }
       })
+  const precisionDecimals = typeof precisionMultiplier === 'number'
+    ? getPrecisionDecimals(precisionMultiplier) : undefined
+  let validationColumns = null
 
   // Process each row in the input
   for (let chunkStart = 0; chunkStart < len; chunkStart += chunkProcess) {
@@ -95,7 +101,7 @@ export const mainLoop = (input, main) => {
             if (typeof value === 'undefined') continue
 
             const formattedValue = formatter === null ? value
-              : numeric ? formatter(value, precisionMultiplier) : formatter(value)
+              : numeric ? formatter(value, precisionMultiplier, precisionDecimals) : formatter(value)
             main.pushToMain({ index, key, value: formattedValue })
           }
         } else {
@@ -107,7 +113,7 @@ export const mainLoop = (input, main) => {
 
             if(inputNumberFormatter.hasOwnProperty(formaterKey))
             {
-              const formatedValue = inputNumberFormatter[formaterKey](value, precisionMultiplier)
+              const formatedValue = inputNumberFormatter[formaterKey](value, precisionMultiplier, precisionDecimals)
 
               main.pushToMain({index, key, value: formatedValue})
             }
@@ -134,10 +140,16 @@ export const mainLoop = (input, main) => {
       
         input[index] = null //flusing data
 
-        const keyNames = Object.keys(verticalOhlcv)
+        // All built-in outputs (including generated lags) exist after row zero.
+        // Custom callbacks may add/delete columns or replace their buffers, so
+        // retain the dynamic lookup path whenever mapCols is registered.
+        if (inputColumns !== null && validationColumns === null) {
+          validationColumns = Object.values(verticalOhlcv)
+        }
+        const keyNames = validationColumns === null ? Object.keys(verticalOhlcv) : null
 
-        // if any value at this index is missing/NaN/null, mark it invalid
-        if (!areKeyValuesValid(main, index, keyNames)) {
+        // Preserve the missing/NaN/null predicate, including Infinity behavior.
+        if (!areKeyValuesValid(main, index, keyNames, validationColumns)) {
           main.invalidValueIndex = index
         }
       }

@@ -169,23 +169,24 @@ Supported output date formats: `milliseconds`, `seconds`, `iso` / `toISOString`,
 
 All methods below return the instance for chaining. Periods and lookbacks are measured in rows, not minutes or days. Periods must be positive integers within the input length; allow extra history for warm-up. Avoid repeating configurations that produce the same output names.
 
-Defaults are shown below. `target` means the numeric source column; `lag: n` creates output copies from each of the previous `1` through `n` rows. `retLogs` means natural-log ratios, not application logging.
+Defaults are shown below. `target` means the numeric source column; `lag: n` creates output copies from each of the previous `1` through `n` rows. `retLogs` selects natural-log-based features, not application logging; see each indicator's formula below.
 
 | Method | Options and behavior |
 | --- | --- |
-| `ema(size = 5, options = {})` | Exponential moving average. `{ target: 'close', lag: 0 }`. |
-| `sma(size = 5, options = {})` | Simple moving average. `{ target: 'close', lag: 0 }`. |
-| `bollingerBands(size = 20, stdDev = 2, options = {})` | Upper, middle, and lower close-price bands. `{ lag: 0 }`. |
-| `donchianChannels(size = 20, offset = 0, options = {})` | Rolling high/low channel and midpoint. `{ lag: 0 }`; positive offset shifts the window into the past. |
+| `ema(size = 5, options = {})` | Exponential moving average, or `ln(target / EMA)` when logged. `{ target: 'close', lag: 0, retLogs: false }`. |
+| `sma(size = 5, options = {})` | Simple moving average, or `ln(target / SMA)` when logged. `{ target: 'close', lag: 0, retLogs: false }`. |
+| `bollingerBands(size = 20, stdDev = 2, options = {})` | Upper, middle, and lower close-price bands, or logarithmic width and position. `{ lag: 0, retLogs: false }`. |
+| `donchianChannels(size = 20, offset = 0, options = {})` | Rolling high/low channel and midpoint, or logarithmic width and position. `{ lag: 0, retLogs: false }`; positive offset shifts the channel window into the past, not the close used for position. |
 | `macd(fast = 12, slow = 26, signal = 9, options = {})` | Difference, signal (`dea`), and histogram. `{ target: 'close', lag: 0 }`. |
 | `rsi(size = 14, options = {})` | RSI and a same-period SMA of RSI. `{ target: 'close', lag: 0, retLogs: false }`. |
+| `mfi(size = 14, options = {})` | Money flow index using high, low, close, and volume. `{ lag: 0, retLogs: false }`; logged output uses `mathLog(MFI, 50)`. |
 | `stochastic(kPeriod = 14, kSlowingPeriod = 3, dPeriod = 3, options = {})` | K and D outputs. `{ lag: 0, retLogs }`; explicitly supply `retLogs: false` or `true` in this version. |
 | `atr(size = 14, options = {})` | Average true range. `{ lag: 0, retLogs: false }`. |
 | `adx(size = 14, options = {})` | Average directional index. `{ lag: 0, retLogs: false }`. |
 | `heikenAshi(smoothLength = null, afterSmoothLength = null, options = {})` | Heiken-Ashi body/wick/range returns and direction counter, not raw HA OHLC columns. `{ lag: 0, retLogs: false }`; use either two `null`s or two positive smoothing periods. |
-| `relativeVolume(size = 10, options = {})` | Current volume / previous completed volume-SMA window, excluding the current sample from the denominator. `{ lag: 0 }`. |
+| `relativeVolume(size = 10, options = {})` | Current volume / previous completed volume-SMA window, or its natural log, excluding the current sample from the denominator. `{ lag: 0, retLogs: false }`. |
 | `volumeDelta(options = {})` | Candle-direction-based signed volume, delta high/low/close, and direction counter; not trade-by-trade bid/ask delta. `{ lag: 0 }`. |
-| `volumeOscillator(fast = 5, slow = 10, options = {})` | `100 * (fastVolumeEMA - slowVolumeEMA) / slowVolumeEMA`. `{ lag: 0, retLogs: false }`. |
+| `volumeOscillator(fast = 5, slow = 10, options = {})` | One output: percentage difference, or `ln(fastVolumeEMA / slowVolumeEMA)` when logged. `{ lag: 0, retLogs: false }`. |
 | `candleFeatures(options = {})` | Change, gap, body, wick, and range returns. `{ lag: 0, colKeys: [], retLogs: false }`. Extra `colKeys` compare current close to each selected price column, not that column's previous value. |
 | `dateTime(options = {})` | Calendar features from `date`. `{ lag: 0, oneHot: false }`. |
 | `crossPairs(pairs = [], options = {})` | Signed direction/run counters for `{ fast, slow }` pairs. `{ limit: null, oneHot: false }`; `slow` can be a column name or numeric constant. Call once with all pairs. |
@@ -194,13 +195,98 @@ Defaults are shown below. `target` means the numeric source column; `lag: n` cre
 
 ### Output names and units
 
-Examples of names: `ema_5`, `sma_5_open`, `rsi_14`, `rsi_sma_14`, `atr_14`, `relative_volume_10`, and `volume_oscillator_5_10`.
+Examples of names: `ema_5`, `sma_5_open`, `rsi_14`, `rsi_sma_14`, `mfi_14`, `atr_14`, `relative_volume_10`, and `volume_oscillator_5_10`.
 
 A single Bollinger configuration normally uses `bollinger_bands_upper`, `bollinger_bands_middle`, and `bollinger_bands_lower`. With `useFullNames: true`, `.bollingerBands(20, 2)` adds `_20_2`. MACD and Donchian also expand their names when multiple configurations are registered. Use full names for persistent downstream schemas, and inspect `Object.keys(instance.getLastValues())` rather than guessing names.
 
-For `retLogs: true`, RSI and stochastic use `ln(value / 50)`, ADX uses `ln(value / 20)`, and ATR uses `ln(ATR / close)`. Their logged columns replace the corresponding raw outputs. Volume oscillator is different: it keeps its percentage column and **adds** `ret_log_volume_oscillator_<fast>_<slow>` containing `ln(fastEMA / slowEMA)`.
+For `retLogs: true`, RSI, MFI, and stochastic use `ln(value / 50)`, ADX uses `ln(value / 20)`, and ATR uses `ln(ATR / close)`. Their logged columns replace the corresponding raw outputs.
+
+EMA and SMA use `ln(currentTarget / currentAverage)`; relative volume uses `ln(currentVolume / previousCompletedSMA)`. These are log-relative features, not changes from the previous row. Their names are `ret_log_ema_<size>`, `ret_log_sma_<size>`, and `ret_log_relative_volume_<size>`; non-close moving-average targets append `_<target>`, for example `ret_log_sma_3_open`. A value of zero means the source equals its reference. Raw mode remains the default, including replay of older configs that omit `retLogs`.
+
+Each of these three methods emits only the selected raw or logged column, with generated lags only for that column. Register both modes to obtain both outputs; raw/log instances have independent state. Logs and their lags are dimensionless numbers even with `precision: true`. Logged ATR and its lags are also dimensionless and are no longer incorrectly rescaled as prices in precision mode; replaying older configs with this combination now produces the corrected output.
+
+```js
+const logFeatures = new OHLCV_INDICATORS({ input })
+  .ema(3, { retLogs: true, lag: 1 })
+  .sma(3, { target: 'open', retLogs: true })
+  .relativeVolume(3, { retLogs: true });
+
+const savedLogConfig = JSON.parse(JSON.stringify(logFeatures.exportConfig()));
+const replayedLogFeatures = new OHLCV_INDICATORS({ input, config: savedLogConfig });
+console.log(replayedLogFeatures.getLastValues().ret_log_ema_3);
+```
+
+The EMA/SMA/relative-volume log modes leave unavailable or invalid ratios as `NaN`: operands must be positive and the computed ratio finite and greater than zero. They do not apply epsilon substitution to zero targets. Their underlying averages still update exactly as in raw mode; relative volume still skips zero-volume rows without updating its state. MACD and volume delta have no `retLogs` option.
+
+`volumeOscillator()` also emits only the selected output:
+
+- `retLogs: false` creates `volume_oscillator_<fast>_<slow>` containing `100 * (fastEMA - slowEMA) / slowEMA`.
+- `retLogs: true` creates `ret_log_volume_oscillator_<fast>_<slow>` containing `mathLog(fastEMA, slowEMA)`; it does **not** create the percentage column.
+
+Its `lag` option generates lags only for that selected column. To obtain both forms, register both modes before computation, for example `.volumeOscillator(5, 10, { lag: 2 }).volumeOscillator(5, 10, { retLogs: true, lag: 2 })`. Each mode has independent EMA state; both outputs and their lags are dimensionless.
+
+Older saved configs using `retLogs: true` may expect the percentage column that was previously emitted too. If an explicit lag, callback, or downstream consumer still needs that percentage column, add a raw-mode registration before the consumer. Change a reference to the logged column only when you intend to consume log ratios instead of percentages. Current configs preserve the selected mode on export/replay.
 
 Non-log candle and Heiken-Ashi returns are fractions, not percentages: `0.01` means 1%. Unavailable indicator values can remain `NaN`. The shared `mathLog()` helper substitutes `0.001` for a zero numerator or denominator and throws for incompatible signs or a non-finite result; its zero handling is not literal `ln(0)`. Candle and Heiken-Ashi features have their own log calculations.
+
+### Bollinger and Donchian: logarithmic channel features
+
+With `{ retLogs: true }`, these methods replace their three raw price columns with two dimensionless features. Given upper bound `U`, lower bound `L`, and the current candle's close `C`:
+
+```text
+logRange = ln(U / L)
+width = logRange / 2
+position = 2 * ln(C / L) / logRange - 1
+```
+
+`position` is `-1` at the lower bound, `+1` at the upper bound, and `0` at their geometric midpoint, `sqrt(U * L)`. Breakouts remain below `-1` or above `+1`; values are not clipped. These describe the current channel, not returns from the previous candle. Donchian's `offset` shifts only the bounds: position always compares the **current close** to that historical channel.
+
+The compact output names are `ret_log_bollinger_bands_width`, `ret_log_bollinger_bands_position`, `ret_log_donchian_channel_width`, and `ret_log_donchian_channel_position`. With `useFullNames: true` or more than one registration of the same method (counting both modes), they append `_<size>_<stdDev>` for Bollinger or `_<size>_<offset>` for Donchian. Prefer full names for a stable downstream schema.
+
+This example reuses the five quick-start candles and includes saved-config replay:
+
+```js
+const channelFeatures = new OHLCV_INDICATORS({
+  input,
+  config: { useFullNames: true },
+})
+  .bollingerBands(3, 2, { retLogs: true, lag: 1 })
+  .donchianChannels(3, 1, { retLogs: true, lag: 1 });
+
+const savedChannelConfig = JSON.parse(JSON.stringify(channelFeatures.exportConfig()));
+const replayedChannels = new OHLCV_INDICATORS({ input, config: savedChannelConfig });
+const lastChannel = replayedChannels.getLastValues();
+console.log(lastChannel.ret_log_bollinger_bands_width_3_2);
+console.log(lastChannel.ret_log_donchian_channel_position_3_1);
+console.log(lastChannel.ret_log_donchian_channel_position_3_1_lag_1);
+```
+
+Both bounds must be finite, positive, ordered (`U >= L`), and have a finite representable ratio. Invalid bounds leave both features `NaN`. In particular, Bollinger's lower band can be zero or negative despite valid positive input prices; it is not clamped and there is no fallback transform. Valid equal bounds produce width `0`, but position remains `NaN` because it is undefined. Width depends only on the bounds; an invalid close or close/bound ratio leaves position `NaN` without discarding an otherwise valid width.
+
+Warm-up and raw calculations are unchanged. The default remains `{ retLogs: false }`, including replay of older configs that omit the option. To obtain raw bands as well, register the same method again in raw mode before computation; raw/log variants maintain independent state. Each registration generates lags only for its selected outputs. Logged columns and their lags are not price-based and remain dimensionless in precision mode. No absolute log-center column is allocated: two numeric outputs instead of three save approximately `8 * input.length * (1 + lag)` bytes per registration.
+
+A flat or otherwise invalid final channel can make default `getData()` return `[]`, because `skipNull` removes the prefix through the last invalid row. Use `getData({ skipNull: false })` to inspect these rows and their `NaN` positions.
+
+### Money flow index: raw, logged, and lagged
+
+MFI weights typical price `(high + low + close) / 3` by volume, then compares positive and negative flow over the selected period. Rising typical prices contribute positive flow, falling prices negative flow, and unchanged prices zero. The result is `100 - 100 / (1 + positiveFlow / negativeFlow)`. See the [MFI calculation reference](https://www.tradingview.com/support/solutions/43000502348-money-flow-mfi/).
+
+This example reuses the five quick-start candles, so it uses a short period:
+
+```js
+const moneyFlow = new OHLCV_INDICATORS({ input })
+  .mfi(3, { lag: 1 })
+  .mfi(3, { lag: 1, retLogs: true });
+
+const lastMoneyFlow = moneyFlow.getLastValues();
+console.log(lastMoneyFlow.mfi_3);             // Raw index, between 0 and 100
+console.log(lastMoneyFlow.ret_log_mfi_3);     // 50 maps to 0; below 50 is negative
+console.log(lastMoneyFlow.mfi_3_lag_1);       // Previous candle's MFI
+```
+
+For ordinary use, call `.mfi()` for period 14, or `.mfi(14, { lag: 2, retLogs: true })` for logged output and two lags. Logged output is named `ret_log_mfi_14`; raw and logged variants can coexist at the same period without sharing state. Both are dimensionless, including their lags, even with `precision: true`.
+
+MFI needs one starting candle plus `size` flow observations: period 14 first becomes available at index 14 (the fifteenth row). Zero-volume candles contribute zero **and count toward this window**; unlike `relativeVolume`, `volumeDelta`, and `volumeOscillator`, MFI does not skip them. A positive-only window returns 100, a negative-only window returns 0, and a window with no directional flow returns `NaN`. Logged zero uses the existing `mathLog` epsilon behavior. Invalid flow/comparisons leave output `NaN` until they leave the window. Storage is bounded by the period; summation is chronological to avoid rolling-subtraction drift.
 
 ## Advanced: combine indicators and lagged features
 
@@ -227,6 +313,7 @@ const features = new OHLCV_INDICATORS({
   .ema(5, { lag: 2 })
   .ema(20)
   .rsi(14)
+  .mfi(14, { lag: 2, retLogs: true })
   .macd(12, 26, 9)
   .bollingerBands(20, 2)
   .donchianChannels(20, 1)
@@ -379,7 +466,6 @@ Prices are scaled internally using a shared multiplier derived from the first ro
 - **A derived target fails at row zero:** source validation requires positive finite values at the first row for non-volume targets. This restricts using warming-up outputs (such as an EMA) or signed/zero-valued custom columns as inputs to another indicator or `crossPairs()`. Registering the producer first does not bypass that validation.
 - **Date errors:** use `Date` objects or timezone-qualified ISO strings consistently. Numeric millisecond input currently has a formatter-name mismatch; wrap it with `new Date(timestampMs)` first. Millisecond *output* is supported. Local/timezone-less strings can parse differently across runtimes.
 - **Unexpected volume:** storage is signed 32-bit integer. Normalize data externally; larger counts and fractional volumes are not preserved.
-- **Logged ATR with precision:** the current handler marks even logged ATR as price-based, so `precision: true` rescales that dimensionless output incorrectly. Avoid that combination until corrected; use `precision: false` for logged ATR.
 - **MACD on a non-price target:** its outputs are always marked price-based. With `precision: true`, targets such as volume or a custom ratio are therefore rescaled incorrectly; use `precision: false` for those targets.
 - **Comparing raw and logged variants:** use separate instances for ADX, stochastic, or Heiken-Ashi at identical periods/smoothing settings. Their raw/log variants can share internal state despite having different output names.
 - **Cross one-hot output:** provide a finite integer `limit` of at least 2 (within the input length) when `oneHot: true` so the vector has a meaningful fixed size.
@@ -394,7 +480,7 @@ Use this section as a compact implementation contract, alongside [AGENTS.md](./A
 - Registration is separate from execution. `inputParams` contains immutable declarations; `executionParams` is the mutable runtime queue. Never serialize runtime instances, buffers, generated jobs, or resolved callback functions.
 - Handlers execute chronologically, allocate columns on `index === 0`, and keep rolling state in `main.instances`. The runtime is column-oriented even though input and returned data are row-oriented.
 - `initializeColumns()` owns output allocation, naming collision checks, price metadata, and generated lags. Numeric outputs normally use `Float64Array` with `NaN`; object/one-hot columns use arrays. Volume input uses `Int32Array`.
-- `src/core-indicators/` contains the local numeric indicator classes used at runtime. `trading-signals` is retained as a regression reference, not a production indicator import. Preserve warm-up, arithmetic order, and intentional zero/NaN behavior when changing these classes.
+- `src/core-indicators/` contains the local numeric indicator classes used at runtime, with no external indicator dependency. Self-contained tests cover known results and fixed behavior traces. Preserve warm-up, arithmetic order, and intentional zero/NaN behavior when changing these classes.
 - Full output storage grows with both row count and column count. Each `Float64Array` column uses approximately `8 * input.length` bytes, excluding other overhead. Lags add full columns; `getData()` allocates row objects on each call. Request only needed features, or use `getLastValues()` when you only need the final row.
 - `chunkProcess` does not turn the API into asynchronous, streaming, or bounded-memory processing. Create a new instance for each independent run and retain the input separately if you need replay.
 - Read the implementation for exact output naming and formulas; do not assume every third-party indicator convention or parameter combination is supported.
@@ -410,6 +496,6 @@ npm run build
 git diff --check
 ```
 
-`test/test.js` runs deterministic local regressions by default, including indicator behavior, configuration replay, and core-class comparisons. `npm test -- --live` is an optional integration demo requiring its configured market-data service. Build the browser bundle with `npm run build`; do not edit the minified file manually.
+`test/test.js` runs deterministic local regressions by default, including indicator behavior, configuration replay, known-value core checks, and fixed behavior traces. The tests do not require a third-party indicator oracle. `npm test -- --live` is an optional integration demo requiring its configured market-data service. Build the browser bundle with `npm run build`; do not edit the minified file manually.
 
 The package declares the ISC license. Adapted core indicator code retains its upstream MIT notice; preserve that notice when redistributing it and the generated bundle's accompanying license file.

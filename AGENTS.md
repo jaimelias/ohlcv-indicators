@@ -12,7 +12,7 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 2. `compute()`, `getData()`, or `getLastValues()` starts the one-shot calculation. Do not allow indicators to be registered after computation.
 3. `compute()` copies declarations into `main.executionParams` and sorts only that runtime queue. `src/core-functions/mainLoop.js` creates input columns in `main.verticalOhlcv`, walks rows in chronological order, writes the raw row and `mid_price`, and invokes every queued handler from `mainFunctions`.
 4. Indicator handlers initialize state and output columns when `index === 0`, keep rolling state in `main.instances`, update once per row, and write through `main.pushToMain()`.
-5. Output columns start as `NaN` during warm-up or after an unexpected value. `areKeyValuesValid()` records the last invalid row in `main.invalidValueIndex`; `getData({ skipNull: true })` starts after that row.
+5. Output columns start as `NaN` during warm-up or after an unexpected value. `areKeyValuesValid()` determines the last invalid row recorded in `main.invalidValueIndex`; `getData({ skipNull: true })` starts after that row. Without `mapCols`, cache validation column references only after all row-zero handlers and generated lags finish. With `mapCols`, retain dynamic column discovery and buffer lookup so callback mutations remain visible.
 6. `verticalToHorizontal()` converts the column store back to row objects. Temporary columns in `verticalOhlcvTempCols` are not returned.
 
 ### Indicator contract
@@ -25,8 +25,10 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 - Add an output to `main.priceBased` only when it remains in scaled price units. Ratios, percentages, return logs, counters, dates, volume, and one-hot vectors are not price-based.
 - `retLogs` outputs use natural log ratios through `mathLog(a, b)` where applicable. Logged values are dimensionless.
 - Keep output names deterministic. When multiple configurations are supported, include enough parameters and target information to prevent collisions.
-- `src/core-indicators/` supplies compatible numeric EMA, SMA, WSMA, RSI, MACD, Bollinger Bands, stochastic, ATR, and ADX implementations. Use cheap `isStable` checks before `getResult()`; do not use exceptions for routine warm-up. The installed `trading-signals@5.0.4` remains a test oracle, not a production import.
+- `src/core-indicators/` supplies numeric EMA, SMA, WSMA, RSI, MACD, Bollinger Bands, stochastic, ATR, and ADX implementations without an external indicator dependency. Use cheap `isStable` checks before `getResult()`; do not use exceptions for routine warm-up. Core tests use known results and fixed behavior traces, not a third-party test oracle.
 - Preserve reference arithmetic order, warm-up, zero/NaN behavior, and update/replacement sequencing in core classes. SMA/Bollinger use bounded chronological rings rather than rolling sums that change rounding. RSI history and MACD counters must stay bounded; WSMA releases its seed window. Runtime state must never enter exported config.
+- Cross detection retains only state needed for the next update, not arrays of historical cross indexes. Preserve output counters and clipping behavior.
+- Allocation optimizations must preserve handler evaluation/write order, optional-target all-or-nothing validation, and independent one-hot vectors. Never share mutable result vectors between unrelated rows.
 
 ## Configuration export and replay guards
 
@@ -47,23 +49,31 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 
 ### Moving averages and channels
 
-- `src/moving-averages/movingAverages.js` — shared runtime for public `ema()` and `sma()`.
-- `src/moving-averages/bollingerBands.js` — Bollinger upper, middle, and lower bands.
-- `src/moving-averages/donchianChannel.js` — rolling Donchian upper, basis, and lower channels with optional offset.
+- `src/moving-averages/movingAverages.js` — shared runtime for public `ema()` and `sma()`, optionally returning `ln(currentTarget / currentAverage)`. Raw/log variants have independent keys/state; only the selected output and its lags are allocated. Logged outputs are not price-based. Missing/nonpositive operands or non-finite/nonpositive ratios remain `NaN`; raw arithmetic and warm-up are unchanged.
+- `src/moving-averages/bollingerBands.js` — Bollinger upper, middle, and lower bands, or only dimensionless logarithmic width and position with `retLogs: true`.
+- `src/moving-averages/donchianChannel.js` — rolling Donchian upper, basis, and lower channels with optional offset, or only logarithmic width and position. Offset shifts bounds, never the current close used for position.
 - `src/moving-averages/heikenAshi.js` — optional pre/post-smoothed Heiken-Ashi structure returns and trend counter.
 - `src/moving-averages/macd.js` — MACD difference, signal/DEA, and histogram for a selectable target.
-- `src/moving-averages/relativeVolume.js` — current volume divided by the previous completed volume-SMA window.
+- `src/moving-averages/relativeVolume.js` — current volume divided by the previous completed volume-SMA window, optionally its natural log. Zero-volume rows still skip state updates. Raw/log variants have independent keys/state and selected-output lags; neither is price-based. Old configs omitting `retLogs` retain raw behavior, as do EMA/SMA configs.
+
+#### Channel log-feature guards
+
+- Bollinger/Donchian `retLogs` defaults to `false`; omitted options in old configs preserve raw outputs, arithmetic, and warm-up. Raw/log variants at identical periods have independent runtime state and may coexist. Preserve selected mode in config export/replay.
+- Log mode emits only `ret_log_bollinger_bands_width/position` or `ret_log_donchian_channel_width/position`. Append existing parameter suffixes when `useFullNames` is enabled or total registrations of the same method exceed one, counting both raw and logged modes. Generate lags only for the selected outputs; logged columns and lags must never be price-based.
+- For finite positive ordered bounds, use `logRange = ln(upper / lower)`, `width = logRange / 2`, and `position = 2 * ln(currentClose / lower) / logRange - 1`. Require finite representable ratios/results. Position is geometrically centered and unclipped, not a temporal return. Do not allocate an absolute log-center column.
+- Invalid/nonpositive bounds (possible for Bollinger even with valid prices) leave both outputs `NaN`; never clamp or silently switch transforms. Valid equal bounds produce width `0` and position `NaN`. Width depends only on bounds and must not be invalidated solely by an invalid current close. Invalid position operands/results stay `NaN`. Retain normal `skipNull` semantics, including an empty result if the final position is invalid.
 
 ### Oscillators and volume
 
 - `src/oscillators/rsi.js` — RSI plus an SMA of RSI, optionally expressed as log ratios to 50.
+- `src/oscillators/mfi.js` — money flow index from HLC3 and volume, with a bounded signed-flow window, optional log ratio to 50, and generated lags. The first row seeds typical price; a period of N needs N + 1 rows. Unlike the three zero-skipping volume indicators, MFI counts zero-volume rows as zero flow. Equal-price rows contribute zero; a window with no directional flow stays `NaN`. Raw/log variants have independent runtime state and neither output is price-based.
 - `src/oscillators/stochastic.js` — stochastic K and D, optionally expressed as log ratios to 50.
 - `src/oscillators/volumeDelta.js` — signed per-bar volume and consecutive buy/sell direction counter.
 - `src/oscillators/volumeOscillator.js` — percentage difference and optional log ratio between fast and slow volume EMAs.
 
 ### Volatility
 
-- `src/volatility/atr.js` — ATR or its log ratio to close.
+- `src/volatility/atr.js` — ATR or its log ratio to close; only raw ATR and its lags are price-based, never the dimensionless logged variant.
 - `src/volatility/adx.js` — ADX or its log ratio to the neutral reference value.
 
 ### Studies and feature utilities
@@ -94,6 +104,7 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 
 - With `precision: false`, price inputs use normal floating-point values.
 - With `precision: true`, OHLC price strings are converted to fixed-point numbers using one shared multiplier. Price-based indicator outputs stay in those units internally and are restored only during output conversion.
+- Cache numeric multiplier decimal metadata once per computation/output conversion, outside exported configuration. Preserve string parsing, truncation, signed-zero, and error behavior; do not replace conversion formulas merely to avoid allocations.
 - Volume is currently stored in an `Int32Array`; do not assume that integer typed arrays preserve `NaN`.
 - `Array` columns are used for objects such as dates and one-hot vectors; numeric indicator outputs normally use `Float64Array`.
 

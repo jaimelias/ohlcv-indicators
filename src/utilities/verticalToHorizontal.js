@@ -1,5 +1,6 @@
 import { dateOutputFormaters } from "./dateUtilities.js" 
 import { outputNumberFormatter } from "./numberUtilities.js"
+import { getPrecisionDecimals } from "./precisionMultiplier.js"
 
 export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, dateFormat}) => {
 
@@ -8,6 +9,10 @@ export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, da
   
 
   if (verticalOhlcvKeyNames.length === 0) return []
+
+  const precisionDecimals = precision && typeof precisionMultiplier === 'number'
+    ? getPrecisionDecimals(precisionMultiplier)
+    : undefined
   
   const skipNullIndex = skipNull && invalidValueIndex >= 0 ? invalidValueIndex + 1 : 0
   const maxStartIndex = Math.max(skipNullIndex, startIndex)
@@ -33,7 +38,7 @@ export const verticalToHorizontal = ({main, skipNull = false, startIndex = 0, da
         const value = arr[i]
         result[i - maxStartIndex][key] = value == null || Number.isNaN(value)
           ? value
-          : formatter(value, precisionMultiplier)
+          : formatter(value, precisionMultiplier, precisionDecimals)
       }
     }
     else

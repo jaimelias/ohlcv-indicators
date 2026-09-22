@@ -1,6 +1,8 @@
 import {oneHotEncode} from '../machine-learning/ml-utilities.js'
 import { initializeColumns } from '../core-functions/initializeColumns.js'
 
+const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
 export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
     
@@ -40,43 +42,44 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
 
     const currDate = verticalOhlcv.date[index]
 
-    const dateInfo = getDateInfo(currDate, oneHot, colKeySizes, formatter)
-
-    for(const [key, value] of Object.entries(dateInfo))
-    {
-        main.pushToMain({index, key, value})
+    let yearPart, monthPart, hourPart, minutePart, weekdayPart, dayPart
+    for (const part of formatter.formatToParts(currDate)) {
+        switch (part.type) {
+            case 'year': yearPart = part.value; break
+            case 'month': monthPart = part.value; break
+            case 'hour': hourPart = part.value; break
+            case 'minute': minutePart = part.value; break
+            case 'weekday': weekdayPart = part.value; break
+            case 'day': dayPart = part.value; break
+        }
     }
+    const year = Number(yearPart)
+    const month = Number(monthPart) - 1
+    const hour = Number(hourPart)
+    const minute = Number(minutePart)
+    const dayOfWeek = weekdays.indexOf(weekdayPart)
+    const dayOfMonth = Number(dayPart) - 1
+
+    if (!oneHot) {
+        main.pushToMain({ index, key: 'year', value: year })
+        main.pushToMain({ index, key: 'month', value: month + 1 })
+        main.pushToMain({ index, key: 'hour', value: hour })
+        main.pushToMain({ index, key: 'minute', value: minute })
+        main.pushToMain({ index, key: 'day_of_the_week', value: ((dayOfWeek + 6) % 7) + 1 })
+        main.pushToMain({ index, key: 'day_of_the_month', value: dayOfMonth + 1 })
+        return
+    }
+
+    // Build every fresh vector before the first write, as callbacks can observe writes.
+    const oneHotMonth = oneHotEncode(month, colKeySizes.one_hot_month)
+    const oneHotHour = oneHotEncode(hour, colKeySizes.one_hot_hour)
+    const oneHotMinute = oneHotEncode(minute, colKeySizes.one_hot_minute)
+    const oneHotWeekday = oneHotEncode(dayOfWeek, colKeySizes.one_hot_day_of_the_week)
+    const oneHotDay = oneHotEncode(dayOfMonth, colKeySizes.one_hot_day_of_the_month)
+
+    main.pushToMain({ index, key: 'one_hot_month', value: oneHotMonth })
+    main.pushToMain({ index, key: 'one_hot_hour', value: oneHotHour })
+    main.pushToMain({ index, key: 'one_hot_minute', value: oneHotMinute })
+    main.pushToMain({ index, key: 'one_hot_day_of_the_week', value: oneHotWeekday })
+    main.pushToMain({ index, key: 'one_hot_day_of_the_month', value: oneHotDay })
 }
-
-
-
-const getDateInfo = (date, oneHot, colKeySizes, formatter) => {
-
-
-  const parts = Object.fromEntries(formatter.formatToParts(date).map(({ type, value }) => [type, value]));
-  const year = Number(parts.year);
-  const month = Number(parts.month) - 1;
-  const hour = Number(parts.hour);
-  const minute = Number(parts.minute);
-  const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(parts.weekday);
-  const dayOfMonth = Number(parts.day) - 1;
-
-  if (!oneHot) {
-    return {
-      year: year,
-      month: month + 1,  //iso month
-      hour: hour,
-      minute: minute,
-      day_of_the_week: ((dayOfWeek + 6) % 7) + 1, //iso date of the week
-      day_of_the_month: dayOfMonth + 1,  //iso date of the month
-    };
-  }
-
-  return {
-    one_hot_month: oneHotEncode(month, colKeySizes.one_hot_month),
-    one_hot_hour: oneHotEncode(hour, colKeySizes.one_hot_hour),
-    one_hot_minute: oneHotEncode(minute, colKeySizes.one_hot_minute),
-    one_hot_day_of_the_week: oneHotEncode(dayOfWeek, colKeySizes.one_hot_day_of_the_week),
-    one_hot_day_of_the_month: oneHotEncode(dayOfMonth, colKeySizes.one_hot_day_of_the_month),
-  };
-};

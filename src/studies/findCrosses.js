@@ -24,11 +24,7 @@ class CrossInstance {
             prevSlow: NaN,
             prevHigh: NaN,
             prevLow: NaN,
-            areHighAndLowUndefined: false,
-            crossIndexes: {
-                up: [],
-                down: []
-            }
+            areHighAndLowUndefined: false
         })        
 
     }
@@ -114,9 +110,6 @@ class CrossInstance {
             }
         }
 
-
-        if(this.interval === 1) this.crossIndexes.up.push(index)
-        if(this.interval === -1) this.crossIndexes.down.push(index)
 
         //save prev state
         Object.assign(this, {

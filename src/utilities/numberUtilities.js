@@ -5,13 +5,13 @@ export const isPositiveInteger = n => Number.isInteger(n) && n >= 0;
 export const inputNumberFormatter = {
   number: n => n,
   numberCleanString: n => Number(n),
-  precisionNumberCleanString: (strNum, multiplier) => addPrecisionAsNumber(strNum, multiplier)
+  precisionNumberCleanString: (strNum, multiplier, cachedDecimals) => addPrecisionAsNumber(strNum, multiplier, cachedDecimals)
 }
 
 export const outputNumberFormatter = {
   number: n => n,
   numberCleanString: n => n,
-  precisionNumberCleanString: (strNum, multiplier) => revertPrecisionAsNumber(strNum, multiplier)
+  precisionNumberCleanString: (strNum, multiplier, cachedDecimals) => revertPrecisionAsNumber(strNum, multiplier, cachedDecimals)
 }
 
 export const classifyNum = (num, throwError = false, precision = false) => {
