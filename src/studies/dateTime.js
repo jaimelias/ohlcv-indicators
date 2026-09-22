@@ -70,7 +70,7 @@ export const dateTime = (main, index, {lag, oneHot, precompute}) => {
         return
     }
 
-    // Build every fresh vector before the first write, as callbacks can observe writes.
+    // Build a fresh vector for every field and row before writing.
     const oneHotMonth = oneHotEncode(month, colKeySizes.one_hot_month)
     const oneHotHour = oneHotEncode(hour, colKeySizes.one_hot_hour)
     const oneHotMinute = oneHotEncode(minute, colKeySizes.one_hot_minute)

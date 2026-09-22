@@ -45,7 +45,7 @@ of previously supplied objects. Private buffer layouts intentionally differ.
 
 `npm test` checks known core results and fixed behavior traces captured before
 runtime optimizations, checks bounded retained storage, and exercises all
-public indicators, precision/log modes, lags, callbacks, and config replay.
+public indicators, precision/log modes, lags, and config replay.
 These checks are self-contained: no third-party indicator library or test
 oracle is installed. Preserve the trace expectations unless intentionally
 changing the corresponding behavior.

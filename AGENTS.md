@@ -12,7 +12,7 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 2. `compute()`, `getData()`, or `getLastValues()` starts the one-shot calculation. Do not allow indicators to be registered after computation.
 3. `compute()` copies declarations into `main.executionParams` and sorts only that runtime queue. `src/core-functions/mainLoop.js` creates input columns in `main.verticalOhlcv`, walks rows in chronological order, writes the raw row and `mid_price`, and invokes every queued handler from `mainFunctions`.
 4. Indicator handlers initialize state and output columns when `index === 0`, keep rolling state in `main.instances`, update once per row, and write through `main.pushToMain()`.
-5. Output columns start as `NaN` during warm-up or after an unexpected value. `areKeyValuesValid()` determines the last invalid row recorded in `main.invalidValueIndex`; `getData({ skipNull: true })` starts after that row. Without `mapCols`, cache validation column references only after all row-zero handlers and generated lags finish. With `mapCols`, retain dynamic column discovery and buffer lookup so callback mutations remain visible.
+5. Output columns start as `NaN` during warm-up or after an unexpected value. `areKeyValuesValid()` determines the last invalid row recorded in `main.invalidValueIndex`; `getData({ skipNull: true })` starts after that row. Cache validation column references only after all row-zero handlers and generated lags finish.
 6. `verticalToHorizontal()` converts the column store back to row objects. Temporary columns in `verticalOhlcvTempCols` are not returned.
 
 ### Indicator contract
@@ -34,16 +34,14 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 
 - `config` contains `schemaVersion` (currently `1`), `precision`, `useFullNames`, `inputParams`, `dateFormat`, `skipNull`, and `timeZone`.
 - Omitting `config.inputParams` (or setting it to `null`) creates a chainable instance. Supplying an array, including `[]`, imports independent copies and computes immediately.
-- `exportConfig()` returns a new JSON-safe snapshot. Export before and after `compute()`, `getData()`, or `getLastValues()` must produce equivalent configuration. Never include generated lag jobs, indicator instances, buffers, cached column references, or resolved callback functions in that snapshot.
+- `exportConfig()` returns a new JSON-safe snapshot. Export before and after `compute()`, `getData()`, or `getLastValues()` must produce equivalent configuration. Never include generated lag jobs, indicator instances, buffers, or cached column references in that snapshot.
 - `this.inputParams` is persistent configuration, not a work queue. Keep declarations deeply copied and frozen. Register public methods through `_registerIndicator()`; never sort, push into, or edit existing declarations directly. Runtime caching and parameter mutation belong only in `executionParams` or `instances`.
 - Sorting and generated jobs must affect only `executionParams`. Import must never mutate the caller's config, even when the same saved object is replayed repeatedly. Exports must not share nested arrays or objects with the instance or the imported config.
 - Every public indicator method must reject registration during or after computation. Preserve the `isComputing` reentrancy guard and the `isComputed` guard, including for `stochastic()`.
-- `mapCols` accepts a callback function or a registered string name. Register portable callbacks with `OHLCV_INDICATORS.registerMapCallback('name.v1', callback)` before loading configs. The built-in callback uses the reserved name `default`. Never overwrite a registered name with different code; use a new versioned name.
-- Callback arguments belong in `mapCols` options as JSON-safe `callbackParams`; callbacks receive them as `params` in `{ index, main, params }`. Resolve callbacks and copy their arguments only into the runtime queue. Registered callbacks must derive results from supplied input/params, not changing closure state, clocks, randomness, or external services.
-- Unregistered callbacks may execute locally, but export must throw explicitly. Do not serialize function source, evaluate stored code, or silently let JSON replace functions, undefined, or non-finite numbers with null. Reject unsupported config versions, circular references, and non-JSON objects.
+- All indicator parameters must be JSON-safe. Reject functions, undefined, non-finite numbers, circular references, and non-JSON objects instead of silently allowing JSON to omit or replace them with null. Reject unsupported config versions and unknown indicator methods.
 - `dateFormat` and `skipNull` in config are output defaults. Per-call getter overrides must not modify exported settings. `timeZone` is stored explicitly (defaults to the resolved runtime timezone) and controls `dateTime` calendar features through a per-instance formatter.
-- Cross-runtime replay requires identical inputs, callback implementations, and library versions. Use unambiguous input dates (valid Date objects, supported timestamps, or ISO strings with `Z`/offsets). Timezone-less date strings and local `dateFormat: 'string'/'toString'` output still depend on runtime date parsing/formatting; prefer `iso`, `milliseconds`, or `seconds` for portable output.
-- Verify JSON export/import both before and after computation, repeated reuse of one frozen saved config, nested-copy isolation, generated and explicit lags, callback resolution, constructor/output defaults, and calendar features across runtime timezones.
+- Cross-runtime replay requires identical inputs and library versions. Use unambiguous input dates (valid Date objects, supported timestamps, or ISO strings with `Z`/offsets). Timezone-less date strings and local `dateFormat: 'string'/'toString'` output still depend on runtime date parsing/formatting; prefer `iso`, `milliseconds`, or `seconds` for portable output.
+- Verify JSON export/import both before and after computation, repeated reuse of one frozen saved config, nested-copy isolation, generated and explicit lags, constructor/output defaults, and calendar features across runtime timezones.
 
 ## Indicator files
 
@@ -82,7 +80,6 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 - `src/studies/dateTime.js` — numeric or one-hot calendar features.
 - `src/studies/findCrosses.js` — signed intervals since a cross, optional clipping, and optional one-hot encoding.
 - `src/studies/lag.js` — lag columns for existing vertical columns.
-- `src/studies/mapCols.js` — custom user-defined columns produced by a callback.
 
 ## Minimum required helpers
 
@@ -92,7 +89,7 @@ Input rows normally contain `open`, `high`, `low`, `close`, and `volume`; `date`
 - `src/core-functions/pushToMain.js` — column writes and per-row validity checks.
 - `src/utilities/assignTypes.js` — input type inference, typed-array allocation, and array-type lookup used by lagging.
 - `src/utilities/validators.js` — public API and queued-parameter validation.
-- `src/utilities/config.js` — strict configuration copying/freezing, schema version, named callback registration/resolution, and JSON-safe parameter export.
+- `src/utilities/config.js` — strict configuration copying/freezing, schema version, and JSON-safe parameter export.
 - `src/utilities/verticalToHorizontal.js` — output materialization, invalid-prefix skipping, temporary-column filtering, and precision restoration.
 - `src/utilities/numberUtilities.js` — input/output numeric formatters, numeric classification, and volume-number predicates.
 - `src/utilities/precisionMultiplier.js` — fixed-point conversion for exact price-string processing when `precision: true`.

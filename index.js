@@ -13,7 +13,7 @@ import { verticalToHorizontal } from './src/utilities/verticalToHorizontal.js'
 import { assignTypes } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
-import { CONFIG_VERSION, copyConfig, freezeConfig, registerMapCallback, resolveMapCallback, exportInputParams } from './src/utilities/config.js'
+import { CONFIG_VERSION, copyConfig, freezeConfig } from './src/utilities/config.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -116,18 +116,13 @@ export default class OHLCV_INDICATORS {
     }
 
 
-    static registerMapCallback(name, callback) {
-        registerMapCallback(name, callback)
-        return this
-    }
-
     exportConfig() {
-        return { ...this.config, inputParams: exportInputParams(this.inputParams) }
+        return { ...this.config, inputParams: copyConfig(this.inputParams) }
     }
 
     _registerIndicator(job) {
         isAlreadyComputed(this)
-        this.inputParams = Object.freeze([...this.inputParams, freezeConfig(copyConfig(job, true))])
+        this.inputParams = Object.freeze([...this.inputParams, freezeConfig(copyConfig(job))])
         return this
     }
 
@@ -175,11 +170,8 @@ export default class OHLCV_INDICATORS {
 
         if (this.isComputing) throw new Error('Computation is already in progress.')
 
-        this.executionParams = copyConfig(this.inputParams, true)
+        this.executionParams = copyConfig(this.inputParams)
             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        for (const job of this.executionParams) {
-            if (job.key === 'mapCols') job.params[1] = resolveMapCallback(job.params[1])
-        }
       
         // Mark as “in progress”
         this.isComputed = false;
@@ -255,6 +247,13 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
         validateArray(colKeys, 'colKeys', methodName)
+
+        const invalidItem = colKeys.find(v => typeof v !== 'string' || v === '')
+
+        if(invalidItem !== undefined) {
+            throw new Error(`Invalid item "${invalidItem}" (column name) in "colKeys" array param of "${methodName}()".`)
+        }
+
         validateNumber(lookback, {min:1, max: this.len, allowDecimals: false}, 'lookback', methodName)
 
         this._registerIndicator({key: methodName, params: [colKeys, lookback]})
@@ -608,33 +607,4 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
-    mapCols(newCols = ['change'], callback = null, options = {}) {
-
-        isAlreadyComputed(this)
-
-        const methodName = 'mapCols'
-
-        if(typeof callback === 'undefined' || callback === null)
-        {
-            callback = 'default'
-        }
-
-        validateObject(options, 'options', methodName)
-
-        const {lag = 0, isPriceBased = false, callbackParams = {}} = options
-        resolveMapCallback(callback)
-        const savedCallbackParams = copyConfig(callbackParams)
-
-        validateArray(newCols, 'newCols', methodName)
-        validateNumber(lag, {min: 0, allowDecimals: false}, 'options.lag', methodName)
-        validateBoolean(isPriceBased, 'isPriceBased', 'mapCols')
-
-        if(this.precision === false && isPriceBased) {
-            throw new Error(`Invalid param: If "mapCols.options.isPriceBased" is true, the "constructor.precision" param must be also true.`)
-        }
-
-        this._registerIndicator({key: methodName, params: [newCols, callback, {lag, isPriceBased, callbackParams: savedCallbackParams}]})
-
-        return this
-    }
 }

@@ -15,7 +15,6 @@ This README describes the API in this repository. Keep the same library version 
 - [Indicator reference](#indicator-reference)
 - [Advanced: combine indicators and lagged features](#advanced-combine-indicators-and-lagged-features)
 - [Save and reuse a configuration](#save-and-reuse-a-configuration)
-- [Advanced: custom columns with portable callbacks](#advanced-custom-columns-with-portable-callbacks)
 - [Precision mode](#precision-mode)
 - [Current limitations and troubleshooting](#current-limitations-and-troubleshooting)
 - [Notes for developers and LLMs](#notes-for-developers-and-llms)
@@ -190,7 +189,6 @@ Defaults are shown below. `target` means the numeric source column; `lag: n` cre
 | `candleFeatures(options = {})` | Change, gap, body, wick, and range returns. `{ lag: 0, colKeys: [], retLogs: false }`. Extra `colKeys` compare current close to each selected price column, not that column's previous value. |
 | `dateTime(options = {})` | Calendar features from `date`. `{ lag: 0, oneHot: false }`. |
 | `crossPairs(pairs = [], options = {})` | Signed direction/run counters for `{ fast, slow }` pairs. `{ limit: null, oneHot: false }`; `slow` can be a column name or numeric constant. Call once with all pairs. |
-| `mapCols(newCols = ['change'], callback = null, options = {})` | Custom columns. `{ lag: 0, isPriceBased: false, callbackParams: {} }`. See the callback example below. |
 | `lag(colKeys = ['close'], lookback = 1)` | Copies existing columns into `<column>_lag_1`, ..., `<column>_lag_<lookback>`. |
 
 ### Output names and units
@@ -225,7 +223,7 @@ The EMA/SMA/relative-volume log modes leave unavailable or invalid ratios as `Na
 
 Its `lag` option generates lags only for that selected column. To obtain both forms, register both modes before computation, for example `.volumeOscillator(5, 10, { lag: 2 }).volumeOscillator(5, 10, { retLogs: true, lag: 2 })`. Each mode has independent EMA state; both outputs and their lags are dimensionless.
 
-Older saved configs using `retLogs: true` may expect the percentage column that was previously emitted too. If an explicit lag, callback, or downstream consumer still needs that percentage column, add a raw-mode registration before the consumer. Change a reference to the logged column only when you intend to consume log ratios instead of percentages. Current configs preserve the selected mode on export/replay.
+Older saved configs using `retLogs: true` may expect the percentage column that was previously emitted too. If an explicit lag or downstream consumer still needs that percentage column, add a raw-mode registration before the consumer. Change a reference to the logged column only when you intend to consume log ratios instead of percentages. Current configs preserve the selected mode on export/replay.
 
 Non-log candle and Heiken-Ashi returns are fractions, not percentages: `0.01` means 1%. Unavailable indicator values can remain `NaN`. The shared `mathLog()` helper substitutes `0.001` for a zero numerator or denominator and throws for incompatible signs or a non-finite result; its zero handling is not literal `ln(0)`. Candle and Heiken-Ashi features have their own log calculations.
 
@@ -335,7 +333,7 @@ console.log(lastFeature.macd_histogram_12_26_9);
 console.log(lastFeature.one_hot_hour); // Uint8Array of length 24
 ```
 
-Register producers before consumers: for example, create a custom column before asking `lag()` to read it. Do not create the same lag twice using both an indicator's `lag` option and an explicit `.lag()` call.
+Register producers before consumers: for example, register `.ema(5)` before asking `.lag(['ema_5'], 1)` to read its output. Do not create the same lag twice using both an indicator's `lag` option and an explicit `.lag()` call.
 
 A lag always refers to an earlier row, not an earlier nonzero-volume row. Features on the current candle can depend on its final high, low, close, and volume; account for candle completion when using them in a backtest.
 
@@ -385,55 +383,12 @@ Important replay rules:
 
 - Passing `config.inputParams` as an array computes immediately, even if it is empty. Do **not** chain more indicators onto a restored instance.
 - Preserve the whole exported config; saving only `inputParams` loses settings that affect the result.
-- For identical results, reuse identical ordered input, the same library version, the same callback implementations, and unambiguous dates. The config schema version alone does not pin library behavior.
+- For identical results, reuse identical ordered input, the same library version, and unambiguous dates. The config schema version alone does not pin library behavior.
 - Exported objects are independent copies. Runtime-generated lag jobs are not added to the saved declarations; replay regenerates them from their options.
-- Custom callbacks must be registered in each process before importing their configs. Function source and closures are not serialized.
-- Configuration values must be JSON-safe. Functions without registered names, `undefined`, `NaN`, `Infinity`, circular references, and non-plain objects cannot be exported as configuration.
+- Configuration values must be JSON-safe. Functions, `undefined`, `NaN`, `Infinity`, circular references, and non-plain objects are not supported as configuration.
+- `mapCols()` and `registerMapCallback()` have been removed. Older configurations containing `mapCols` are rejected as unknown indicators; they cannot be replayed unchanged in this version.
 
 JSON safety applies to exported **configuration**, not arbitrary result rows. Serializing results converts `NaN` to `null`, and typed-array vectors are not serialized as ordinary arrays automatically.
-
-## Advanced: custom columns with portable callbacks
-
-`mapCols()` runs a callback once per input row. It receives `{ index, main, params }`; input and previously calculated columns are available at `main.verticalOhlcv[column][index]`.
-
-Register a versioned callback name so that its configuration can be saved and replayed. This example reuses `input` from the quick start and the `assert` import from the save-and-reuse example:
-
-```js
-const bodyPercent = ({ index, main, params }) => {
-  const { open, close } = main.verticalOhlcv;
-  return {
-    body_percent: ((close[index] - open[index]) / open[index]) * params.scale,
-  };
-};
-
-OHLCV_INDICATORS.registerMapCallback('body-percent.v1', bodyPercent);
-
-const custom = new OHLCV_INDICATORS({
-  input,
-  config: { timeZone: 'UTC', dateFormat: 'iso' },
-}).mapCols(['body_percent'], 'body-percent.v1', {
-  callbackParams: { scale: 100 },
-  lag: 1,
-});
-
-const customConfig = JSON.parse(JSON.stringify(custom.exportConfig()));
-const customRows = custom.getData();
-const customReplay = new OHLCV_INDICATORS({ input, config: customConfig });
-assert.deepStrictEqual(customReplay.getData(), customRows);
-console.log(customReplay.getLastValues().body_percent);
-```
-
-In a new process, define and register `body-percent.v1` before constructing `customReplay`. Registration is runtime-local. Do not replace an existing callback name with different code; register `body-percent.v2` instead.
-
-Callback guidelines:
-
-- Declare every output name in `newCols`, return only those keys, and do not overwrite existing columns.
-- Return `null` or `undefined` to leave that row's custom outputs unavailable.
-- Put configurable values in JSON-safe `callbackParams`. Do not depend on changing closure state, randomness, clocks, or external services if you need reproducible replay.
-- Treat `main` as read-only apart from returning your declared values. Do not mutate input, internal queues, configuration, or other columns.
-- With precision mode, price columns in `verticalOhlcv` are scaled internal values. Ratios such as the example above cancel that scale. Use `isPriceBased: true` only for custom outputs that remain in scaled price units; that option requires `precision: true`.
-
-You may pass an unregistered function directly for local use, but `exportConfig()` will throw until it has a registered name. The built-in callback name `default` is reserved. With no callback, `.mapCols()` creates `change = 100 * (close[i] - open[i - 1]) / open[i - 1]`, not the usual close-to-close return; use an explicit callback when you want another formula.
 
 ## Precision mode
 
@@ -463,7 +418,7 @@ Prices are scaled internally using a shared multiplier derived from the first ro
 - **“Already computed” error:** register all methods before calling any getter or `compute()`. Imported configs already computed during construction.
 - **Empty output:** inspect `getData({ skipNull: false })`. You may need more history, or a late missing/zero-volume row may have moved the `skipNull` cutoff.
 - **Stochastic options error:** explicitly call, for example, `.stochastic(14, 3, 3, { retLogs: false })`; the current implementation does not supply that boolean's default.
-- **A derived target fails at row zero:** source validation requires positive finite values at the first row for non-volume targets. This restricts using warming-up outputs (such as an EMA) or signed/zero-valued custom columns as inputs to another indicator or `crossPairs()`. Registering the producer first does not bypass that validation.
+- **A derived target fails at row zero:** source validation requires positive finite values at the first row for non-volume targets. This restricts using warming-up outputs (such as an EMA) or signed/zero-valued extra input columns as inputs to another indicator or `crossPairs()`. Registering the producer first does not bypass that validation.
 - **Date errors:** use `Date` objects or timezone-qualified ISO strings consistently. Numeric millisecond input currently has a formatter-name mismatch; wrap it with `new Date(timestampMs)` first. Millisecond *output* is supported. Local/timezone-less strings can parse differently across runtimes.
 - **Unexpected volume:** storage is signed 32-bit integer. Normalize data externally; larger counts and fractional volumes are not preserved.
 - **MACD on a non-price target:** its outputs are always marked price-based. With `precision: true`, targets such as volume or a custom ratio are therefore rescaled incorrectly; use `precision: false` for those targets.
@@ -477,7 +432,7 @@ These are descriptions of the current implementation, not promises that invalid 
 Use this section as a compact implementation contract, alongside [AGENTS.md](./AGENTS.md).
 
 - Public entry point: default ESM export `OHLCV_INDICATORS` from `index.js`. Constructor shape: `{ input, ticker?, chunkProcess?, config? }`. There are no public `scaler()` or `vidya()` methods.
-- Registration is separate from execution. `inputParams` contains immutable declarations; `executionParams` is the mutable runtime queue. Never serialize runtime instances, buffers, generated jobs, or resolved callback functions.
+- Registration is separate from execution. `inputParams` contains immutable declarations; `executionParams` is the mutable runtime queue. Never serialize runtime instances, buffers, or generated jobs. All configuration parameters must be JSON-safe.
 - Handlers execute chronologically, allocate columns on `index === 0`, and keep rolling state in `main.instances`. The runtime is column-oriented even though input and returned data are row-oriented.
 - `initializeColumns()` owns output allocation, naming collision checks, price metadata, and generated lags. Numeric outputs normally use `Float64Array` with `NaN`; object/one-hot columns use arrays. Volume input uses `Int32Array`.
 - `src/core-indicators/` contains the local numeric indicator classes used at runtime, with no external indicator dependency. Self-contained tests cover known results and fixed behavior traces. Preserve warm-up, arithmetic order, and intentional zero/NaN behavior when changing these classes.

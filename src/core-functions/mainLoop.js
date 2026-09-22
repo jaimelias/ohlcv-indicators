@@ -16,7 +16,6 @@ import { crossPairs } from "../studies/findCrosses.js";
 import { dateTime } from "../studies/dateTime.js";
 import { atr } from "../volatility/atr.js";
 import { adx } from "../volatility/adx.js";
-import { mapCols } from "../studies/mapCols.js";
 
 import { buildArray } from "../utilities/assignTypes.js";
 import {  inputNumberFormatter } from "../utilities/numberUtilities.js";
@@ -43,7 +42,6 @@ const mainFunctions = {
   donchianChannels,
   bollingerBands,
   volumeOscillator,
-  mapCols,
   crossPairs,
   lag
 };
@@ -73,16 +71,13 @@ export const mainLoop = (input, main) => {
     verticalOhlcv[key] = buildArray(arrayTypes[key], len)
   }
 
-  // Callbacks can modify inputTypes through main; retain dynamic lookup for them.
-  const inputColumns = executionParams.some(({ key }) => key === 'mapCols')
-    ? null
-    : Object.entries(inputTypes).map(([key, formatterKey]) => {
-        const numeric = inputNumberFormatter.hasOwnProperty(formatterKey)
-        const formatter = numeric
-          ? inputNumberFormatter[formatterKey]
-          : dateFormaters.hasOwnProperty(formatterKey) ? dateFormaters[formatterKey] : null
-        return { key, formatter, numeric }
-      })
+  const inputColumns = Object.entries(inputTypes).map(([key, formatterKey]) => {
+    const numeric = inputNumberFormatter.hasOwnProperty(formatterKey)
+    const formatter = numeric
+      ? inputNumberFormatter[formatterKey]
+      : dateFormaters.hasOwnProperty(formatterKey) ? dateFormaters[formatterKey] : null
+    return { key, formatter, numeric }
+  })
   const precisionDecimals = typeof precisionMultiplier === 'number'
     ? getPrecisionDecimals(precisionMultiplier) : undefined
   let validationColumns = null
@@ -95,37 +90,13 @@ export const mainLoop = (input, main) => {
       for (let index = chunkStart; index < chunkEnd; index++) {
         const curr = input[index]
       
-        if (inputColumns !== null) {
-          for (const { key, formatter, numeric } of inputColumns) {
-            const value = curr[key]
-            if (typeof value === 'undefined') continue
+        for (const { key, formatter, numeric } of inputColumns) {
+          const value = curr[key]
+          if (typeof value === 'undefined') continue
 
-            const formattedValue = formatter === null ? value
-              : numeric ? formatter(value, precisionMultiplier, precisionDecimals) : formatter(value)
-            main.pushToMain({ index, key, value: formattedValue })
-          }
-        } else {
-          for(const [key, formaterKey] of Object.entries(inputTypes))
-          {
-            let value = curr[key]
-
-            if(typeof value === 'undefined') continue
-
-            if(inputNumberFormatter.hasOwnProperty(formaterKey))
-            {
-              const formatedValue = inputNumberFormatter[formaterKey](value, precisionMultiplier, precisionDecimals)
-
-              main.pushToMain({index, key, value: formatedValue})
-            }
-            else if(dateFormaters.hasOwnProperty(formaterKey))
-            {
-              main.pushToMain({index, key, value: dateFormaters[formaterKey](value)})
-            }
-            else
-            {
-              main.pushToMain({index, key, value})
-            }
-          }
+          const formattedValue = formatter === null ? value
+            : numeric ? formatter(value, precisionMultiplier, precisionDecimals) : formatter(value)
+          main.pushToMain({ index, key, value: formattedValue })
         }
 
         const midPrice = (verticalOhlcv.open[index] + verticalOhlcv.close[index]) / 2
@@ -141,15 +112,12 @@ export const mainLoop = (input, main) => {
         input[index] = null //flusing data
 
         // All built-in outputs (including generated lags) exist after row zero.
-        // Custom callbacks may add/delete columns or replace their buffers, so
-        // retain the dynamic lookup path whenever mapCols is registered.
-        if (inputColumns !== null && validationColumns === null) {
+        if (validationColumns === null) {
           validationColumns = Object.values(verticalOhlcv)
         }
-        const keyNames = validationColumns === null ? Object.keys(verticalOhlcv) : null
 
         // Preserve the missing/NaN/null predicate, including Infinity behavior.
-        if (!areKeyValuesValid(main, index, keyNames, validationColumns)) {
+        if (!areKeyValuesValid(validationColumns, index)) {
           main.invalidValueIndex = index
         }
       }

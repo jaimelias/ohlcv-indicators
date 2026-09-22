@@ -29,12 +29,7 @@ const makeInput = (length = 320, precision = false) => Array.from({ length }, (_
         note: `row-${index}`, flag: index % 2 === 0, extra: index / 10
     }
 })
-const mapCallback = ({ index, main, params }) => ({
-    custom_value: index === 17 ? null : main.verticalOhlcv.close[index] * params.factor,
-    custom_vector: index === 19 ? undefined : [index % 2, (index + 1) % 2]
-})
 const configure = (Ctor, input, { precision = false, retLogs = false, chunkProcess = 100, includeMfi = true } = {}) => {
-    Ctor.registerMapCallback('test.optimizations.v1', mapCallback)
     const main = new Ctor({ input, chunkProcess, config: { precision, useFullNames: retLogs, timeZone: 'America/Panama', dateFormat: 'iso', skipNull: false } })
         .ema(5, { lag: 2 }).ema(9, { target: 'open' }).sma(7, { lag: 1 })
         .bollingerBands(8, 2, { lag: 1 }).macd(4, 9, 3, { lag: 1 })
@@ -45,7 +40,6 @@ const configure = (Ctor, input, { precision = false, retLogs = false, chunkProce
         .donchianChannels(1, 0, { lag: 1 }).donchianChannels(8, 2, { lag: 2 }).donchianChannels(31, 9)
         .dateTime({ oneHot: retLogs, lag: 1 }).candleFeatures({ colKeys: ['close'], retLogs, lag: 1 })
         .crossPairs([{ fast: 'close', slow: 'open' }, { fast: 'price', slow: 100 }], { limit: 5, oneHot: true })
-        .mapCols(['custom_value', 'custom_vector'], 'test.optimizations.v1', { callbackParams: { factor: 2 }, lag: 2 })
         .lag(['close', 'volume'], 2).lag(['close_lag_1'], 2).lag(['one_hot_close_x_open'], 1)
     if (includeMfi) main.mfi(7, { retLogs, lag: 1 })
     return main
@@ -176,7 +170,6 @@ const indicatorCases = [
         keys: logs => ['change', 'mid_price_change', 'upper_wick', 'lower_wick', 'gap', 'body', 'range', 'close'].map(k => `${logs ? 'ret_log_' : 'ret_'}${k}`), warmup: 1 },
     { name: 'crossPairs', register: (m, o) => m.crossPairs([{ fast: 'close', slow: 'open' }], { limit: 5, oneHot: o.retLogs }),
         keys: oneHot => ['close_x_open', ...(oneHot ? ['one_hot_close_x_open'] : [])], autoLag: false },
-    { name: 'mapCols', register: (m, o) => m.mapCols(['change'], null, { lag: o.lag }), keys: () => ['change'], warmup: 1 },
     { name: 'lag', register: m => m.lag(['close', 'volume'], 2),
         keys: () => ['close_lag_1', 'close_lag_2', 'volume_lag_1', 'volume_lag_2'], autoLag: false }
 ]
@@ -795,7 +788,8 @@ const runRegressions = Baseline => {
             assert.deepStrictEqual(snapshot(configure(OHLCV_INDICATORS, input, { ...options, chunkProcess: 2000 }).compute()), expected)
             const exported = main.exportConfig()
             exported.inputParams[0].params[1] = 99
-            exported.inputParams.find(job => job.key === 'mapCols').params[2].callbackParams.factor = 999
+            exported.inputParams.find(job => job.key === 'crossPairs').params[0][0].fast = 'high'
+            exported.inputParams.find(job => job.key === 'lag').params[0][0] = 'open'
             assert.deepStrictEqual(main.exportConfig(), before)
             if (Baseline) {
                 const includeMfi = typeof Baseline.prototype.mfi === 'function'
@@ -871,75 +865,57 @@ const runRegressions = Baseline => {
         assert.throws(() => new OHLCV_INDICATORS({ input }).lag(['missing'], 1).compute(), /not found/)
         assert.throws(() => new OHLCV_INDICATORS({ input }).lag(['extra', 'extra'], 1).compute(), /already exists/)
     })
-    check('callbacks replacing lag buffers and changing inputTypes preserve behavior', () => {
-        const input = makeInput(120)
-        input.forEach((row, index) => { row.note = index === 0 ? 'original' : String(index) })
-        const create = Ctor => new Ctor({ input }).mapCols(['custom'], ({ index, main }) => {
-            if (index === 0) main.inputTypes.note = 'numberCleanString'
-            if (index === 1) main.verticalOhlcv.custom = new Float64Array(main.len).fill(NaN)
-            if (index === 2) {
-                main.verticalOhlcv.custom = new Array(main.len).fill(null)
-                main.verticalOhlcv.custom_lag_1 = new Array(main.len).fill('replaced')
-            }
-            return { custom: index === 2 ? null : index }
-        }).lag(['custom'], 1).compute()
-        const main = create(OHLCV_INDICATORS), v = main.verticalOhlcv
-        assert.equal(v.note[0], 'original'); assert.equal(v.note[1], 1)
-        assert.equal(v.custom_lag_1[0], 'replaced'); assert.equal(v.custom_lag_1[2], null)
-        assert.equal(v.custom_lag_1[3], null); assert.equal(v.custom_lag_1[4], 3)
-        if (Baseline) assert.deepStrictEqual(v, create(Baseline).verticalOhlcv)
+    check('removed custom-column APIs are absent and stored declarations are rejected', () => {
+        const input = makeInput(120), main = new OHLCV_INDICATORS({ input })
+        assert.equal('mapCols' in main, false)
+        assert.equal('registerMapCallback' in OHLCV_INDICATORS, false)
+        const config = main.exportConfig()
+        config.inputParams = [{ key: 'mapCols', params: [['custom'], 'default', { lag: 0, isPriceBased: false }] }]
+        assert.throws(() => new OHLCV_INDICATORS({ input, config }), /Unknown indicator "mapCols"/)
     })
-    check('callbacks changing runtime lag targets/lookback leave persistent declarations intact', () => {
-        const input = makeInput(120)
-        for (const mutation of ['lookback', 'splice', 'replace']) {
-            const create = Ctor => new Ctor({ input }).mapCols(['marker'], ({ index, main }) => {
-                if (index === 3) {
-                    const job = main.executionParams.find(job => job.key === 'lag')
-                    if (mutation === 'lookback') job.params[1] = 0
-                    if (mutation === 'splice') job.params[0].splice(0, 1)
-                    if (mutation === 'replace') job.params[0] = ['high']
-                }
-                return { marker: index }
-            }).lag(['close', 'high'], 2).compute()
-            const main = create(OHLCV_INDICATORS)
-            assert.deepStrictEqual(main.inputParams[1].params, [['close', 'high'], 2])
-            assert.equal(main.verticalOhlcv.close_lag_1[2], input[1].close)
-            assert.ok(Number.isNaN(main.verticalOhlcv.close_lag_1[3]))
-            if (mutation === 'lookback') assert.ok(Number.isNaN(main.verticalOhlcv.high_lag_1[3]))
-            else assert.equal(main.verticalOhlcv.high_lag_1[3], input[2].high)
-            if (Baseline) assert.deepStrictEqual(main.verticalOhlcv, create(Baseline).verticalOhlcv)
+    check('configuration rejects non-JSON values and runtime jobs do not share declarations', () => {
+        const input = makeInput(120), main = new OHLCV_INDICATORS({ input }).lag(['close', 'high'], 2)
+        const before = main.exportConfig()
+        main.compute()
+        const job = main.executionParams.find(job => job.key === 'lag')
+        job.params[0][0] = 'low'; job.params[1] = 1
+        assert.deepStrictEqual(main.inputParams[0].params, [['close', 'high'], 2])
+        assert.deepStrictEqual(main.exportConfig(), before)
+        const circular = {}; circular.self = circular
+        for (const value of [() => 1, undefined, NaN, Infinity, -Infinity, new Date(), new Map(), 1n, Symbol('invalid'), circular]) {
+            const config = { inputParams: [{ key: 'ema', params: ['ema', 5, { target: 'close', lag: 0, retLogs: false, extra: value }] }] }
+            assert.throws(() => new OHLCV_INDICATORS({ input, config }), /JSON-safe|plain objects|circular/)
         }
     })
     check('output conversion: precision, dates, null/NaN, property order and identity', () => {
         const input = makeInput(120, true)
-        const create = Ctor => {
-            const main = new Ctor({ input, config: { precision: true, timeZone: 'UTC', skipNull: false } })
-                .mapCols(['scaled'], ({ index, main }) => ({ scaled: index === 0 ? NaN : index === 1 ? null : main.verticalOhlcv.close[index] }), { isPriceBased: true })
-                .mapCols(['vector'], ({ index }) => ({ vector: [index] })).compute()
-            return main
-        }
+        input.forEach((row, index) => { row.vector = index === 1 ? null : [index] })
+        const create = Ctor => new Ctor({ input, config: { precision: true, timeZone: 'UTC', skipNull: false } })
+            .lag(['close'], 1).dateTime({ oneHot: true, lag: 1 }).compute()
         const main = create(OHLCV_INDICATORS), expected = Baseline ? create(Baseline) : null
-        assert.throws(() => main.exportConfig(), /callback/i)
+        assert.deepStrictEqual(snapshot(new OHLCV_INDICATORS({ input, config: main.exportConfig() })), snapshot(main))
         for (const dateFormat of ['milliseconds', 'seconds', 'iso', 'toISOString', 'object', 'string', 'toString', 'toUTCString']) for (const skipNull of [false, true]) {
             const rows = main.getData({ dateFormat, skipNull })
             if (expected) assert.deepStrictEqual(rows, expected.getData({ dateFormat, skipNull }))
             if (!skipNull) {
-                assert.ok(Number.isNaN(rows[0].scaled)); assert.equal(rows[1].scaled, null)
-                assert.equal(rows[2].scaled, Number(input[2].close))
+                assert.ok(Number.isNaN(rows[0].close_lag_1)); assert.equal(rows[1].vector, null)
+                assert.equal(rows[2].close_lag_1, Number(input[1].close))
                 assert.strictEqual(rows[2].vector, main.verticalOhlcv.vector[2])
+                assert.strictEqual(rows[2].one_hot_hour, main.verticalOhlcv.one_hot_hour[2])
+                assert.equal(rows[0].one_hot_hour_lag_1, null)
                 if (dateFormat === 'object') assert.strictEqual(rows[2].date, main.verticalOhlcv.date[2])
             }
             assert.deepStrictEqual(Object.keys(rows[0]), Object.keys(main.verticalOhlcv))
         }
     })
-    check('default callback replay and first-row validation', () => {
-        const input = makeInput(120), main = new OHLCV_INDICATORS({ input }).mapCols().compute()
+    check('empty declarations replay and first-row validation', () => {
+        const input = makeInput(120), main = new OHLCV_INDICATORS({ input }).compute()
         assert.deepStrictEqual(snapshot(new OHLCV_INDICATORS({ input, config: main.exportConfig() })), snapshot(main))
         const invalid = makeInput(120); invalid[0].high = 0
         assert.throws(() => new OHLCV_INDICATORS({ input: invalid }).donchianChannels(3).compute(), /invalid/i)
-        if (Baseline) assert.deepStrictEqual(snapshot(main), snapshot(new Baseline({ input }).mapCols().compute()))
+        if (Baseline) assert.deepStrictEqual(snapshot(main), snapshot(new Baseline({ input }).compute()))
     })
-    check('cached validation includes generated outputs; callbacks can add/remove columns later', () => {
+    check('cached validation includes input columns and generated outputs', () => {
         const input = makeInput(120)
         delete input[11].high; input[77].extra = NaN
         const create = Ctor => new Ctor({ input, config: { timeZone: 'UTC' } })
@@ -948,20 +924,10 @@ const runRegressions = Baseline => {
         assert.equal(main.invalidValueIndex, 77)
         assert.equal(main.getData().length, 42)
         if (Baseline) assert.deepStrictEqual(snapshot(main), snapshot(create(Baseline)))
-        const dynamic = Ctor => new Ctor({ input: makeInput(120), config: { timeZone: 'UTC' } })
-            .mapCols(['marker'], ({ index, main }) => {
-                if (index === 3) {
-                    main.verticalOhlcv.ephemeral = new Float64Array(main.len).fill(1)
-                    main.verticalOhlcv.ephemeral[index] = NaN
-                }
-                if (index === 4) delete main.verticalOhlcv.ephemeral
-                return { marker: index }
-            }).compute()
-        const changed = dynamic(OHLCV_INDICATORS)
-        assert.equal(changed.invalidValueIndex, 3)
-        assert.equal(changed.getData().length, 116)
-        assert.ok(!('ephemeral' in changed.verticalOhlcv))
-        if (Baseline) assert.deepStrictEqual(changed.getData({ skipNull: false }), dynamic(Baseline).getData({ skipNull: false }))
+        const generated = new OHLCV_INDICATORS({ input: makeInput(120), config: { timeZone: 'UTC' } })
+            .ema(5, { lag: 2 }).dateTime({ oneHot: true, lag: 1 }).compute()
+        assert.equal(generated.invalidValueIndex, 5)
+        assert.equal(generated.getData().length, 114)
     })
     check('cross counters retain bounded state and independent one-hot output vectors', () => {
         const input = makeInput(2048)
@@ -969,14 +935,16 @@ const runRegressions = Baseline => {
         const observed = []
         const main = new OHLCV_INDICATORS({ input })
             .crossPairs([{ fast: 'close', slow: 'open' }], { limit: 3, oneHot: true })
-            .mapCols(['marker'], ({ index, main }) => {
-                if (index === 127 || index === input.length - 1) {
-                    const run = main.instances.crossPairs.close_x_open.run
-                    observed.push(retainedStorage(run))
-                    assert.ok(!('crossIndexes' in run), 'unused event history must not be retained')
-                }
-                return { marker: index }
-            }).compute()
+        const push = main.pushToMain
+        main.pushToMain = output => {
+            push(output)
+            if (output.key === 'one_hot_close_x_open' && (output.index === 127 || output.index === input.length - 1)) {
+                const run = main.instances.crossPairs.close_x_open.run
+                observed.push(retainedStorage(run))
+                assert.ok(!('crossIndexes' in run), 'unused event history must not be retained')
+            }
+        }
+        main.compute()
         assert.deepStrictEqual(observed, [{ slots: 0, bytes: 0 }, { slots: 0, bytes: 0 }])
         const v = main.verticalOhlcv
         assert.deepStrictEqual(Array.from(v.close_x_open), input.map((_, index) => index % 2 ? -1 : 1))
@@ -1121,10 +1089,19 @@ const runRegressions = Baseline => {
         assert.throws(() => new OHLCV_INDICATORS({ input }).mfi(3, { retLogs: true }).mfi(3, { retLogs: true }).compute(), /already|duplicate/i)
         const computed = defaults.compute()
         assert.throws(() => computed.mfi(3), /already computed/)
-        new OHLCV_INDICATORS({ input }).mapCols(['guard'], ({ index, main }) => {
-            if (index === 0) assert.throws(() => main.mfi(3), /computation is in progress/)
-            return { guard: 1 }
-        }).mfi(3).compute()
+        const guarded = new OHLCV_INDICATORS({ input }).mfi(3)
+        const push = guarded.pushToMain
+        let checked = false
+        guarded.pushToMain = output => {
+            if (output.index === 3) {
+                assert.throws(() => guarded.mfi(3), /computation is in progress/)
+                assert.throws(() => guarded.compute(), /already in progress/)
+                checked = true
+            }
+            push(output)
+        }
+        guarded.compute()
+        assert.equal(checked, true)
         for (const key of ['high', 'low', 'close', 'volume']) {
             const missing = makeInput(120); delete missing[0][key]
             assert.throws(() => new OHLCV_INDICATORS({ input: missing }).mfi(3).compute())
@@ -1136,8 +1113,10 @@ const runRegressions = Baseline => {
         const sizes = [1, 7, 37], observed = []
         const main = new OHLCV_INDICATORS({ input: makeInput(8192) })
         for (const size of sizes) main.mfi(size).mfi(size, { retLogs: true })
-        main.mapCols(['observe'], ({ index, main }) => {
-            if (index === 255 || index === main.len - 1) {
+        const push = main.pushToMain
+        main.pushToMain = output => {
+            push(output)
+            if (output.key === 'ret_log_mfi_37' && (output.index === 255 || output.index === main.len - 1)) {
                 const buffers = []
                 for (const size of sizes) for (const prefix of ['', 'ret_log_']) {
                     const state = main.instances[`${prefix}mfi_${size}`]
@@ -1149,8 +1128,8 @@ const runRegressions = Baseline => {
                 }
                 observed.push(buffers.map(buffer => buffer.byteLength))
             }
-            return { observe: index }
-        }).compute()
+        }
+        main.compute()
         assert.deepStrictEqual(observed[0], observed[1])
         assert.equal(observed.length, 2)
     })
@@ -1168,15 +1147,12 @@ const benchmark = Baseline => {
                 .ema(10, { lag: 3 }).sma(20, { lag: 3 }).rsi(14, { retLogs: true, lag: 2 })
                 .donchianChannels(128, 0, { lag: 2 }).donchianChannels(255, 5, { lag: 1 })
                 .volumeOscillator(5, 10, { retLogs: true, lag: 2 }).lag(['close', 'volume'], 3) },
-        ...[false, true].map(callback => ({ name: `features+precision${callback ? '+callback' : ''}`, input: makeInput(rows, true), create: (Ctor, input) => {
-            const main = new Ctor({ input, config: { timeZone: 'America/New_York', precision: true } })
+        { name: 'features+precision', input: makeInput(rows, true), create: (Ctor, input) =>
+            new Ctor({ input, config: { timeZone: 'America/New_York', precision: true } })
                 .sma(10, { lag: 2 }).heikenAshi(3, 4, { retLogs: true, lag: 1 })
                 .candleFeatures({ retLogs: true }).dateTime({ lag: 1 })
                 .crossPairs([{ fast: 'close', slow: 'open' }], { limit: 5, oneHot: true })
-            return callback ? main.mapCols(['body_ratio'], ({ index, main }) => ({
-                body_ratio: main.verticalOhlcv.close[index] / main.verticalOhlcv.open[index]
-            })) : main
-        } }))
+        }
     ]
     const samples = {}
     for (const profile of profiles) {
