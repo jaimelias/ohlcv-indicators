@@ -4,6 +4,9 @@ import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
 import { mathLog } from '../utilities/math.js';
 
+const isBadNumber = v => v == null || !Number.isFinite(v);
+
+
 const indicatorClasses = {
   ema: FasterEMA, 
   sma: FasterSMA
@@ -27,27 +30,49 @@ export const movingAverages = (main, index, methodName, size, { target, lag, ret
     // Create the main moving average instance.
     instances[keyName] = new indicatorClasses[methodName](size)
 
-    initializeColumns(main, [{ key: keyName, priceBased: !retLogs && priceBased.has(target) }], { lag })
+    if(retLogs) {
+      initializeColumns(main, [
+        { key: `${keyName}_distance`, priceBased: false },
+        { key: `${keyName}_change`, priceBased: false }
+      ], { lag })
+    } else {
+      initializeColumns(main, [{ key: keyName, priceBased: priceBased.has(target) }], { lag })
+    }
+    
   }
 
   // Retrieve the current price value
-  const value = verticalOhlcv[target][index]
-  const instance = instances[keyName]
+  const currVal = verticalOhlcv[target][index];
+
+
+  if(isBadNumber(currVal)) return;
+
+  const instance = instances[keyName];
+
+  //The easiest way to compute prevMa change is to retrieve the previous result before updating the indicator.
+  const prevMa = instance.isStable ? instance.getResult() : NaN;
 
   // Update the moving average instance.
-  instance.update(value)
+  instance.update(currVal)
 
-  const currMa = instance.isStable ? instance.getResult() : NaN
+  const currMa = instance.isStable ? instance.getResult() : NaN;
 
-  let output = currMa
+  if(isBadNumber(currMa)) return;
+
   if (retLogs) {
-    const ratio = value / currMa
-    // Log-relative distance is defined only for finite, positive ratios and operands.
-    output = value > 0 && currMa > 0 && ratio > 0 && Number.isFinite(ratio)
-      ? mathLog(ratio, 1)
-      : NaN
+
+    const ratio = currVal / currMa;
+    const distance = mathLog(currVal, currMa);
+
+    main.pushToMain({ index, key: `${keyName}_distance`, value: distance })
+
+    if(isBadNumber(prevMa)) return;
+
+    const change = mathLog(currMa, prevMa);
+
+    main.pushToMain({ index, key: `${keyName}_change`, value: change })
+  } else {
+    main.pushToMain({ index, key: keyName, value: currMa })
   }
 
-  // Always push the selected value (even if NaN).
-  main.pushToMain({ index, key: keyName, value: output })
 }
