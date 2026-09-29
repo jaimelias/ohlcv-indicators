@@ -2,7 +2,6 @@
 
 # Keep the deterministic harness; ignore local test helpers and artifacts.
 test/*
-!test/test.js
 
 # Ignore node_modules directory
 node_modules/

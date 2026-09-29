@@ -40,21 +40,3 @@ columns without adding object storage for normal numeric input. NaN and
 Infinity remain numeric values and do not trigger this fallback. Candle
 references are retained where the reference implementation observes mutations
 of previously supplied objects. Private buffer layouts intentionally differ.
-
-## Verification
-
-`npm test` checks known core results and fixed behavior traces captured before
-runtime optimizations, checks bounded retained storage, and exercises all
-public indicators, precision/log modes, lags, and config replay.
-These checks are self-contained: no third-party indicator library or test
-oracle is installed. Preserve the trace expectations unless intentionally
-changing the corresponding behavior.
-
-`node test/test.js --baseline /path/to/original/index.js --benchmark` also
-compares the full pipeline with a pre-change checkout. Benchmarks report
-local timings and retained array slots/buffer bytes, not total heap usage or
-performance guarantees. Results must remain exact; changing summation order,
-warm-up, or quirks is a separate behavior change.
-
-Adapted portions retain the upstream MIT notice in `indicator.js`, also
-preserved in the generated distribution's license notice.

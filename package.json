@@ -5,10 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node test/test.js",
-    "test-benchmark": "npm test -- --benchmark --rows 20000 --repeats 9",
-    "build": "npx webpack",
-    "cross": "node src/studies/findCrosses2.js"
+    "build": "npx webpack"
   },
   "author": "https://jaimelias.com/",
   "license": "ISC",
