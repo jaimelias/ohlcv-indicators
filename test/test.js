@@ -1,7 +1,7 @@
 import OHLCV_INDICATORS from '../index.js'
 import { getNasdaqOHLCV } from './utilities/fetchNasdaq.js'
 
-const config = { symbol: 'BTC', type: 'crypto', limit: 300, interval: '1d' }
+const config = { symbol: 'NVDA', type: 'index', limit: 300, interval: '1d' }
 
 const main = async () => {
     const input = await getNasdaqOHLCV(config)
@@ -20,7 +20,7 @@ const main = async () => {
         .stochastic(14, 3, 3, {retLogs})
         .atr(14, {retLogs})
         .adx(14, {retLogs})
-        .heikenAshi(null, null, {retLogs})
+        .heikenAshi(null, null, {retLogs: false})
         .donchianChannels(20, 0, {retLogs})
         .candleFeatures({ colKeys: ['open'], retLogs })
         .crossPairs([{ fast: 'close', slow: 'open' }])

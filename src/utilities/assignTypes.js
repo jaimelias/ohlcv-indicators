@@ -47,7 +47,7 @@ export const assignTypes = main => {
     }
     else if (colName === 'volume') {
       inputTypes[colName] = classifyNum(cellValue, true)
-      arrayTypes[colName] = 'Int32Array'
+      arrayTypes[colName] = 'Float64Array'
     }
     else if (initialPriceBased.has(colName)) {
       inputTypes[colName] = classifyNum(cellValue, true, precision)

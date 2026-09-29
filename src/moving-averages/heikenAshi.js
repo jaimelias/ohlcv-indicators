@@ -1,8 +1,9 @@
 import { FasterEMA } from '../core-indicators/index.js';
 import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
-
+import { mathLog } from '../utilities/math.js';
 const isBadNumber = v => v == null || !Number.isFinite(v);
+
 
 export const heikenAshi = (
   main,
@@ -15,10 +16,10 @@ export const heikenAshi = (
   const indicatorKey = `${smoothLength}_${afterSmoothLength}`;
 
   const getRet = (next, prev) => retLogs
-    ? Math.log(next / prev)
+    ? mathLog(next, prev)
     : (next - prev) / prev;
 
-  const prefix = retLogs ? 'ret_log_' : 'ret_';
+  const prefix = retLogs ? 'ret_log_' : '';
 
   const paramsKey = bothNull ? '' : `_${indicatorKey}`;
 

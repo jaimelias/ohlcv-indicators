@@ -141,7 +141,7 @@ export const validateInputValues = (
     const value = verticalOhlcv[key]?.[index];
 
     const isValid = key === "volume"
-      ? Number.isInteger(value) && value >= 0
+      ? Number.isFinite(value) && value >= 0
       : Number.isFinite(value) && value > 0;
 
     if (!isValid) invalidParams.push(key);
