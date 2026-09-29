@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "npx webpack"
+    "build": "npx webpack",
+    "test": "node test/test.js"
   },
   "author": "https://jaimelias.com/",
   "license": "ISC",
