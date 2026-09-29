@@ -3,6 +3,7 @@ import { validateInputValues } from '../utilities/validators.js';
 import { initializeColumns } from '../core-functions/initializeColumns.js';
 import { mathLog } from '../utilities/math.js';
 const isBadNumber = v => v == null || !Number.isFinite(v);
+const arithmeticReturn = (next, prev) => (next - prev) / prev;
 
 
 export const heikenAshi = (
@@ -10,35 +11,31 @@ export const heikenAshi = (
   index,
   smoothLength,
   afterSmoothLength,
-  { lag = 0, bothNull = false, retLogs = false } = {}
+  { lag = 0, noSmoothing = false, retLogs = false } = {}
 ) => {
   const { verticalOhlcv, instances, scaledGroups } = main;
-  const indicatorKey = `${smoothLength}_${afterSmoothLength}`;
-
-
-  const prefix = retLogs ? 'ret_log_' : 'ret_';
-
-  const paramsKey = bothNull ? '' : `_${indicatorKey}`;
-
-  const crossKey = bothNull
-    ? 'heiken_ashi_cross'
-    : `heiken_ashi_cross_${indicatorKey}`;
-
-  const instanceKey = bothNull
+  const instanceKey = noSmoothing
     ? 'heiken_ashi'
-    : `heiken_ashi_${indicatorKey}`;
+    : `heiken_ashi_${smoothLength}_${afterSmoothLength}`;
 
   // ---- INIT ----
   if (index === 0) {
     validateInputValues({ open: true, high: true, low: true, close: true }, verticalOhlcv, index, 'heikenAshi');
     const ohlcKeys = ['open', 'high', 'low', 'close'];
     const featureKeys = ['body', 'upper_wick', 'lower_wick', 'range'];
+    const paramsKey = noSmoothing ? '' : `_${smoothLength}_${afterSmoothLength}`;
+    const prefix = retLogs ? 'ret_log_' : 'ret_';
+    const outputKeys = Object.fromEntries(
+      featureKeys.map(key => [key, `${prefix}heiken_ashi_${key}${paramsKey}`])
+    );
+    const crossKey = `heiken_ashi_cross${paramsKey}`;
+    const keyNames = Object.values(outputKeys);
 
     instances[instanceKey] = {
-      emaPre: !bothNull
+      emaPre: !noSmoothing
         ? Object.fromEntries(ohlcKeys.map(k => [k, new FasterEMA(smoothLength)]))
         : null,
-      emaPost: !bothNull
+      emaPost: !noSmoothing
         ? Object.fromEntries(ohlcKeys.map(k => [k, new FasterEMA(afterSmoothLength)]))
         : null,
       prevHaOpen: NaN,
@@ -46,11 +43,10 @@ export const heikenAshi = (
       prevSmOpen: NaN,
       prevSmClose: NaN,
       trendDirection: 0,
-      getRet: (next, prev) => retLogs ? mathLog(next, prev) : (next - prev) / prev,
-      getKey: key => `${prefix}heiken_ashi_${key}${paramsKey}`
+      getRet: retLogs ? mathLog : arithmeticReturn,
+      outputKeys,
+      crossKey
     };
-
-    const keyNames = featureKeys.map(instances[instanceKey].getKey);
 
     initializeColumns(main, [...keyNames, crossKey].map(key => ({ key })), { lag });
 
@@ -65,6 +61,7 @@ export const heikenAshi = (
   const low = verticalOhlcv.low[index];
   const close = verticalOhlcv.close[index];
   const inst = instances[instanceKey];
+  const { crossKey, emaPre, emaPost, getRet, outputKeys } = inst;
 
   if (
     isBadNumber(open) ||
@@ -75,23 +72,21 @@ export const heikenAshi = (
     return;
   }
 
-  const {getKey, getRet} = inst
-
   let sOpen, sHigh, sLow, sClose;
 
-  if (!bothNull) {
+  if (emaPre !== null) {
     // ---- PRE-SMOOTHING EMA ----
-    inst.emaPre.open.update(open);
-    inst.emaPre.high.update(high);
-    inst.emaPre.low.update(low);
-    inst.emaPre.close.update(close);
+    emaPre.open.update(open);
+    emaPre.high.update(high);
+    emaPre.low.update(low);
+    emaPre.close.update(close);
 
-    if (!inst.emaPre.open.isStable || !inst.emaPre.high.isStable ||
-        !inst.emaPre.low.isStable || !inst.emaPre.close.isStable) return;
-    sOpen = inst.emaPre.open.getResult();
-    sHigh = inst.emaPre.high.getResult();
-    sLow = inst.emaPre.low.getResult();
-    sClose = inst.emaPre.close.getResult();
+    if (!emaPre.open.isStable || !emaPre.high.isStable ||
+        !emaPre.low.isStable || !emaPre.close.isStable) return;
+    sOpen = emaPre.open.getResult();
+    sHigh = emaPre.high.getResult();
+    sLow = emaPre.low.getResult();
+    sClose = emaPre.close.getResult();
   } else {
     sOpen = open;
     sHigh = high;
@@ -126,19 +121,19 @@ export const heikenAshi = (
 
   let smOpen, smHigh, smLow, smClose;
 
-  if (!bothNull) {
+  if (emaPost !== null) {
     // ---- POST-SMOOTHING EMA ----
-    inst.emaPost.open.update(haOpen);
-    inst.emaPost.high.update(haHigh);
-    inst.emaPost.low.update(haLow);
-    inst.emaPost.close.update(haClose);
+    emaPost.open.update(haOpen);
+    emaPost.high.update(haHigh);
+    emaPost.low.update(haLow);
+    emaPost.close.update(haClose);
 
-    if (!inst.emaPost.open.isStable || !inst.emaPost.high.isStable ||
-        !inst.emaPost.low.isStable || !inst.emaPost.close.isStable) return;
-    smOpen = inst.emaPost.open.getResult();
-    smHigh = inst.emaPost.high.getResult();
-    smLow = inst.emaPost.low.getResult();
-    smClose = inst.emaPost.close.getResult();
+    if (!emaPost.open.isStable || !emaPost.high.isStable ||
+        !emaPost.low.isStable || !emaPost.close.isStable) return;
+    smOpen = emaPost.open.getResult();
+    smHigh = emaPost.high.getResult();
+    smLow = emaPost.low.getResult();
+    smClose = emaPost.close.getResult();
   } else {
     smOpen = haOpen;
     smHigh = haHigh;
@@ -200,10 +195,10 @@ export const heikenAshi = (
   const lowerWick = getRet(bodyBottom, smLow);
   const range = getRet(smHigh, smLow);
 
-  if (!isBadNumber(body)) main.pushToMain({ index, key: getKey('body'), value: body });
-  if (!isBadNumber(upperWick)) main.pushToMain({ index, key: getKey('upper_wick'), value: upperWick });
-  if (!isBadNumber(lowerWick)) main.pushToMain({ index, key: getKey('lower_wick'), value: lowerWick });
-  if (!isBadNumber(range)) main.pushToMain({ index, key: getKey('range'), value: range });
+  if (!isBadNumber(body)) main.pushToMain({ index, key: outputKeys.body, value: body });
+  if (!isBadNumber(upperWick)) main.pushToMain({ index, key: outputKeys.upper_wick, value: upperWick });
+  if (!isBadNumber(lowerWick)) main.pushToMain({ index, key: outputKeys.lower_wick, value: lowerWick });
+  if (!isBadNumber(range)) main.pushToMain({ index, key: outputKeys.range, value: range });
 
   // Do not add return logs to cross.
   main.pushToMain({ index, key: crossKey, value: cross });

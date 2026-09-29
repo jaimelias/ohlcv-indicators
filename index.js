@@ -389,9 +389,9 @@ export default class OHLCV_INDICATORS {
 
         isAlreadyComputed(this)
 
-        const bothNull = smoothLength === null && afterSmoothLength === null;
+        const noSmoothing = smoothLength === null && afterSmoothLength === null;
 
-        if(bothNull === false) {
+        if(noSmoothing === false) {
             validateNumber(smoothLength, {min: 1, max: this.len, allowDecimals: false}, 'smoothLength', methodName)
             validateNumber(afterSmoothLength, {min: 1, max: this.len, allowDecimals: false}, 'afterSmoothLength', methodName)
         }
@@ -405,7 +405,7 @@ export default class OHLCV_INDICATORS {
 
         const order = 0
 
-        this._registerIndicator({key: methodName, order, params: [smoothLength, afterSmoothLength, {lag, bothNull, retLogs}]})
+        this._registerIndicator({key: methodName, order, params: [smoothLength, afterSmoothLength, {lag, noSmoothing, retLogs}]})
 
         return this
     }

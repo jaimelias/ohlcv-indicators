@@ -8,6 +8,7 @@ const main = async () => {
     const retLogs = true
 
     const indicators = new OHLCV_INDICATORS({ input })
+        .ema(5)
         .ema(5, {retLogs})
         .sma(5, {retLogs})
         .bollingerBands(20, 2, {retLogs})
