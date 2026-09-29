@@ -10,20 +10,15 @@ export const heikenAshi = (
   index,
   smoothLength,
   afterSmoothLength,
-  { lag = 0, bothNull = false, retLogs = true } = {}
+  { lag = 0, bothNull = false, retLogs = false } = {}
 ) => {
   const { verticalOhlcv, instances, scaledGroups } = main;
   const indicatorKey = `${smoothLength}_${afterSmoothLength}`;
 
-  const getRet = (next, prev) => retLogs
-    ? mathLog(next, prev)
-    : (next - prev) / prev;
 
-  const prefix = retLogs ? 'ret_log_' : '';
+  const prefix = retLogs ? 'ret_log_' : 'ret_';
 
   const paramsKey = bothNull ? '' : `_${indicatorKey}`;
-
-  const getKey = key => `${prefix}heiken_ashi_${key}${paramsKey}`;
 
   const crossKey = bothNull
     ? 'heiken_ashi_cross'
@@ -50,10 +45,12 @@ export const heikenAshi = (
       prevHaClose: NaN,
       prevSmOpen: NaN,
       prevSmClose: NaN,
-      isTrendUp: false,
+      trendDirection: 0,
+      getRet: (next, prev) => retLogs ? mathLog(next, prev) : (next - prev) / prev,
+      getKey: key => `${prefix}heiken_ashi_${key}${paramsKey}`
     };
 
-    const keyNames = featureKeys.map(getKey);
+    const keyNames = featureKeys.map(instances[instanceKey].getKey);
 
     initializeColumns(main, [...keyNames, crossKey].map(key => ({ key })), { lag });
 
@@ -77,6 +74,8 @@ export const heikenAshi = (
   ) {
     return;
   }
+
+  const {getKey, getRet} = inst
 
   let sOpen, sHigh, sLow, sClose;
 
@@ -162,40 +161,35 @@ export const heikenAshi = (
 
   // ---- TREND/CROSS LOGIC ----
   // Cross uses raw smoothed HA values, not the returned log/return features.
-  const prevCross = index > 0 ? verticalOhlcv[crossKey][index - 1] : 0;
-  const prevSmOpen = inst.prevSmOpen;
-  const prevSmClose = inst.prevSmClose;
+  const hasPrevious = (
+    Number.isFinite(inst.prevSmOpen) &&
+    Number.isFinite(inst.prevSmClose)
+  )
 
-  const crossUp = (
-    Number.isFinite(prevSmOpen) &&
-    Number.isFinite(prevSmClose) &&
-    prevSmClose <= prevSmOpen &&
-    smClose > smOpen
-  );
+  const prevCross = index > 0
+    ? verticalOhlcv[crossKey][index - 1]
+    : NaN
 
-  const crossDown = (
-    Number.isFinite(prevSmOpen) &&
-    Number.isFinite(prevSmClose) &&
-    prevSmClose >= prevSmOpen &&
-    smClose < smOpen
-  );
+  // A doji preserves the established direction.
+  // Before any direction exists, it remains neutral.
+  const direction = smClose > smOpen
+    ? 1
+    : smClose < smOpen
+      ? -1
+      : inst.trendDirection
 
-  if (crossUp) inst.isTrendUp = true;
-  if (crossDown) inst.isTrendUp = false;
+  let cross = 0
 
-  let cross = 0;
-
-  if (index > 0) {
-    if (inst.isTrendUp) {
-      cross = prevCross > 0 ? prevCross + 1 : 1;
-    } else {
-      cross = prevCross < 0 ? prevCross - 1 : -1;
-    }
+  if (hasPrevious && direction !== 0) {
+    cross = Number.isFinite(prevCross) &&
+            Math.sign(prevCross) === direction
+      ? prevCross + direction
+      : direction
   }
 
-  // Store previous raw smoothed HA values after cross calculation.
-  inst.prevSmOpen = smOpen;
-  inst.prevSmClose = smClose;
+  inst.trendDirection = direction
+  inst.prevSmOpen = smOpen
+  inst.prevSmClose = smClose
 
   // ---- HEIKEN ASHI STRUCTURE RETURNS ----
   const bodyTop = Math.max(smOpen, smClose);
