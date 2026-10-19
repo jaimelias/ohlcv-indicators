@@ -2,6 +2,7 @@ import { areKeyValuesValid } from "./pushToMain.js";
 import { validateInputParams } from "../utilities/validators.js";
 import { rsi } from "../oscillators/rsi.js";
 import { mfi } from "../oscillators/mfi.js";
+import { cmf } from "../oscillators/cmf.js";
 import { stochastic } from "../oscillators/stochastic.js";
 import { movingAverages } from "../moving-averages/movingAverages.js";
 import { heikenAshi } from "../moving-averages/heikenAshi.js";
@@ -31,6 +32,7 @@ const mainFunctions = {
   heikenAshi,
   rsi,
   mfi,
+  cmf,
   stochastic,
   atr,
   adx,

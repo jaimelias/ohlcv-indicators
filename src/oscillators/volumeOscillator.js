@@ -43,6 +43,9 @@ export const volumeOscillator = (main, index, fast, slow, {lag, retLogs}) => {
         return;
     }
 
+    // The raw percentage is 100 * (fast / slow - 1). Its log ratio has a
+    // natural neutral reference of fast / slow = 1 and handles both signs
+    // of the resulting oscillator without logging a signed value.
     volumeOscValue = retLogs
         ?  mathLog(fastValue, slowValue)
         : 100 * (fastValue - slowValue) / slowValue

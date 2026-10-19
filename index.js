@@ -510,6 +510,27 @@ export default class OHLCV_INDICATORS {
         return this
     }
 
+    cmf(size = 20, options = {}) {
+        const methodName = 'cmf'
+
+        if(!this.inputTypes.hasOwnProperty('volume')) {
+            throw new Error('If "cmf" is called the input ohlcv must contain valid volume properties.')
+        }
+
+        isAlreadyComputed(this)
+        validateNumber(size, {min: 1, max: this.len, allowDecimals: false}, 'size', methodName)
+        validateObject(options, 'options', methodName)
+
+        const unsupportedOption = Object.keys(options).find(key => key !== 'lag')
+        if (unsupportedOption) throw new Error(`Unsupported option "${unsupportedOption}" in "cmf"; only "lag" is available.`)
+
+        const {lag = 0} = options
+        validateNumber(lag, {min: 0, max: this.len, allowDecimals: false}, 'options.lag', methodName)
+
+        this._registerIndicator({key: methodName, params: [size, {lag}]})
+        return this
+    }
+
     donchianChannels(size = 20, offset = 0, options = {}) {
 
         const methodName = 'donchianChannels'

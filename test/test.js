@@ -8,7 +8,9 @@ const main = async () => {
     const retLogs = true
 
     const indicators = new OHLCV_INDICATORS({ input })
-        .ema(5)
+        .sma(200)
+        .cmf(20)
+/*         .ema(5)
         .ema(5, {retLogs})
         .sma(5, {retLogs})
         .bollingerBands(20, 2, {retLogs})
@@ -24,7 +26,9 @@ const main = async () => {
         .heikenAshi(null, null, {retLogs: false})
         .donchianChannels(20, 0, {retLogs})
         .candleFeatures({ colKeys: ['open'], retLogs })
-        .crossPairs([{ fast: 'close', slow: 'open' }])
+        
+ */
+    .crossPairs([{ fast: 'price', slow: 'sma_200' }])
 
     console.log(indicators.getLastValues())
 }

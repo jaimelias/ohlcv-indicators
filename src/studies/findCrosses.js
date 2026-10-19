@@ -138,16 +138,6 @@ export const crossPairs = (main, index, crossPairsList, {oneHot, limit}) => {
 
     if(index === 0)
     {
-        validateInputValues(
-            {
-                ...(fast === 'price' ? { high: true, low: true, close: true } : { [fast]: true }),
-                ...(typeof slow === 'number' ? {} : { [slow]: true })
-            },
-            verticalOhlcv,
-            index,
-            'crossPairs'
-        )
-
         // allow numeric 'slow' as a constant column
         if (typeof slow === 'number') {
 
