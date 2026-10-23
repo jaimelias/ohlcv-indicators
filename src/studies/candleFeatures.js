@@ -18,7 +18,6 @@ export const candleFeatures  = (main, index, {lag, colKeys, retLogs}) => {
         ].map(name => ({ key: `${prefix}${name}` }))
 
         for(const target of colKeys) {
-            validateInputValues({ [target]: true }, verticalOhlcv, index, 'candleFeatures')
 
             if(!verticalOhlcv.hasOwnProperty(target)) {
                 throw new Error(

@@ -1,15 +1,16 @@
 import OHLCV_INDICATORS from '../index.js'
 import { getNasdaqOHLCV } from './utilities/fetchNasdaq.js'
 
-const config = { symbol: 'NVDA', type: 'index', limit: 300, interval: '1d' }
+const config = { symbol: 'RTX', type: 'index', limit: 300, interval: '4h' }
 
 const main = async () => {
     const input = await getNasdaqOHLCV(config)
     const retLogs = true
 
     const indicators = new OHLCV_INDICATORS({ input })
-        .sma(200)
-        .cmf(20)
+        .heikenAshi(10, 10)
+        //.sma(200)
+        //.cmf(20)
 /*         .ema(5)
         .ema(5, {retLogs})
         .sma(5, {retLogs})
@@ -28,8 +29,6 @@ const main = async () => {
         .candleFeatures({ colKeys: ['open'], retLogs })
         
  */
-    .crossPairs([{ fast: 'price', slow: 'sma_200' }])
-
     console.log(indicators.getLastValues())
 }
 
