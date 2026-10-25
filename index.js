@@ -14,6 +14,7 @@ import { assignTypes } from './src/utilities/assignTypes.js'
 import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { CONFIG_VERSION, copyConfig, freezeConfig } from './src/utilities/config.js'
+import { DEFAULT_LOOKBACKS, validateScoreMomentumParams } from './src/studies/scoreMomentum.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -607,6 +608,14 @@ export default class OHLCV_INDICATORS {
 
         this._registerIndicator({key: methodName, order: 0, params: [{lag, oneHot, precompute}]})
         return this           
+    }
+
+    scoreMomentum(lookbacks = DEFAULT_LOOKBACKS) {
+        isAlreadyComputed(this)
+        validateScoreMomentumParams(lookbacks)
+
+        this._registerIndicator({key: 'scoreMomentum', params: [lookbacks]})
+        return this
     }
 
     candleFeatures(options = {}) {

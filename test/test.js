@@ -1,17 +1,20 @@
 import OHLCV_INDICATORS from '../index.js'
 import { getNasdaqOHLCV } from './utilities/fetchNasdaq.js'
 
-const config = { symbol: 'RTX', type: 'index', limit: 300, interval: '4h' }
+const config = { symbol: 'RTX', type: 'index', limit: 1000, interval: '4h' }
 
 const main = async () => {
     const input = await getNasdaqOHLCV(config)
     const retLogs = true
 
     const indicators = new OHLCV_INDICATORS({ input })
-        .heikenAshi(10, 10)
+        //.heikenAshi(10, 10)
+        //.ema(5)
+        //.candleFeatures({ colKeys: ['ema_5'], retLogs })
+        .scoreMomentum()
         //.sma(200)
         //.cmf(20)
-/*         .ema(5)
+/*         
         .ema(5, {retLogs})
         .sma(5, {retLogs})
         .bollingerBands(20, 2, {retLogs})
@@ -26,7 +29,7 @@ const main = async () => {
         .adx(14, {retLogs})
         .heikenAshi(null, null, {retLogs: false})
         .donchianChannels(20, 0, {retLogs})
-        .candleFeatures({ colKeys: ['open'], retLogs })
+        
         
  */
     console.log(indicators.getLastValues())

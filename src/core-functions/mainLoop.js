@@ -22,12 +22,14 @@ import { buildArray } from "../utilities/assignTypes.js";
 import {  inputNumberFormatter } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
 import { candleFeatures } from "../studies/candleFeatures.js";
+import { scoreMomentum } from "../studies/scoreMomentum.js";
 import { getPrecisionDecimals } from "../utilities/precisionMultiplier.js";
 
 
 // Map indicator keys to their respective functions
 const mainFunctions = {
   candleFeatures,
+  scoreMomentum,
   dateTime,
   heikenAshi,
   rsi,
