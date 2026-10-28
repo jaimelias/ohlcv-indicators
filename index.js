@@ -15,6 +15,7 @@ import { dateOutputFormaters } from './src/utilities/dateUtilities.js'
 import { calcPrecisionMultiplier } from './src/utilities/precisionMultiplier.js'
 import { CONFIG_VERSION, copyConfig, freezeConfig } from './src/utilities/config.js'
 import { DEFAULT_LOOKBACKS, validateScoreMomentumParams } from './src/studies/scoreMomentum.js'
+import { validateZscoreParams } from './src/studies/zscore.js'
 
 /**
  * Class OHLCV_INDICATORS
@@ -608,6 +609,17 @@ export default class OHLCV_INDICATORS {
 
         this._registerIndicator({key: methodName, order: 0, params: [{lag, oneHot, precompute}]})
         return this           
+    }
+
+    zscore(rollingWindow = 200, colKeys, options = {}) {
+        isAlreadyComputed(this)
+        const {lag} = validateZscoreParams(rollingWindow, colKeys, options, this.len)
+        if (this.inputParams.some(job => job.key === 'zscore' && job.params[0] === rollingWindow)) {
+            throw new Error(`zscore with rollingWindow ${rollingWindow} is already registered.`)
+        }
+
+        this._registerIndicator({key: 'zscore', params: [rollingWindow, colKeys, {lag}]})
+        return this
     }
 
     scoreMomentum(lookbacks = DEFAULT_LOOKBACKS) {

@@ -23,6 +23,7 @@ import {  inputNumberFormatter } from "../utilities/numberUtilities.js";
 import { dateFormaters } from "../utilities/dateUtilities.js";
 import { candleFeatures } from "../studies/candleFeatures.js";
 import { scoreMomentum } from "../studies/scoreMomentum.js";
+import { zscore } from "../studies/zscore.js";
 import { getPrecisionDecimals } from "../utilities/precisionMultiplier.js";
 
 
@@ -30,6 +31,7 @@ import { getPrecisionDecimals } from "../utilities/precisionMultiplier.js";
 const mainFunctions = {
   candleFeatures,
   scoreMomentum,
+  zscore,
   dateTime,
   heikenAshi,
   rsi,

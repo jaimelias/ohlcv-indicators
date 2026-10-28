@@ -9,9 +9,10 @@ const main = async () => {
 
     const indicators = new OHLCV_INDICATORS({ input })
         //.heikenAshi(10, 10)
-        //.ema(5)
-        //.candleFeatures({ colKeys: ['ema_5'], retLogs })
+        .ema(5)
+        .candleFeatures({ colKeys: ['ema_5'], retLogs })
         .scoreMomentum()
+        .zscore(200, ['ret_log_change'])
         //.sma(200)
         //.cmf(20)
 /*         
