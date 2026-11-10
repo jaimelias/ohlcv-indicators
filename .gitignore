@@ -2,6 +2,7 @@
 
 # Keep the deterministic harness; ignore local test helpers and artifacts.
 test/*
+!test/zscore-rowwise.test.js
 
 # Ignore node_modules directory
 node_modules/

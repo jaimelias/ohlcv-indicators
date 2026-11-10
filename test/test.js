@@ -1,18 +1,20 @@
 import OHLCV_INDICATORS from '../index.js'
 import { getNasdaqOHLCV } from './utilities/fetchNasdaq.js'
 
-const config = { symbol: 'RTX', type: 'index', limit: 1000, interval: '4h' }
+const config = { symbol: 'GME', type: 'index', limit: 5000, interval: '1d' }
 
 const main = async () => {
     const input = await getNasdaqOHLCV(config)
     const retLogs = true
 
     const indicators = new OHLCV_INDICATORS({ input })
-        //.heikenAshi(10, 10)
-        .ema(5)
-        .candleFeatures({ colKeys: ['ema_5'], retLogs })
-        .scoreMomentum()
+        .candleFeatures({ colKeys: [], retLogs })
+        //.scoreMomentum()
+        .volumeDelta()
+        .heikenAshi(10, 10, {retLogs})
+        .relativeVolume(10, {retLogs})
         .zscore(200, ['ret_log_change'])
+        .zscore(190, ['ret_log_upper_wick', 'ret_log_lower_wick', 'ret_log_body', 'ret_log_gap'])
         //.sma(200)
         //.cmf(20)
 /*         
@@ -28,7 +30,7 @@ const main = async () => {
         .stochastic(14, 3, 3, {retLogs})
         .atr(14, {retLogs})
         .adx(14, {retLogs})
-        .heikenAshi(null, null, {retLogs: false})
+        
         .donchianChannels(20, 0, {retLogs})
         
         

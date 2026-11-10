@@ -613,12 +613,12 @@ export default class OHLCV_INDICATORS {
 
     zscore(rollingWindow = 200, colKeys, options = {}) {
         isAlreadyComputed(this)
-        const {lag} = validateZscoreParams(rollingWindow, colKeys, options, this.len)
+        const {lag, rowWise} = validateZscoreParams(rollingWindow, colKeys, options, this.len)
         if (this.inputParams.some(job => job.key === 'zscore' && job.params[0] === rollingWindow)) {
             throw new Error(`zscore with rollingWindow ${rollingWindow} is already registered.`)
         }
 
-        this._registerIndicator({key: 'zscore', params: [rollingWindow, colKeys, {lag}]})
+        this._registerIndicator({key: 'zscore', params: [rollingWindow, colKeys, {lag, rowWise}]})
         return this
     }
 
